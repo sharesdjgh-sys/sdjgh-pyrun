@@ -29,23 +29,16 @@ export function usePyodide() {
     if (typeof window === "undefined") return;
 
     if (!window.__pyodidePromise) {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.js";
-      script.crossOrigin = "anonymous";
-      script.onload = () => {
-        if (window.loadPyodide) {
-          window.__pyodidePromise = window.loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/",
-          });
-        }
-      };
-      document.head.appendChild(script);
-      window.__pyodidePromise = new Promise((resolve, reject) => {
+      window.__pyodidePromise = new Promise<PyodideInterface>((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.js";
+        script.crossOrigin = "anonymous";
         script.onload = () => {
           if (window.loadPyodide) {
-            window.loadPyodide({
-              indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/",
-            }).then(resolve).catch(reject);
+            window
+              .loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/" })
+              .then(resolve)
+              .catch(reject);
           } else {
             reject(new Error("loadPyodide not found"));
           }
@@ -74,14 +67,12 @@ export function usePyodide() {
     const py = pyodideRef.current;
 
     try {
-      // Load packages from imports in the code
       try {
         await py.loadPackagesFromImports(code);
       } catch {
         // Some packages are not available in Pyodide — ignore
       }
 
-      // Setup: redirect stdout, patch time.sleep
       await py.runPythonAsync(`
 import sys
 import io
@@ -92,7 +83,6 @@ _stdout_capture = io.StringIO()
 _stderr_capture = io.StringIO()
 sys.stdout = _stdout_capture
 sys.stderr = _stderr_capture
-_exec_error = None
 `);
 
       let success = true;

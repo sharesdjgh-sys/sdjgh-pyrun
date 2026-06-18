@@ -106,7 +106,11 @@ export default function LearnClient({ userName }: LearnClientProps) {
             return (
               <button
                 key={cid}
-                onClick={() => setSelectedConceptId(cid)}
+                onClick={() => {
+                  setSelectedConceptId(cid);
+                  const example = CONCEPT_EXAMPLES[cid];
+                  if (example) setCode(example.exampleCode);
+                }}
                 style={{
                   flex: "none", whiteSpace: "nowrap", border: "none", cursor: "pointer",
                   fontFamily: "inherit", fontSize: 13, fontWeight: 700,

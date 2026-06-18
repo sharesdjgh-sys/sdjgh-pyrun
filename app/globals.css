@@ -31,6 +31,10 @@ html, body {
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ── Keyframe animations ── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 @keyframes bobMove {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
