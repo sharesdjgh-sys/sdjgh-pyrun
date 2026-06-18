@@ -1,7 +1,5 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-
 interface VariableFloatProps {
   varName?: string;
   varValue?: string;
@@ -9,20 +7,22 @@ interface VariableFloatProps {
 }
 
 export default function VariableFloat({ varName, varValue, visible }: VariableFloatProps) {
-  if (!varName) return null;
+  if (!varName || !visible) return null;
 
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: [0, -6, 0], transition: { y: { duration: 1.5, repeat: Infinity } } }}
-          exit={{ opacity: 0, y: -20 }}
-          className="absolute -top-10 left-1/2 -translate-x-1/2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg px-3 py-1 text-yellow-300 text-xs font-mono whitespace-nowrap"
-        >
-          {varName} = {varValue}
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div
+      style={{
+        position: "absolute", top: -44, left: "50%", transform: "translateX(-50%)",
+        zIndex: 3, animation: "floatChip 1.6s ease-in-out infinite",
+        background: "#FFF6DC", border: "2px solid #FFD970", borderRadius: 12,
+        padding: "5px 12px",
+        fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+        fontSize: 12.5, fontWeight: 700, color: "#A87A12",
+        boxShadow: "0 5px 12px rgba(255,193,60,.3)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {varName} = {varValue}
+    </div>
   );
 }

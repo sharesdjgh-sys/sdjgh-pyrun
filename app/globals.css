@@ -3,62 +3,146 @@
 @tailwind utilities;
 
 :root {
-  --background: #0f1117;
-  --foreground: #e2e8f0;
-  --panel-bg: #1a1d27;
-  --border-color: #2d3148;
-  --accent: #4f8ef7;
+  --bg-gradient: linear-gradient(160deg, #F4EFFC 0%, #FCEFF6 52%, #EEF3FE 100%);
+  --foreground: #2C2747;
+  --card-bg: #ffffff;
+  --border-light: #EFEAF8;
+  --border-input: #ECE7F8;
+  --accent-purple: #7B5CF0;
+  --accent-green: #18C99A;
+  --text-muted: #8B83A8;
+  --text-secondary: #544D70;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-body {
-  background: var(--background);
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-gradient);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* CodeMirror custom styles */
-.cm-editor {
-  height: 100%;
-  font-size: 14px;
+::selection { background: #DCCBFF; }
+
+::-webkit-scrollbar { height: 8px; width: 8px; }
+::-webkit-scrollbar-thumb { background: #D9CEF2; border-radius: 99px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Keyframe animations ── */
+@keyframes bobMove {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes blinkEye {
+  0%, 92%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
+}
+@keyframes antGlow {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+@keyframes armWaveL {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(8deg); }
+}
+@keyframes armWaveR {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-8deg); }
+}
+@keyframes floatChip {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(115vh) rotate(720deg); opacity: 0.9; }
+}
+@keyframes popIn {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes barShimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 240px 0; }
+}
+@keyframes blobFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(18px, -22px) scale(1.06); }
+}
+@keyframes caretBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes starSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes bowSway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(4deg); }
+}
+@keyframes robotJump {
+  0% { transform: translateY(0) scaleY(1); }
+  30% { transform: translateY(-40px) scaleY(1.05); }
+  60% { transform: translateY(-40px) scaleY(1.05); }
+  80% { transform: translateY(4px) scaleY(0.92); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+@keyframes robotShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-12px); }
+  40% { transform: translateX(12px); }
+  60% { transform: translateX(-12px); }
+  80% { transform: translateX(12px); }
+}
+@keyframes robotCelebrate {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(8deg) scale(1.08); }
+  75% { transform: rotate(-8deg) scale(1.08); }
+}
+@keyframes walkStep {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
 }
 
-.cm-editor.cm-focused {
-  outline: none;
+/* ── Speech bubble tail ── */
+.speech-bubble-tail {
+  position: relative;
 }
-
-.cm-scroller {
-  font-family: var(--font-geist-mono), "Fira Code", monospace !important;
-}
-
-/* Speech bubble tail */
 .speech-bubble-tail::after {
   content: "";
   position: absolute;
-  bottom: -10px;
+  bottom: -9px;
   left: 50%;
   transform: translateX(-50%);
-  border: 10px solid transparent;
-  border-top-color: #1e293b;
-  border-bottom: 0;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-right: 2px solid #E9E1FA;
+  border-bottom: 2px solid #E9E1FA;
+  rotate: 45deg;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ── CodeMirror light theme ── */
+.cm-editor {
+  height: 100%;
 }
-::-webkit-scrollbar-track {
-  background: #1a1d27;
+.cm-editor.cm-focused { outline: none; }
+.cm-scroller {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 14px;
+  line-height: 1.8;
 }
-::-webkit-scrollbar-thumb {
-  background: #3d4568;
-  border-radius: 3px;
+.cm-gutters {
+  background: #FCFBFF !important;
+  border-right: 1px solid #EEE8FA !important;
+  color: #CBC3E2 !important;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #4f5a8a;
+.cm-activeLineGutter, .cm-activeLine {
+  background: #F5F1FD !important;
 }
+.cm-cursor { border-left-color: #7B5CF0 !important; }
+.cm-selectionBackground { background: #DDD0FA !important; }

@@ -1,14 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Jua, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/lib/auth";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const jua = Jua({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-jua",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "파이썬 학습 서비스",
+  title: "파이썬 학습 놀이터",
   description: "AI 로봇과 함께 배우는 인터랙티브 파이썬 학습 플랫폼",
 };
 
@@ -20,8 +30,19 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="ko" className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="ko">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
+        />
+      </head>
+      <body
+        className={`${jua.variable} ${jetbrainsMono.variable}`}
+        style={{ fontFamily: "'Pretendard Variable', Pretendard, sans-serif" }}
+      >
         <SessionProvider session={session}>
           {children}
         </SessionProvider>

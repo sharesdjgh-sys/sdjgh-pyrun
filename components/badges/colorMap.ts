@@ -1,0 +1,18 @@
+export const COLOR_HEX: Record<string, string> = {
+  "text-green-500": "#18C99A",
+  "text-blue-500": "#4F8EF7",
+  "text-yellow-500": "#FFB02E",
+  "text-orange-500": "#FF7A59",
+  "text-amber-500": "#FF9F40",
+  "text-red-500": "#F5577A",
+  "text-teal-500": "#14B8A6",
+  "text-cyan-500": "#22B8CF",
+  "text-sky-500": "#5B7CFA",
+  "text-violet-500": "#8B5CF6",
+  "text-pink-500": "#FF5C8A",
+  "text-emerald-500": "#2BC48A",
+  "text-lime-500": "#84CC16",
+  "text-indigo-500": "#6366F1",
+  "text-purple-500": "#A855F7",
+  "text-orange-600": "#FB923C",
+};

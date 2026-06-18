@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { UserPlus, Bot } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,98 +14,117 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-
     const data = await res.json();
     setLoading(false);
-
     if (!res.ok) {
       setError(data.error || "오류가 발생했습니다.");
     } else {
-      router.push("/login?registered=true");
+      router.push("/login");
     }
   }
 
+  const inputStyle = {
+    width: "100%", padding: "14px 16px", border: "2px solid #ECE7F8", borderRadius: 14,
+    background: "#FBFAFF", fontSize: 15, color: "#2C2747", fontFamily: "inherit",
+    outline: "none", marginBottom: 16,
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f1117] px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center mb-4">
-            <Bot size={32} className="text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">파이썬 학습 서비스</h1>
-          <p className="text-slate-400 text-sm mt-1">계정을 만들고 시작해요</p>
+    <div
+      style={{
+        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 32, position: "relative", overflow: "hidden",
+        background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)",
+      }}
+    >
+      <div style={{ position: "absolute", top: -70, right: -50, width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle at 40% 40%,#B8FFE4,#18C99A00)", filter: "blur(8px)", animation: "blobFloat 10s ease-in-out infinite" }} />
+      <div style={{ position: "absolute", bottom: -80, left: -60, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle at 50% 50%,#C9B6FF,#A78BFA00)", filter: "blur(8px)", animation: "blobFloat 12s ease-in-out infinite reverse" }} />
+
+      <div style={{ position: "relative", width: "100%", maxWidth: 400 }}>
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 24, color: "#2C2747" }}>반가워요! 함께 시작해요</div>
+          <div style={{ fontSize: 13.5, color: "#8B83A8", marginTop: 4 }}>간단한 정보만 입력하면 끝나요</div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-[#1a1d27] rounded-2xl p-6 border border-[#2d3148]">
-          <h2 className="text-lg font-semibold text-white mb-5">회원가입</h2>
+        <div style={{ background: "#fff", borderRadius: 28, padding: "30px 28px", boxShadow: "0 18px 50px rgba(90,63,214,.14)", border: "1px solid #F1ECFA" }}>
+          <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 21, marginBottom: 20, color: "#2C2747" }}>회원가입</div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3 mb-4">
+            <div style={{ background: "#FFF0F4", border: "1px solid #FFD0DC", borderRadius: 12, padding: "11px 14px", marginBottom: 16, fontSize: 13.5, color: "#E23E70" }}>
               {error}
             </div>
           )}
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-slate-300 mb-1.5">닉네임</label>
-              <input
-                type="text"
-                value={form.displayName}
-                onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-                className="w-full bg-[#0f1117] border border-[#2d3148] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="화면에 표시될 이름"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-300 mb-1.5">아이디</label>
-              <input
-                type="text"
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
-                className="w-full bg-[#0f1117] border border-[#2d3148] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="영문, 숫자 3~50자"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-300 mb-1.5">비밀번호</label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full bg-[#0f1117] border border-[#2d3148] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="4자 이상"
-                required
-              />
-            </div>
-          </div>
+          <form onSubmit={handleSubmit}>
+            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>
+              닉네임 <span style={{ color: "#BDB6D4", fontWeight: 500 }}>(선택)</span>
+            </label>
+            <input
+              type="text"
+              value={form.displayName}
+              onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+              style={inputStyle}
+              onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
+              onBlur={(e) => { e.target.style.borderColor = "#ECE7F8"; e.target.style.background = "#FBFAFF"; }}
+              placeholder="코딩하는 지민"
+            />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-6 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed text-white rounded-lg py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-            ) : (
-              <UserPlus size={16} />
-            )}
-            {loading ? "가입 중..." : "회원가입"}
-          </button>
+            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>아이디</label>
+            <input
+              type="text"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              style={inputStyle}
+              onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
+              onBlur={(e) => { e.target.style.borderColor = "#ECE7F8"; e.target.style.background = "#FBFAFF"; }}
+              placeholder="영문/숫자 4자 이상"
+              required
+            />
 
-          <p className="text-center text-sm text-slate-400 mt-4">
+            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>비밀번호</label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              style={{ ...inputStyle, marginBottom: 24 }}
+              onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
+              onBlur={(e) => { e.target.style.borderColor = "#ECE7F8"; e.target.style.background = "#FBFAFF"; }}
+              placeholder="6자 이상"
+              required
+            />
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                padding: 15, border: "none", borderRadius: 16,
+                background: loading ? "#5ED4AA" : "linear-gradient(180deg,#34D9A6,#18C99A)",
+                color: "#fff", fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 17,
+                cursor: loading ? "not-allowed" : "pointer",
+                boxShadow: "0 6px 0 #0FA37C,0 12px 22px rgba(24,201,154,.32)",
+                transition: "transform .12s, box-shadow .12s",
+              }}
+              onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(4px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 0 #0FA37C"; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = ""; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 0 #0FA37C,0 12px 22px rgba(24,201,154,.32)"; }}
+            >
+              {loading ? (
+                <span style={{ width: 18, height: 18, border: "2.5px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block" }} />
+              ) : null}
+              가입하고 시작하기
+            </button>
+          </form>
+
+          <div style={{ textAlign: "center", marginTop: 18, fontSize: 14, color: "#8B83A8" }}>
             이미 계정이 있나요?{" "}
-            <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
-              로그인
-            </Link>
-          </p>
-        </form>
+            <Link href="/login" style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>로그인</Link>
+          </div>
+        </div>
       </div>
     </div>
   );
