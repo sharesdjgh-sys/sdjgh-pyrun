@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  @keyframes mBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes mBlink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+  @keyframes mAnt{0%,100%{opacity:.7;transform:scale(.92)}50%{opacity:1;transform:scale(1.12)}}
+  @keyframes mArmL{0%,100%{transform:rotate(0deg)}50%{transform:rotate(7deg)}}
+  @keyframes mArmR{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-7deg)}}
+  @keyframes mBow{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(4deg)}}
+</style>
+</helmet>
+<div style="width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;animation:mBob 3.2s ease-in-out infinite;">
+  <svg viewBox="0 0 200 250" width="100%" height="100%" preserveAspectRatio="xMidYMax meet" style="overflow:visible;">
+    <ellipse cx="100" cy="245" rx="54" ry="7" fill="#B98FE6" opacity=".16"></ellipse>
+
+    <!-- legs -->
+    <g>
+      <rect x="78" y="196" width="22" height="34" rx="11" fill="#FBF7FF"></rect>
+      <rect x="62" y="222" width="36" height="22" rx="11" fill="#FFFFFF" stroke="#ECE0FA" strokeWidth="1.5"></rect>
+      <rect x="62" y="235" width="36" height="9" rx="4.5" fill="#C6A2EC"></rect>
+    </g>
+    <g>
+      <rect x="100" y="196" width="22" height="34" rx="11" fill="#FBF7FF"></rect>
+      <rect x="102" y="222" width="36" height="22" rx="11" fill="#FFFFFF" stroke="#ECE0FA" strokeWidth="1.5"></rect>
+      <rect x="102" y="235" width="36" height="9" rx="4.5" fill="#C6A2EC"></rect>
+    </g>
+
+    <!-- left-arm -->
+    <g style="transform-origin:56px 162px;animation:mArmL 3.2s ease-in-out infinite;">
+      <rect x="42" y="160" width="20" height="32" rx="10" fill="#FBF7FF"></rect>
+      <ellipse cx="55" cy="161" rx="15" ry="13" fill="#C6A2EC"></ellipse>
+      <circle cx="49" cy="196" r="13" fill="#C6A2EC"></circle>
+      <circle cx="39" cy="190" r="6" fill="#C6A2EC"></circle>
+      <ellipse cx="46" cy="192" rx="4" ry="3" fill="#FFFFFF" opacity=".45"></ellipse>
+    </g>
+    <!-- right-arm -->
+    <g style="transform-origin:144px 162px;animation:mArmR 3.2s ease-in-out infinite;">
+      <rect x="138" y="160" width="20" height="32" rx="10" fill="#FBF7FF"></rect>
+      <ellipse cx="145" cy="161" rx="15" ry="13" fill="#C6A2EC"></ellipse>
+      <circle cx="151" cy="196" r="13" fill="#C6A2EC"></circle>
+      <circle cx="161" cy="190" r="6" fill="#C6A2EC"></circle>
+      <ellipse cx="148" cy="192" rx="4" ry="3" fill="#FFFFFF" opacity=".45"></ellipse>
+    </g>
+
+    <!-- body -->
+    <g>
+      <rect x="54" y="150" width="92" height="74" rx="36" fill="#FCF9FF" stroke="#ECE0FA" strokeWidth="1.5"></rect>
+      <ellipse cx="80" cy="166" rx="22" ry="11" fill="#FFFFFF" opacity=".7"></ellipse>
+      <text x="100" y="186" textAnchor="middle" fontFamily="'Jua',sans-serif" fontSize="30" fill="#C29BEC" letterSpacing="1">AI</text>
+      <rect x="58" y="196" width="84" height="15" rx="7.5" fill="#C6A2EC"></rect>
+      <circle cx="70" cy="203.5" r="2.1" fill="#FBF4FF"></circle>
+      <circle cx="82" cy="203.5" r="2.1" fill="#FBF4FF"></circle>
+      <circle cx="94" cy="203.5" r="2.1" fill="#FBF4FF"></circle>
+      <circle cx="106" cy="203.5" r="2.1" fill="#FBF4FF"></circle>
+      <circle cx="118" cy="203.5" r="2.1" fill="#FBF4FF"></circle>
+      <circle cx="130" cy="203.5" r="2.1" fill="#FBF4FF"></circle>
+    </g>
+
+    <!-- ears / headphones -->
+    <g>
+      <circle cx="35" cy="96" r="20" fill="#D0B6F2"></circle>
+      <ellipse cx="35" cy="96" rx="8.5" ry="13" fill="#EFE4FB"></ellipse>
+      <circle cx="165" cy="96" r="20" fill="#D0B6F2"></circle>
+      <ellipse cx="165" cy="96" rx="8.5" ry="13" fill="#EFE4FB"></ellipse>
+    </g>
+
+    <!-- head -->
+    <g>
+      <rect x="28" y="40" width="144" height="110" rx="50" fill="#FCF9FF" stroke="#ECE0FA" strokeWidth="2"></rect>
+      <ellipse cx="70" cy="66" rx="34" ry="16" fill="#FFFFFF" opacity=".65"></ellipse>
+      <ellipse cx="100" cy="140" rx="60" ry="15" fill="#EEE2FB" opacity=".55"></ellipse>
+      <rect x="44" y="60" width="112" height="70" rx="32" fill="#FFFFFF" stroke="#E7DAF7" strokeWidth="3"></rect>
+      <!-- eyebrows -->
+      <path d="M69 73q9 -6 18 -1.5" stroke="#C49BE8" strokeWidth="3.6" fill="none" strokeLinecap="round"></path>
+      <path d="M113 71.5q9 -4.5 18 1.5" stroke="#C49BE8" strokeWidth="3.6" fill="none" strokeLinecap="round"></path>
+      <!-- cheeks -->
+      <ellipse cx="59" cy="113" rx="11" ry="7.5" fill="#F4A6C2" opacity=".8"></ellipse>
+      <ellipse cx="141" cy="113" rx="11" ry="7.5" fill="#F4A6C2" opacity=".8"></ellipse>
+      <!-- eyes (blink) -->
+      <g style="transform-origin:100px 96px;animation:mBlink 4.6s ease-in-out infinite;">
+        <ellipse cx="78" cy="96" rx="15" ry="18" fill="#2B2440"></ellipse>
+        <ellipse cx="122" cy="96" rx="15" ry="18" fill="#2B2440"></ellipse>
+        <circle cx="73" cy="88" r="5" fill="#FFFFFF"></circle>
+        <circle cx="117" cy="88" r="5" fill="#FFFFFF"></circle>
+        <circle cx="83" cy="103" r="2.4" fill="#FFFFFF" opacity=".55"></circle>
+        <circle cx="127" cy="103" r="2.4" fill="#FFFFFF" opacity=".55"></circle>
+      </g>
+      <!-- mouth -->
+      <path d="M92 113q8 8 16 0" stroke="#3A2E4A" strokeWidth="3.2" fill="none" strokeLinecap="round"></path>
+    </g>
+
+    <!-- antenna -->
+    <g>
+      <line x1="100" y1="36" x2="100" y2="14" stroke="#C49BE8" strokeWidth="5" strokeLinecap="round"></line>
+      <circle cx="100" cy="9" r="9" fill="#C6A2EC" style="transform-origin:100px 9px;animation:mAnt 1.9s ease-in-out infinite;"></circle>
+    </g>
+
+    <!-- bow -->
+    <g style="transform-origin:64px 40px;animation:mBow 3.6s ease-in-out infinite;">
+      <ellipse cx="50" cy="40" rx="12" ry="9.5" fill="#C9A4EE"></ellipse>
+      <ellipse cx="79" cy="39" rx="12" ry="9.5" fill="#CDABF1"></ellipse>
+      <ellipse cx="48" cy="38" rx="5" ry="3.5" fill="#FFFFFF" opacity=".35"></ellipse>
+      <circle cx="64" cy="40" r="7.5" fill="#B98FE6"></circle>
+    </g>
+  </svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:210,&quot;height&quot;:262}}"></script>
+</body>
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#F3EFFB;-webkit-font-smoothing:antialiased;}
+  ::selection{background:#DCCBFF;}
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-thumb{background:#D9CEF2;border-radius:99px;}
+  @keyframes bobMove{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes blinkEye{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+  @keyframes antGlow{0%,100%{opacity:.6;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
+  @keyframes armWaveL{0%,100%{transform:rotate(0deg)}50%{transform:rotate(8deg)}}
+  @keyframes armWaveR{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-8deg)}}
+  @keyframes floatChip{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(115vh) rotate(720deg);opacity:.9}}
+  @keyframes popIn{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+  @keyframes barShimmer{0%{background-position:-200px 0}100%{background-position:240px 0}}
+  @keyframes blobFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(18px,-22px) scale(1.06)}}
+  @keyframes caretBlink{0%,100%{opacity:1}50%{opacity:0}}
+  @keyframes starSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+</style>
+</helmet>
+
+<div data-screen-root style="position:relative;min-height:100vh;font-family:'Pretendard Variable',Pretendard,sans-serif;color:#2C2747;background:linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%);overflow-x:hidden;">
+
+  <!-- ===================== LOGIN ===================== -->
+  <sc-if value="{{ isLogin }}">
+  <div data-screen-label="로그인" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;overflow:hidden;">
+    <div style="position:absolute;top:-80px;left:-60px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#C9B6FF,#A78BFA00);filter:blur(8px);animation:blobFloat 9s ease-in-out infinite;"></div>
+    <div style="position:absolute;bottom:-90px;right:-50px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle at 60% 40%,#FFC2DA,#FF8FB800);filter:blur(8px);animation:blobFloat 11s ease-in-out infinite reverse;"></div>
+    <div style="position:relative;width:100%;max-width:400px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:22px;">
+        <dc-import name="Mascot" hint-size="120px,150px" style="width:120px;height:150px;"></dc-import>
+        <div style="text-align:center;">
+          <div style="font-family:'Jua',sans-serif;font-size:26px;color:#2C2747;letter-spacing:-.5px;white-space:nowrap;">파이썬 학습 놀이터</div>
+          <div style="font-size:13.5px;color:#8B83A8;margin-top:2px;white-space:nowrap;">코드를 실행하면 로봇 친구가 반응해요</div>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:28px;padding:30px 28px;box-shadow:0 18px 50px rgba(90,63,214,.14);border:1px solid #F1ECFA;">
+        <div style="font-family:'Jua',sans-serif;font-size:21px;margin-bottom:20px;">로그인</div>
+        <label style="display:block;font-size:13px;color:#8B83A8;font-weight:600;margin-bottom:7px;">아이디</label>
+        <input type="text" value="jimin" style="width:100%;padding:14px 16px;border:2px solid #ECE7F8;border-radius:14px;background:#FBFAFF;font-size:15px;color:#2C2747;font-family:inherit;outline:none;margin-bottom:16px;" style-focus="border-color:#7B5CF0;background:#fff;"/>
+        <label style="display:block;font-size:13px;color:#8B83A8;font-weight:600;margin-bottom:7px;">비밀번호</label>
+        <input type="password" value="123456" style="width:100%;padding:14px 16px;border:2px solid #ECE7F8;border-radius:14px;background:#FBFAFF;font-size:15px;color:#2C2747;font-family:inherit;outline:none;margin-bottom:24px;" style-focus="border-color:#7B5CF0;background:#fff;"/>
+        <button onClick="{{ goLearn }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:15px;border:none;border-radius:16px;background:linear-gradient(180deg,#8B6CFF,#7B5CF0);color:#fff;font-family:'Jua',sans-serif;font-size:17px;cursor:pointer;box-shadow:0 6px 0 #5B3FD6,0 12px 22px rgba(123,92,240,.34);transition:transform .12s,box-shadow .12s;" style-active="transform:translateY(4px);box-shadow:0 2px 0 #5B3FD6;">
+          학습 시작하기
+        </button>
+        <div style="text-align:center;margin-top:18px;font-size:14px;color:#8B83A8;">
+          아직 계정이 없나요?
+          <span onClick="{{ goRegister }}" style="color:#7B5CF0;font-weight:700;cursor:pointer;margin-left:4px;">회원가입</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===================== REGISTER ===================== -->
+  <sc-if value="{{ isRegister }}">
+  <div data-screen-label="회원가입" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;overflow:hidden;">
+    <div style="position:absolute;top:-70px;right:-50px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#B8FFE4,#18C99A00);filter:blur(8px);animation:blobFloat 10s ease-in-out infinite;"></div>
+    <div style="position:absolute;bottom:-80px;left:-60px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#C9B6FF,#A78BFA00);filter:blur(8px);animation:blobFloat 12s ease-in-out infinite reverse;"></div>
+    <div style="position:relative;width:100%;max-width:400px;">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-family:'Jua',sans-serif;font-size:24px;color:#2C2747;">반가워요! 함께 시작해요</div>
+        <div style="font-size:13.5px;color:#8B83A8;margin-top:4px;">간단한 정보만 입력하면 끝나요</div>
+      </div>
+      <div style="background:#fff;border-radius:28px;padding:30px 28px;box-shadow:0 18px 50px rgba(90,63,214,.14);border:1px solid #F1ECFA;">
+        <div style="font-family:'Jua',sans-serif;font-size:21px;margin-bottom:20px;">회원가입</div>
+        <label style="display:block;font-size:13px;color:#8B83A8;font-weight:600;margin-bottom:7px;">닉네임 <span style="color:#BDB6D4;font-weight:500;">(선택)</span></label>
+        <input type="text" placeholder="코딩하는 지민" style="width:100%;padding:14px 16px;border:2px solid #ECE7F8;border-radius:14px;background:#FBFAFF;font-size:15px;color:#2C2747;font-family:inherit;outline:none;margin-bottom:16px;" style-focus="border-color:#7B5CF0;background:#fff;"/>
+        <label style="display:block;font-size:13px;color:#8B83A8;font-weight:600;margin-bottom:7px;">아이디</label>
+        <input type="text" placeholder="영문/숫자 4자 이상" style="width:100%;padding:14px 16px;border:2px solid #ECE7F8;border-radius:14px;background:#FBFAFF;font-size:15px;color:#2C2747;font-family:inherit;outline:none;margin-bottom:16px;" style-focus="border-color:#7B5CF0;background:#fff;"/>
+        <label style="display:block;font-size:13px;color:#8B83A8;font-weight:600;margin-bottom:7px;">비밀번호</label>
+        <input type="password" placeholder="6자 이상" style="width:100%;padding:14px 16px;border:2px solid #ECE7F8;border-radius:14px;background:#FBFAFF;font-size:15px;color:#2C2747;font-family:inherit;outline:none;margin-bottom:24px;" style-focus="border-color:#7B5CF0;background:#fff;"/>
+        <button onClick="{{ goLearn }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:15px;border:none;border-radius:16px;background:linear-gradient(180deg,#34D9A6,#18C99A);color:#fff;font-family:'Jua',sans-serif;font-size:17px;cursor:pointer;box-shadow:0 6px 0 #0FA37C,0 12px 22px rgba(24,201,154,.32);transition:transform .12s,box-shadow .12s;" style-active="transform:translateY(4px);box-shadow:0 2px 0 #0FA37C;">
+          가입하고 시작하기
+        </button>
+        <div style="text-align:center;margin-top:18px;font-size:14px;color:#8B83A8;">
+          이미 계정이 있나요?
+          <span onClick="{{ goLogin }}" style="color:#7B5CF0;font-weight:700;cursor:pointer;margin-left:4px;">로그인</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===================== LEARN ===================== -->
+  <sc-if value="{{ isLearn }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="메인 학습" style="height:100vh;display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- header -->
+    <div style="height:66px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:rgba(255,255,255,.82);backdrop-filter:blur(10px);border-bottom:1px solid #EDE7F8;">
+      <div onClick="{{ goLearn }}" style="display:flex;align-items:center;gap:11px;cursor:pointer;">
+        <div style="width:40px;height:40px;border-radius:13px;background:linear-gradient(140deg,#8B6CFF,#7B5CF0);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(123,92,240,.35);">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="3"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg>
+        </div>
+        <div style="font-family:'Jua',sans-serif;font-size:18px;letter-spacing:-.3px;white-space:nowrap;">파이썬 학습 놀이터</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;background:#F4F0FE;border-radius:99px;padding:5px 12px 5px 5px;">
+          <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(140deg,#FF8FB8,#FF5C8A);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Jua',sans-serif;font-size:14px;">지</div>
+          <span style="font-size:14px;font-weight:600;color:#544D70;">지민</span>
+        </div>
+        <button onClick="{{ goProgress }}" style="display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid #ECE7F8;border-radius:99px;padding:8px 14px;font-size:13.5px;font-weight:700;color:#7B5CF0;cursor:pointer;font-family:inherit;white-space:nowrap;" style-hover="background:#F6F2FE;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+          성장 기록
+        </button>
+        <button onClick="{{ goLogin }}" title="로그아웃" style="width:38px;height:38px;border-radius:50%;background:#fff;border:1.5px solid #ECE7F8;display:flex;align-items:center;justify-content:center;color:#9A93B5;cursor:pointer;" style-hover="color:#FF5C8A;border-color:#FFD3E0;">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- unit tabs -->
+    <div style="flex:none;padding:12px 22px 4px;">
+      <div style="display:flex;align-items:center;gap:8px;overflow-x:auto;padding-bottom:8px;">
+        <span style="flex:none;font-size:12.5px;font-weight:700;color:#A39CC0;margin-right:2px;">단원</span>
+        <sc-for list="{{ units }}" as="u" hint-placeholder-count="8">
+          <button onClick="{{ u.onSelect }}" style="{{ u.pillStyle }}">{{ u.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- workspace -->
+    <div style="flex:1;min-height:0;display:flex;gap:18px;padding:8px 22px 22px;">
+
+      <!-- editor column -->
+      <div style="flex:1.15;min-width:0;display:flex;flex-direction:column;gap:14px;">
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:#fff;border-radius:22px;border:1px solid #EFEAF8;box-shadow:0 12px 30px rgba(90,63,214,.07);overflow:hidden;">
+          <div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid #F2EDF9;">
+            <span style="width:11px;height:11px;border-radius:50%;background:#FF5C8A;"></span>
+            <span style="width:11px;height:11px;border-radius:50%;background:#FFC23C;"></span>
+            <span style="width:11px;height:11px;border-radius:50%;background:#18C99A;"></span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#9A93B5;margin-left:6px;">main.py</span>
+            <span style="margin-left:auto;font-size:12px;font-weight:700;color:#7B5CF0;background:#F2ECFD;padding:4px 11px;border-radius:99px;">{{ unitTitle }} 단원</span>
+          </div>
+          <div style="flex:1;min-height:0;overflow:auto;padding:16px 8px;font-family:'JetBrains Mono',monospace;font-size:14.5px;line-height:1.9;background:#FCFBFF;">
+            <div style="display:flex;"><span style="width:34px;text-align:right;padding-right:14px;color:#CBC3E2;user-select:none;">1</span><span><span style="color:#2C2747;">name</span> <span style="color:#8B5CF6;">=</span> <span style="color:#16A37B;">"지민"</span></span></div>
+            <div style="display:flex;"><span style="width:34px;text-align:right;padding-right:14px;color:#CBC3E2;user-select:none;">2</span><span><span style="color:#B0A8CC;"># 변수에 이름을 담아요</span></span></div>
+            <div style="display:flex;"><span style="width:34px;text-align:right;padding-right:14px;color:#CBC3E2;user-select:none;">3</span><span><span style="color:#E23E70;">print</span><span style="color:#6B6586;">(</span><span style="color:#16A37B;">"안녕,"</span><span style="color:#6B6586;">,</span> name <span style="color:#8B5CF6;">+</span> <span style="color:#16A37B;">"!"</span><span style="color:#6B6586;">)</span></span></div>
+            <div style="display:flex;"><span style="width:34px;text-align:right;padding-right:14px;color:#CBC3E2;user-select:none;">4</span><span><span style="color:#E23E70;">print</span><span style="color:#6B6586;">(</span><span style="color:#16A37B;">"파이썬 학습 시작!"</span><span style="color:#6B6586;">)</span><span style="display:inline-block;width:8px;height:18px;background:#7B5CF0;border-radius:1px;vertical-align:-3px;margin-left:2px;animation:caretBlink 1s steps(1) infinite;"></span></span></div>
+          </div>
+          <!-- output -->
+          <div style="flex:none;height:120px;border-top:1px solid #F2EDF9;background:#FAF8FF;padding:12px 18px;overflow:auto;">
+            <div style="display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;letter-spacing:.3px;color:#A39CC0;margin-bottom:7px;text-transform:uppercase;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+              실행 결과
+            </div>
+            <sc-if value="{{ hasRun }}">
+              <pre style="margin:0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#16A37B;white-space:pre-wrap;">{{ output }}</pre>
+            </sc-if>
+            <sc-if value="{{ notRun }}" hint-placeholder-val="{{ true }}">
+              <div style="color:#BDB6D4;font-size:13.5px;">실행 버튼을 눌러 코드를 실행해 보세요.</div>
+            </sc-if>
+          </div>
+          <!-- actions -->
+          <div style="flex:none;display:flex;align-items:center;gap:10px;padding:13px 18px;border-top:1px solid #F2EDF9;">
+            <button onClick="{{ run }}" style="display:flex;align-items:center;gap:8px;padding:12px 24px;border:none;border-radius:14px;background:linear-gradient(180deg,#34D9A6,#18C99A);color:#fff;font-family:'Jua',sans-serif;font-size:15.5px;cursor:pointer;box-shadow:0 5px 0 #0FA37C,0 9px 18px rgba(24,201,154,.32);transition:transform .12s,box-shadow .12s;" style-active="transform:translateY(3px);box-shadow:0 2px 0 #0FA37C;">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff" stroke="none"><path d="M7 4l13 8-13 8z"></path></svg>
+              실행
+            </button>
+            <button onClick="{{ loadExample }}" style="display:flex;align-items:center;gap:7px;padding:12px 18px;border:1.5px solid #ECE7F8;border-radius:14px;background:#fff;color:#7B5CF0;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;" style-hover="background:#F6F2FE;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+              예제 불러오기
+            </button>
+            <button onClick="{{ reset }}" style="margin-left:auto;display:flex;align-items:center;gap:6px;padding:10px 14px;border:none;border-radius:12px;background:transparent;color:#A39CC0;font-weight:600;font-size:13.5px;cursor:pointer;font-family:inherit;" style-hover="color:#7B5CF0;background:#F6F2FE;">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10"></path></svg>
+              초기화
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- robot column -->
+      <div style="flex:.85;min-width:300px;display:flex;flex-direction:column;gap:14px;">
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:linear-gradient(165deg,#FBF7FF,#F3ECFE);border-radius:22px;border:1px solid #EFEAF8;box-shadow:0 12px 30px rgba(90,63,214,.07);overflow:hidden;position:relative;">
+          <!-- speech bubble -->
+          <div style="flex:none;min-height:84px;padding:16px 18px 4px;display:flex;justify-content:center;">
+            <sc-if value="{{ showSpeech }}">
+              <div style="position:relative;max-width:300px;background:#fff;border:2px solid #E9E1FA;border-radius:20px;padding:13px 16px;box-shadow:0 8px 20px rgba(90,63,214,.12);animation:popIn .3s ease;">
+                <div style="font-size:14px;line-height:1.5;color:#3A3458;">{{ speechText }}<span style="display:inline-block;width:6px;height:14px;background:#7B5CF0;border-radius:1px;vertical-align:-2px;margin-left:1px;animation:caretBlink 1s steps(1) infinite;"></span></div>
+                <div style="position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);width:16px;height:16px;background:#fff;border-right:2px solid #E9E1FA;border-bottom:2px solid #E9E1FA;rotate:45deg;"></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noSpeech }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size:13px;color:#B6AED0;align-self:center;">코드를 실행하면 로봇이 말을 걸어요</div>
+            </sc-if>
+          </div>
+
+          <!-- robot stage -->
+          <div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative;">
+            <sc-if value="{{ hasRun }}">
+              <div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:3;animation:floatChip 1.6s ease-in-out infinite;">
+                <div style="background:#FFF6DC;border:2px solid #FFD970;border-radius:12px;padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;color:#A87A12;box-shadow:0 5px 12px rgba(255,193,60,.3);">{{ varName }} = {{ varValue }}</div>
+              </div>
+            </sc-if>
+            <dc-import name="Mascot" hint-size="184px,226px" style="width:184px;height:226px;"></dc-import>
+          </div>
+
+          <!-- badge strip -->
+          <div style="flex:none;border-top:1px solid #ECE4FA;background:rgba(255,255,255,.6);padding:13px 16px 15px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+              <span style="font-size:12.5px;font-weight:700;color:#8B83A8;">내 뱃지</span>
+              <span style="font-size:12px;font-weight:700;color:#7B5CF0;background:#F2ECFD;padding:3px 9px;border-radius:99px;">{{ earnedCount }} / 16</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;">
+              <sc-for list="{{ badges }}" as="b" hint-placeholder-count="16">
+                <div title="{{ b.ko }}" style="{{ b.miniStyle }}">
+                  <div style="width:18px;height:18px;color:{{ b.miniIconColor }}">{{ b.icon }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===================== PROGRESS ===================== -->
+  <sc-if value="{{ isProgress }}">
+  <div data-screen-label="성장 기록" style="min-height:100vh;">
+    <div style="height:66px;display:flex;align-items:center;padding:0 22px;background:rgba(255,255,255,.82);backdrop-filter:blur(10px);border-bottom:1px solid #EDE7F8;position:sticky;top:0;z-index:5;">
+      <button onClick="{{ goLearn }}" style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #ECE7F8;border-radius:99px;padding:9px 16px;font-size:14px;font-weight:700;color:#544D70;cursor:pointer;font-family:inherit;white-space:nowrap;" style-hover="background:#F6F2FE;color:#7B5CF0;">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        학습으로 돌아가기
+      </button>
+      <div style="margin-left:18px;font-family:'Jua',sans-serif;font-size:18px;white-space:nowrap;">성장 기록</div>
+    </div>
+
+    <div style="max-width:760px;margin:0 auto;padding:30px 22px 60px;display:flex;flex-direction:column;gap:22px;">
+
+      <!-- progress -->
+      <div style="background:#fff;border-radius:24px;border:1px solid #EFEAF8;box-shadow:0 12px 30px rgba(90,63,214,.07);padding:26px 28px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <div style="width:42px;height:42px;border-radius:13px;background:linear-gradient(140deg,#8B6CFF,#7B5CF0);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(123,92,240,.32);">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-family:'Jua',sans-serif;font-size:18px;">학습 진행률</div>
+            <div style="font-size:13.5px;color:#8B83A8;">{{ earnedCount }}개 / 16개 개념 완료</div>
+          </div>
+          <div style="font-family:'Jua',sans-serif;font-size:34px;color:#7B5CF0;">{{ progressPct }}%</div>
+        </div>
+        <div style="height:18px;border-radius:99px;background:#F0EBFA;overflow:hidden;">
+          <div style="height:100%;width:{{ progressPct }}%;border-radius:99px;background:linear-gradient(90deg,#7B5CF0,#FF8FB8,#FFC23C);background-size:240px 100%;animation:barShimmer 2.2s linear infinite;box-shadow:0 2px 8px rgba(123,92,240,.4);"></div>
+        </div>
+      </div>
+
+      <!-- badges -->
+      <div style="background:#fff;border-radius:24px;border:1px solid #EFEAF8;box-shadow:0 12px 30px rgba(90,63,214,.07);padding:26px 28px;">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:20px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#FFC23C" stroke="#FFC23C" strokeWidth="1.5" strokeLinejoin="round" style="animation:starSpin 14s linear infinite;"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 21.5 12 17.5 5.5 21.5 7 14.5 2 9.5 9 9"></polygon></svg>
+          <div style="font-family:'Jua',sans-serif;font-size:18px;white-space:nowrap;">획득한 뱃지</div>
+          <span style="font-size:12.5px;font-weight:700;color:#7B5CF0;background:#F2ECFD;padding:4px 10px;border-radius:99px;white-space:nowrap;">{{ earnedCount }} / 16</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:12px;">
+          <sc-for list="{{ badges }}" as="b" hint-placeholder-count="16">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:7px;">
+              <div style="{{ b.bigStyle }}">
+                <div style="width:28px;height:28px;color:{{ b.bigIconColor }}">{{ b.bigIcon }}</div>
+              </div>
+              <span style="font-size:10.5px;font-weight:600;color:{{ b.labelColor }};text-align:center;line-height:1.2;">{{ b.ko }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- feedback history -->
+      <div style="background:#fff;border-radius:24px;border:1px solid #EFEAF8;box-shadow:0 12px 30px rgba(90,63,214,.07);padding:26px 28px;">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:18px;">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#7B5CF0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <div style="font-family:'Jua',sans-serif;font-size:18px;">AI 피드백 기록</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="border:1px solid #F0EBFA;border-radius:16px;padding:15px 17px;background:#FCFBFF;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#0FA37C;background:#E3FBF1;padding:4px 10px;border-radius:99px;">성공</span>
+              <span style="font-size:12px;color:#B6AED0;">2026.06.18</span>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#6B6586;background:#F3EFFB;border-radius:9px;padding:8px 11px;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">print("안녕,", name + "!")</div>
+            <div style="font-size:13.5px;line-height:1.55;color:#3A3458;">정확해요! print 함수로 변수를 연결해서 출력하는 방법을 완벽하게 익혔네요.</div>
+          </div>
+          <div style="border:1px solid #F0EBFA;border-radius:16px;padding:15px 17px;background:#FCFBFF;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#E23E70;background:#FFE8EF;padding:4px 10px;border-radius:99px;">오류</span>
+              <span style="font-size:12px;color:#B6AED0;">2026.06.17</span>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#6B6586;background:#F3EFFB;border-radius:9px;padding:8px 11px;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">for i in range(5)</div>
+            <div style="font-size:13.5px;line-height:1.55;color:#3A3458;">거의 다 왔어요! for 문 끝에 콜론(:)을 붙이는 걸 깜빡했네요. 한 번 더 도전해 봐요.</div>
+          </div>
+          <div style="border:1px solid #F0EBFA;border-radius:16px;padding:15px 17px;background:#FCFBFF;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#0FA37C;background:#E3FBF1;padding:4px 10px;border-radius:99px;">성공</span>
+              <span style="font-size:12px;color:#B6AED0;">2026.06.16</span>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#6B6586;background:#F3EFFB;border-radius:9px;padding:8px 11px;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">age = 16</div>
+            <div style="font-size:13.5px;line-height:1.55;color:#3A3458;">변수에 숫자를 담는 데 성공했어요! 이제 이 값으로 계산도 해볼까요?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===================== CELEBRATION OVERLAY ===================== -->
+  <sc-if value="{{ showCelebration }}">
+  <div style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(44,39,71,.45);backdrop-filter:blur(5px);" onClick="{{ closeCelebration }}">
+    <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
+      <sc-for list="{{ confetti }}" as="c" hint-placeholder-count="0">
+        <div style="{{ c.style }}"></div>
+      </sc-for>
+    </div>
+    <div style="position:relative;background:#fff;border-radius:30px;padding:38px 40px;text-align:center;box-shadow:0 30px 70px rgba(44,39,71,.35);animation:popIn .4s ease;max-width:340px;">
+      <svg viewBox="0 0 24 24" width="40" height="40" fill="#FFC23C" stroke="#FFC23C" strokeWidth="1.2" strokeLinejoin="round" style="animation:starSpin 8s linear infinite;"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 21.5 12 17.5 5.5 21.5 7 14.5 2 9.5 9 9"></polygon></svg>
+      <div style="font-family:'Jua',sans-serif;font-size:24px;margin-top:8px;color:#2C2747;">새 뱃지 획득!</div>
+      <div style="font-size:14px;color:#8B83A8;margin-top:4px;margin-bottom:22px;">첫 개념을 성공했어요</div>
+      <div style="display:inline-flex;flex-direction:column;align-items:center;gap:10px;">
+        <div style="width:84px;height:84px;border-radius:24px;background:#E3FBF1;border:3px solid #18C99A;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(24,201,154,.3);animation:floatChip 2.2s ease-in-out infinite;">
+          <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#18C99A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        </div>
+        <div style="font-family:'Jua',sans-serif;font-size:18px;color:#0FA37C;">출력 마스터</div>
+      </div>
+      <button onClick="{{ closeCelebration }}" style="margin-top:24px;width:100%;padding:14px;border:none;border-radius:16px;background:linear-gradient(180deg,#8B6CFF,#7B5CF0);color:#fff;font-family:'Jua',sans-serif;font-size:16px;cursor:pointer;box-shadow:0 5px 0 #5B3FD6;transition:transform .12s;" style-active="transform:translateY(3px);box-shadow:0 2px 0 #5B3FD6;">좋아요!</button>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: 'learn', unit: 0, hasRun: false, output: '', robotState: 'idle', speechText: '', varName: '', varValue: '', showCelebration: false };
+
+  componentWillUnmount() { clearInterval(this._t); clearTimeout(this._c); }
+
+  go(screen) { clearInterval(this._t); this.setState({ screen, hasRun: false, speechText: '', showCelebration: false }); }
+
+  selectUnit(i) { this.setState({ unit: i, hasRun: false, speechText: '' }); }
+
+  run() {
+    clearInterval(this._t); clearTimeout(this._c);
+    const full = '정확해요! print 함수로 변수를 연결해서 멋지게 출력했어요. name 변수도 잘 활용했네요!';
+    this.setState({ hasRun: true, output: '안녕, 지민!\n파이썬 학습 시작!', robotState: 'talking', speechText: '', varName: 'name', varValue: '"지민"' });
+    let i = 0;
+    this._t = setInterval(() => {
+      i++;
+      this.setState({ speechText: full.slice(0, i) });
+      if (i >= full.length) {
+        clearInterval(this._t);
+        this._c = setTimeout(() => this.setState({ showCelebration: true }), 350);
+      }
+    }, 26);
+  }
+
+  loadExample() { clearInterval(this._t); this.setState({ hasRun: false, output: '', speechText: '' }); }
+  reset() { clearInterval(this._t); this.setState({ hasRun: false, output: '', speechText: '', varName: '', varValue: '' }); }
+
+  el(t, p) { return React.createElement(t, p); }
+  mkIcon(items) {
+    return React.createElement('svg', { viewBox: '0 0 24 24', width: '100%', height: '100%', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+      items.map((it, i) => typeof it === 'string' ? React.createElement('path', { key: i, d: it }) : React.createElement(it.t, Object.assign({ key: i }, it.p))));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const UNITS = ['출력', '변수', '산술 연산자', '비교 연산자', '할당 연산자', '논리 연산자', '숫자형', '문자형', '리스트', '불리언', '조건문', 'for 반복문', 'while 반복문', '함수', '클래스', '모듈'];
+    const E = (t, p) => ({ t, p });
+    const ICONS = [
+      ['M4 17l6-6-6-6', E('line', { x1: 12, y1: 19, x2: 20, y2: 19 })],
+      ['M8 21c-2.5-2-4-5-4-9s1.5-7 4-9', 'M16 3c2.5 2 4 5 4 9s-1.5 7-4 9', 'M14.5 9l-5 6', 'M9.5 9l5 6'],
+      [E('rect', { x: 4, y: 2, width: 16, height: 20, rx: 2 }), 'M8 6h8', E('line', { x1: 8, y1: 11, x2: 8, y2: 11 }), E('line', { x1: 12, y1: 11, x2: 12, y2: 11 }), E('line', { x1: 16, y1: 11, x2: 16, y2: 11 }), E('line', { x1: 8, y1: 15, x2: 8, y2: 15 }), E('line', { x1: 12, y1: 15, x2: 12, y2: 15 }), E('line', { x1: 16, y1: 15, x2: 16, y2: 15 })],
+      ['M12 3v18', 'M4 7h16', 'M7 7l-3 7a3 3 0 0 0 6 0z', 'M17 7l-3 7a3 3 0 0 0 6 0z', E('line', { x1: 8, y1: 21, x2: 16, y2: 21 })],
+      ['M5 9h14', 'M5 15h14'],
+      [E('line', { x1: 6, y1: 3, x2: 6, y2: 15 }), E('circle', { cx: 18, cy: 6, r: 3 }), E('circle', { cx: 6, cy: 18, r: 3 }), 'M18 9a9 9 0 0 1-9 9'],
+      ['M4 9h16', 'M4 15h16', 'M10 3 8 21', 'M16 3l-2 18'],
+      ['M4 7V4h16v3', 'M9 20h6', 'M12 4v16'],
+      ['M9 6h12', 'M9 12h12', 'M9 18h12', E('line', { x1: 4, y1: 6, x2: 4, y2: 6 }), E('line', { x1: 4, y1: 12, x2: 4, y2: 12 }), E('line', { x1: 4, y1: 18, x2: 4, y2: 18 })],
+      [E('rect', { x: 2, y: 6, width: 20, height: 12, rx: 6 }), E('circle', { cx: 8, cy: 12, r: 3 })],
+      [E('circle', { cx: 6, cy: 6, r: 3 }), E('circle', { cx: 6, cy: 18, r: 3 }), E('circle', { cx: 18, cy: 6, r: 3 }), 'M6 9v6', 'M6 15a9 9 0 0 0 9-9'],
+      ['M3 12a9 9 0 1 0 2.5-6.3', 'M3 4v4h4'],
+      ['M21 12a9 9 0 1 1-2.5-6.3', 'M21 4v4h-4'],
+      [E('rect', { x: 3, y: 3, width: 18, height: 18, rx: 5 }), 'M9 16c2 0 2-2 2.5-4s.5-4 2.5-4', 'M8 12h6'],
+      [E('rect', { x: 3, y: 9, width: 8, height: 8, rx: 2 }), E('rect', { x: 13, y: 9, width: 8, height: 8, rx: 2 }), E('rect', { x: 8, y: 3, width: 8, height: 8, rx: 2 })],
+      ['M21 8l-9-5-9 5v8l9 5 9-5V8z', 'M3.3 7 12 12l8.7-5', 'M12 12v9']
+    ];
+    const COLORS = ['#18C99A', '#4F8EF7', '#FFB02E', '#FF7A59', '#FF9F40', '#F5577A', '#14B8A6', '#22B8CF', '#5B7CFA', '#8B5CF6', '#FF5C8A', '#2BC48A', '#84CC16', '#6366F1', '#A855F7', '#FB923C'];
+    const NAMES = ['출력 마스터', '변수 마스터', '연산 마스터', '비교 마스터', '할당 마스터', '논리 마스터', '숫자 마스터', '문자 마스터', '리스트 마스터', '논리값 마스터', '조건 마스터', 'for 마스터', 'while 마스터', '함수 마스터', '클래스 마스터', '모듈 마스터'];
+    const EARNED = 5;
+
+    const lock = [E('rect', { x: 5, y: 11, width: 14, height: 10, rx: 2.5 }), 'M8 11V8a4 4 0 0 1 8 0v3'];
+
+    const badges = ICONS.map((paths, i) => {
+      const earned = i < EARNED;
+      const c = COLORS[i];
+      return {
+        ko: NAMES[i],
+        icon: earned ? this.mkIcon(paths) : this.mkIcon(lock),
+        bigIcon: earned ? this.mkIcon(paths) : this.mkIcon(lock),
+        miniIconColor: earned ? c : '#C9C1DE',
+        bigIconColor: earned ? c : '#C9C1DE',
+        labelColor: earned ? '#544D70' : '#BDB6D4',
+        miniStyle: 'aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:11px;'
+          + (earned ? 'background:#fff;border:2px solid ' + c + '33;box-shadow:0 3px 8px ' + c + '22;' : 'background:#F4F1FA;border:2px dashed #E2DCF2;'),
+        bigStyle: 'width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:18px;'
+          + (earned ? 'background:#fff;border:2.5px solid ' + c + '40;box-shadow:0 6px 16px ' + c + '2e;' : 'background:#F4F1FA;border:2.5px dashed #E2DCF2;')
+      };
+    });
+
+    const sel = s.unit;
+    const units = UNITS.map((label, i) => ({
+      label,
+      onSelect: () => this.selectUnit(i),
+      pillStyle: 'flex:none;white-space:nowrap;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;padding:7px 14px;border-radius:99px;transition:all .15s;'
+        + (i === sel
+          ? 'background:linear-gradient(180deg,#8B6CFF,#7B5CF0);color:#fff;box-shadow:0 4px 10px rgba(123,92,240,.34);'
+          : 'background:#fff;color:#8B83A8;border:1.5px solid #ECE7F8;')
+    }));
+
+    let confetti = this._confetti;
+    if (!confetti) {
+      const cc = ['#7B5CF0', '#FF5C8A', '#18C99A', '#FFC23C', '#4F8EF7', '#FF7A59'];
+      confetti = this._confetti = Array.from({ length: 70 }, () => {
+        const sz = 7 + Math.random() * 9;
+        return {
+          style: {
+            position: 'absolute', top: (-10 - Math.random() * 20) + 'px', left: (Math.random() * 100) + '%',
+            width: sz + 'px', height: sz + 'px', background: cc[Math.floor(Math.random() * cc.length)],
+            borderRadius: Math.random() > .5 ? '50%' : '3px',
+            animation: 'confettiFall ' + (2 + Math.random() * 1.8).toFixed(2) + 's ' + (Math.random() * .6).toFixed(2) + 's linear forwards'
+          }
+        };
+      });
+    }
+
+    return {
+      isLogin: s.screen === 'login', isRegister: s.screen === 'register', isLearn: s.screen === 'learn', isProgress: s.screen === 'progress',
+      goLogin: () => this.go('login'), goRegister: () => this.go('register'), goLearn: () => this.go('learn'), goProgress: () => this.go('progress'),
+      units, unitTitle: UNITS[s.unit],
+      hasRun: s.hasRun, notRun: !s.hasRun, output: s.output,
+      showSpeech: s.speechText.length > 0, noSpeech: s.speechText.length === 0, speechText: s.speechText,
+      varName: s.varName, varValue: s.varValue,
+      run: () => this.run(), loadExample: () => this.loadExample(), reset: () => this.reset(),
+      showCelebration: s.showCelebration, closeCelebration: () => this.setState({ showCelebration: false, robotState: 'idle' }),
+      confetti,
+      badges, earnedCount: EARNED, progressPct: Math.round(EARNED / 16 * 100)
+    };
+  }
+}
+</script>
+</body>
+</html>
