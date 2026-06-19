@@ -213,6 +213,17 @@ export default function RobotStage({
           await delay(150);
         }
 
+        // 시킨 동작을 로봇이 다 하고 나면 기본 상태로 복구
+        setPos({ x: 0, y: 0 });
+        setDirection("right");
+        setScale(1.0);
+        setEmotion("idle");
+        setRobotState("idle");
+        setSpeech(null);
+        setClones([]);
+        setShapes([]);
+        setPaths([{ x: 0, y: 0 }]);
+
         setIsRunning(false);
         if (onAnimationComplete) {
           onAnimationComplete();
@@ -240,7 +251,7 @@ export default function RobotStage({
   const getPercentY = (y: number) => `${((150 - y) / 300) * 100}%`;
 
   return (
-    <div className="relative w-full aspect-[4/3] bg-[#131620] border border-[#2d3148] rounded-2xl overflow-hidden shadow-inner">
+    <div className="relative w-full aspect-[4/3] bg-[#FCFAFF] border border-[#ECE7F8] rounded-2xl overflow-hidden shadow-sm">
       {/* Layer 0: 배경 격자 점 */}
       <StageBackground />
 
@@ -261,7 +272,7 @@ export default function RobotStage({
             markerHeight="5"
             orient="auto-start-reverse"
           >
-            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(167, 139, 250, 0.6)" />
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(123, 92, 240, 0.7)" />
           </marker>
         </defs>
 
@@ -270,7 +281,7 @@ export default function RobotStage({
           <polyline
             points={paths.map((p) => `${200 + p.x},${150 - p.y}`).join(" ")}
             fill="none"
-            stroke="rgba(167, 139, 250, 0.4)"
+            stroke="rgba(123, 92, 240, 0.5)"
             strokeWidth="2"
             strokeDasharray="4 4"
             markerEnd="url(#arrow)"
