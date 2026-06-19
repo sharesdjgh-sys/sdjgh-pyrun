@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import RobotCharacter from "./RobotCharacter";
+import DogCharacter from "./DogCharacter";
+import GameCharacter from "./GameCharacter";
 import RobotSpeechBubble from "./RobotSpeechBubble";
 import StageBackground from "./StageBackground";
 import VariableFloat from "./VariableFloat";
@@ -14,6 +16,7 @@ interface RobotStageProps {
   varName?: string;
   varValue?: string;
   showVariable?: boolean;
+  characterType?: "robot" | "dog" | "game";
 }
 
 interface DrawnShape {
@@ -38,6 +41,7 @@ export default function RobotStage({
   varName,
   varValue,
   showVariable,
+  characterType = "robot",
 }: RobotStageProps) {
   // 로봇 상태 변수들
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -46,6 +50,49 @@ export default function RobotStage({
   const [emotion, setEmotion] = useState<RobotEmotion>("idle");
   const [robotState, setRobotState] = useState<RobotState>("idle");
   const [speech, setSpeech] = useState<string | null>(null);
+
+  // 캐릭터 렌더링 헬퍼
+  const renderCharacter = (
+    charState: RobotState,
+    charEmotion: RobotEmotion,
+    charScale: number,
+    charDir: "left" | "right",
+    charSize = 70
+  ) => {
+    switch (characterType) {
+      case "dog":
+        return (
+          <DogCharacter
+            state={charState}
+            emotion={charEmotion}
+            scale={charScale}
+            direction={charDir}
+            size={charSize}
+          />
+        );
+      case "game":
+        return (
+          <GameCharacter
+            state={charState}
+            emotion={charEmotion}
+            scale={charScale}
+            direction={charDir}
+            size={charSize}
+          />
+        );
+      case "robot":
+      default:
+        return (
+          <RobotCharacter
+            state={charState}
+            emotion={charEmotion}
+            scale={charScale}
+            direction={charDir}
+            size={charSize}
+          />
+        );
+    }
+  };
 
   // 스테이지 내 렌더링할 도형, 경로, 클론들
   const [shapes, setShapes] = useState<DrawnShape[]>([]);
@@ -355,13 +402,7 @@ export default function RobotStage({
             opacity: 0.75,
           }}
         >
-          <RobotCharacter
-            state="idle"
-            emotion={clone.emotion}
-            direction={clone.direction}
-            scale={clone.scale}
-            size={70}
-          />
+          {renderCharacter("idle", clone.emotion, clone.scale, clone.direction, 70)}
         </div>
       ))}
 
@@ -388,13 +429,7 @@ export default function RobotStage({
           </div>
         )}
 
-        <RobotCharacter
-          state={robotState}
-          emotion={emotion}
-          scale={scale}
-          direction={direction}
-          size={70}
-        />
+        {renderCharacter(robotState, emotion, scale, direction, 70)}
       </div>
     </div>
   );

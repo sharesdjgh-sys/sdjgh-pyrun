@@ -41,6 +41,9 @@ export default function LearnClient({ userName }: LearnClientProps) {
   const [earnedConceptIds, setEarnedConceptIds] = useState<Set<number>>(new Set());
   const [selectedConceptId, setSelectedConceptId] = useState(1);
 
+  // 캐릭터 선택 스킨 상태
+  const [characterType, setCharacterType] = useState<"robot" | "dog" | "game">("robot");
+
   // 로봇 제어 관련 상태
   const [commands, setCommands] = useState<RobotCommand[]>([]);
   const [pendingFeedback, setPendingFeedback] = useState<{
@@ -553,6 +556,34 @@ export default function LearnClient({ userName }: LearnClientProps) {
               </div>
             </div>
 
+            {/* 캐릭터 선택 탭 */}
+            <div style={{ flex: "none", display: "flex", justifyContent: "center", gap: 6, padding: "2px 18px 10px" }}>
+              {(["robot", "dog", "game"] as const).map((type) => {
+                const isSelected = characterType === type;
+                const labels = { robot: "🤖 로봇", dog: "🐶 강아지", game: "⚔️ 전사" };
+                return (
+                  <button
+                    key={type}
+                    onClick={() => setCharacterType(type)}
+                    style={{
+                      background: isSelected ? "linear-gradient(180deg,#8B6CFF,#7B5CF0)" : "#fff",
+                      color: isSelected ? "#fff" : "#8B83A8",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      padding: "5px 12px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      boxShadow: isSelected ? "0 3px 8px rgba(123,92,240,.24)" : "none",
+                      border: isSelected ? "none" : "1.5px solid #ECE7F8",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {labels[type]}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Robot 2D Stage */}
             <div
               style={{
@@ -606,89 +637,11 @@ export default function LearnClient({ userName }: LearnClientProps) {
                 varName={varName}
                 varValue={varValue}
                 showVariable={showVariable}
+                characterType={characterType}
               />
             </div>
 
-            {/* Badge strip */}
-            <div
-              style={{
-                flex: "none",
-                borderTop: "1px solid #ECE4FA",
-                background: "rgba(255,255,255,.6)",
-                padding: "13px 16px 15px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 9,
-                }}
-              >
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: "#8B83A8" }}>내 뱃지 현황</span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#7B5CF0",
-                    background: "#F2ECFD",
-                    padding: "3px 9px",
-                    borderRadius: 99,
-                  }}
-                >
-                  {earnedConceptIds.size} / 16
-                </span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 6 }}>
-                {BADGE_METADATA.map((badge, idx) => {
-                  const cid = idx + 1;
-                  const earned = earnedConceptIds.has(cid);
-                  const hex = COLOR_HEX[badge.colorClass] || "#7B5CF0";
-                  return (
-                    <div
-                      key={cid}
-                      title={badge.nameKo}
-                      style={{
-                        aspectRatio: "1",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderRadius: 11,
-                        transition: "all 0.2s",
-                        ...(earned
-                          ? {
-                              background: "#fff",
-                              border: `2px solid ${hex}33`,
-                              boxShadow: `0 3px 8px ${hex}22`,
-                            }
-                          : { background: "#F4F1FA", border: "2px dashed #E2DCF2" }),
-                      }}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="16"
-                        height="16"
-                        fill="none"
-                        stroke={earned ? hex : "#C9C1DE"}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        {earned ? (
-                          <polyline points="4 17 10 11 4 5" />
-                        ) : (
-                          <>
-                            <rect x="5" y="11" width="14" height="10" rx="2.5" />
-                            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-                          </>
-                        )}
-                      </svg>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+
           </div>
         </div>
       </div>
