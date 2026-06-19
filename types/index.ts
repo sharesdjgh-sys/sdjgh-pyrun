@@ -51,6 +51,8 @@ export interface ParseResult {
   primaryConcept: DetectedConcept | null;
 }
 
+export type RobotEmotion = "happy" | "sad" | "angry" | "surprised" | "idle";
+
 export type RobotState =
   | "idle"
   | "talking"

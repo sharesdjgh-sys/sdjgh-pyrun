@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { robotApi } from "@/lib/robot-api";
+import { animationQueue } from "@/lib/animation-queue";
 
 interface PyodideInterface {
   runPythonAsync: (code: string) => Promise<unknown>;
   loadPackagesFromImports: (code: string) => Promise<void>;
+  registerJsModule: (name: string, obj: any) => void;
 }
 
 interface ExecuteResult {
@@ -50,6 +53,7 @@ export function usePyodide() {
 
     window.__pyodidePromise
       .then((py) => {
+        py.registerJsModule("robot", robotApi);
         pyodideRef.current = py;
         setLoading(false);
       })
@@ -65,6 +69,9 @@ export function usePyodide() {
     }
 
     const py = pyodideRef.current;
+
+    // 실행 전 이전 애니메이션 큐 초기화
+    animationQueue.clear();
 
     try {
       try {
@@ -112,3 +119,4 @@ _out
 
   return { loading, error, executeCode };
 }
+
