@@ -22,7 +22,7 @@ export const robotApi = {
     animationQueue.push({ type: "jump", params: {} });
   },
 
-  say(text: any) {
+  say(text: unknown) {
     // 숫자가 들어올 수도 있으므로 문자열로 변환하여 처리해 줍니다.
     const textStr = String(text);
     if (textStr.length > 100) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { ParseResult, RobotState, RobotStateData } from "@/types";
+import type { ParseResult, RobotStateData } from "@/types";
 
 export function useRobotState() {
   const [robotStateData, setRobotStateData] = useState<RobotStateData>({ state: "idle" });

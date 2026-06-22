@@ -94,7 +94,8 @@ export default function RegisterPage() {
               style={{ ...inputStyle, marginBottom: 24 }}
               onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
               onBlur={(e) => { e.target.style.borderColor = "#ECE7F8"; e.target.style.background = "#FBFAFF"; }}
-              placeholder="6자 이상"
+              placeholder="8자 이상"
+              minLength={8}
               required
             />
 

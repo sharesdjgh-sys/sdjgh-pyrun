@@ -22,17 +22,27 @@ export default function ProgressClient() {
   const [feedbackHistory, setFeedbackHistory] = useState<FeedbackItem[]>([]);
   const [progressPercent, setProgressPercent] = useState(0);
   const [clearedCount, setClearedCount] = useState(0);
+  const [practicedCount, setPracticedCount] = useState(0);
+  const [totalConcepts, setTotalConcepts] = useState(BADGE_METADATA.length);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/badges").then((r) => r.json()),
-      fetch("/api/progress").then((r) => r.json()),
-    ]).then(([badgeData, progressData]) => {
+    const getJson = async (url: string) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("학습 기록을 불러오지 못했습니다.");
+      return response.json();
+    };
+    Promise.all([getJson("/api/badges"), getJson("/api/progress")]).then(([badgeData, progressData]) => {
       setBadges(badgeData.earned || []);
       setFeedbackHistory(progressData.feedbackHistory || []);
       setProgressPercent(progressData.progressPercent || 0);
       setClearedCount((progressData.clearedConceptIds || []).length);
+      setPracticedCount((progressData.practicedConceptIds || []).length);
+      setTotalConcepts(progressData.totalConcepts || BADGE_METADATA.length);
+      setLoading(false);
+    }).catch((loadError) => {
+      setError(loadError instanceof Error ? loadError.message : "학습 기록을 불러오지 못했습니다.");
       setLoading(false);
     });
   }, []);
@@ -43,6 +53,10 @@ export default function ProgressClient() {
         <div style={{ width: 40, height: 40, border: "3.5px solid #C6A2EC", borderTopColor: "#7B5CF0", borderRadius: "50%" }} />
       </div>
     );
+  }
+
+  if (error) {
+    return <main className="status-page" role="alert"><p>{error}</p><button onClick={() => location.reload()}>다시 시도</button></main>;
   }
 
   const cardStyle: React.CSSProperties = {
@@ -80,7 +94,7 @@ export default function ProgressClient() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747" }}>학습 진행률</div>
-              <div style={{ fontSize: 13.5, color: "#8B83A8" }}>{clearedCount}개 / 16개 개념 완료</div>
+              <div style={{ fontSize: 13.5, color: "#8B83A8" }}>연습 {practicedCount}개 · 검증 완료 {clearedCount}개 / {totalConcepts}개</div>
             </div>
             <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 34, color: "#7B5CF0" }}>{progressPercent}%</div>
           </div>
@@ -96,9 +110,9 @@ export default function ProgressClient() {
               <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 21.5 12 17.5 5.5 21.5 7 14.5 2 9.5 9 9" />
             </svg>
             <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747", whiteSpace: "nowrap" }}>획득한 뱃지</div>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#7B5CF0", background: "#F2ECFD", padding: "4px 10px", borderRadius: 99, whiteSpace: "nowrap" }}>{clearedCount} / 16</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#7B5CF0", background: "#F2ECFD", padding: "4px 10px", borderRadius: 99, whiteSpace: "nowrap" }}>{clearedCount} / {totalConcepts}</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 12 }}>
+          <div className="progress-badge-grid">
             {BADGE_METADATA.map((badge, idx) => {
               const cid = idx + 1;
               const earned = badges.some((b) => b.conceptId === cid && b.earned);

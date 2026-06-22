@@ -3,20 +3,18 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db/index";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { rateLimit, RequestValidationError, validateRegistration } from "@/lib/api-guard";
 
 export async function POST(req: NextRequest) {
   try {
-    const { username, password, displayName } = await req.json();
-
-    if (!username || !password) {
-      return NextResponse.json({ error: "아이디와 비밀번호를 입력해주세요." }, { status: 400 });
+    const rate = rateLimit(req, "register", 5, 10 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json({ error: "요청이 너무 많습니다." }, {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfter) },
+      });
     }
-    if (username.length < 3 || username.length > 50) {
-      return NextResponse.json({ error: "아이디는 3~50자여야 합니다." }, { status: 400 });
-    }
-    if (password.length < 4) {
-      return NextResponse.json({ error: "비밀번호는 4자 이상이어야 합니다." }, { status: 400 });
-    }
+    const { username, password, displayName } = validateRegistration(await req.json());
 
     const existing = await db
       .select({ id: users.id })
@@ -37,7 +35,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    if (error instanceof RequestValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
   }
 }

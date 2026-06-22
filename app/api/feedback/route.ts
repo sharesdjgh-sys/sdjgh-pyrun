@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
-import { userConceptClears, feedbackHistory, concepts, badges } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { userConceptPractices, feedbackHistory, concepts } from "@/lib/db/schema";
+import { inArray } from "drizzle-orm";
 import { generateFeedback } from "@/lib/gemini";
 import { parsePython } from "@/lib/python-parser";
+import { rateLimit, RequestValidationError, validateFeedback } from "@/lib/api-guard";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -14,7 +15,14 @@ export async function POST(req: NextRequest) {
   const userId = Number(session.user.id);
 
   try {
-    const { code, stdout, stderr, isSuccess } = await req.json();
+    const rate = rateLimit(req, `feedback:${userId}`, 15);
+    if (!rate.allowed) {
+      return NextResponse.json({ error: "피드백 요청이 너무 많습니다." }, {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfter) },
+      });
+    }
+    const { code, stdout, stderr, isSuccess } = validateFeedback(await req.json());
 
     // Server-side re-parse (don't trust client-sent concept IDs)
     const parseResult = parsePython(code || "");
@@ -39,37 +47,14 @@ export async function POST(req: NextRequest) {
       detectedConceptNames: conceptNames,
     });
 
-    // Find which concepts are newly cleared (not previously cleared by this user)
-    const newlyEarnedBadgeIds: number[] = [];
-
-    if (isSuccess && detectedConceptIds.length > 0) {
-      const existingClears = await db
-        .select({ conceptId: userConceptClears.conceptId })
-        .from(userConceptClears)
-        .where(
-          and(
-            eq(userConceptClears.userId, userId),
-            inArray(userConceptClears.conceptId, detectedConceptIds)
-          )
-        );
-      const alreadyClearedIds = new Set(existingClears.map((c) => c.conceptId));
-      const newConceptIds = detectedConceptIds.filter((id) => !alreadyClearedIds.has(id));
-
-      // Insert new clears
-      for (const conceptId of newConceptIds) {
+    // A browser-reported success is recorded as practice only. Verified clears are
+    // reserved for a future trusted evaluator and continue to drive badges.
+    if (isSuccess && parseResult.syntaxValid) {
+      for (const conceptId of detectedConceptIds) {
         await db
-          .insert(userConceptClears)
+          .insert(userConceptPractices)
           .values({ userId, conceptId })
           .onConflictDoNothing();
-      }
-
-      // Get badge IDs for newly cleared concepts
-      if (newConceptIds.length > 0) {
-        const earnedBadges = await db
-          .select({ id: badges.id })
-          .from(badges)
-          .where(inArray(badges.conceptId, newConceptIds));
-        newlyEarnedBadgeIds.push(...earnedBadges.map((b) => b.id));
       }
     }
 
@@ -83,8 +68,16 @@ export async function POST(req: NextRequest) {
       isSuccess,
     });
 
-    return NextResponse.json({ feedback, newlyEarnedBadgeIds });
+    return NextResponse.json({
+      feedback,
+      newlyEarnedBadgeIds: [],
+      practicedConceptIds: isSuccess && parseResult.syntaxValid ? detectedConceptIds : [],
+      completionStatus: "practice",
+    });
   } catch (error) {
+    if (error instanceof RequestValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("Feedback API error:", error);
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
   }

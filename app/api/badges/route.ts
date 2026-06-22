@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { userConceptClears, badges, concepts } from "@/lib/db/schema";
+import { sql } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 
 export async function GET() {
@@ -10,6 +11,8 @@ export async function GET() {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
   const userId = Number(session.user.id);
+
+  try {
 
   const allBadges = await db
     .select({
@@ -38,5 +41,10 @@ export async function GET() {
     clearedAt: clearedMap.get(b.conceptId) ?? null,
   }));
 
-  return NextResponse.json({ earned, totalConcepts: 16 });
+  const [{ count: totalConcepts }] = await db.select({ count: sql<number>`count(*)::int` }).from(concepts);
+  return NextResponse.json({ earned, totalConcepts });
+  } catch (error) {
+    console.error("Badges API error", { userId, error });
+    return NextResponse.json({ error: "뱃지 정보를 불러오지 못했습니다." }, { status: 500 });
+  }
 }

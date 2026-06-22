@@ -57,6 +57,20 @@ export const userConceptClears = pgTable(
   })
 );
 
+// Browser execution is useful practice evidence, but is not a trusted completion.
+export const userConceptPractices = pgTable(
+  "user_concept_practices",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id),
+    conceptId: integer("concept_id").notNull().references(() => concepts.id),
+    practicedAt: timestamp("practiced_at").defaultNow(),
+  },
+  (table) => ({
+    userConceptPracticeUnique: uniqueIndex("user_concept_practice_unique").on(table.userId, table.conceptId),
+  })
+);
+
 export const feedbackHistory = pgTable("feedback_history", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")

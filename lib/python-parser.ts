@@ -1,205 +1,136 @@
+import { parser } from "@lezer/python";
 import type { DetectedConcept, ParseResult } from "@/types";
 
-function detectPrint(code: string): DetectedConcept | null {
-  if (!/\bprint\s*\(/.test(code)) return null;
-  const matches = code.match(/\bprint\s*\(/g) || [];
-  return { conceptId: 1, conceptKey: "print", details: { callCount: matches.length } };
+interface AstNode {
+  name: string;
+  from: number;
+  to: number;
 }
 
-function detectVariable(code: string): DetectedConcept | null {
-  const KEYWORDS = new Set([
-    "if", "for", "while", "def", "class", "import", "return",
-    "True", "False", "None", "and", "or", "not", "in", "is",
-    "elif", "else", "try", "except", "with", "as", "from",
-    "pass", "break", "continue", "global", "lambda", "yield",
-  ]);
-  const lines = code.split("\n");
-  const varMatches: { name: string; value: string }[] = [];
-  for (const line of lines) {
-    const m = line.match(/^\s*([a-zA-Z_가-힣]\w*)\s*=\s*(?![=])(.*)/);
-    if (m && !KEYWORDS.has(m[1]) && !m[1].startsWith("__")) {
-      varMatches.push({ name: m[1], value: m[2].trim() });
+function collectNodes(code: string): { nodes: AstNode[]; syntaxValid: boolean } {
+  const tree = parser.parse(code);
+  const cursor = tree.cursor();
+  const nodes: AstNode[] = [];
+  let syntaxValid = true;
+
+  function visit() {
+    nodes.push({ name: cursor.name, from: cursor.from, to: cursor.to });
+    if (cursor.type.isError) syntaxValid = false;
+    if (cursor.firstChild()) {
+      do visit(); while (cursor.nextSibling());
+      cursor.parent();
     }
   }
-  if (varMatches.length === 0) return null;
-  const last = varMatches[varMatches.length - 1];
-  return {
-    conceptId: 2,
-    conceptKey: "variable",
-    details: { varNames: varMatches.map((v) => v.name), lastVarName: last.name, lastVarValue: last.value },
-  };
+
+  visit();
+  return { nodes, syntaxValid };
 }
 
-function detectArithmeticOperator(code: string): DetectedConcept | null {
-  const ops: string[] = [];
-  if (/\*\*/.test(code)) ops.push("**");
-  if (/\/\//.test(code)) ops.push("//");
-  if (/[^+\-*/%!<>=][\+][^=]/.test(code) || /^\s*[\+]/.test(code)) ops.push("+");
-  if (/[^+\-*/%!<>=][\-][^=>\-]/.test(code)) ops.push("-");
-  if (/[^*][*][^*=]/.test(code)) ops.push("*");
-  if (/[^/][/][^/=]/.test(code)) ops.push("/");
-  if (/[^%][%][^=]/.test(code)) ops.push("%");
-  if (ops.length === 0) return null;
-  return { conceptId: 3, conceptKey: "arithmetic_operator", details: { operators: ops } };
+function unique(values: string[]) {
+  return [...new Set(values)];
 }
 
-function detectComparisonOperator(code: string): DetectedConcept | null {
-  const ops: string[] = [];
-  if (/==/.test(code)) ops.push("==");
-  if (/!=/.test(code)) ops.push("!=");
-  if (/>=/.test(code)) ops.push(">=");
-  if (/<=/.test(code)) ops.push("<=");
-  if (/>(?!=)/.test(code)) ops.push(">");
-  if (/<(?!=)/.test(code)) ops.push("<");
-  if (ops.length === 0) return null;
-  return { conceptId: 4, conceptKey: "comparison_operator", details: { operators: ops } };
-}
-
-function detectAssignmentOperator(code: string): DetectedConcept | null {
-  const ops: string[] = [];
-  if (/\+=/.test(code)) ops.push("+=");
-  if (/-=/.test(code)) ops.push("-=");
-  if (/\*=/.test(code)) ops.push("*=");
-  if (/\/=/.test(code)) ops.push("/=");
-  if (ops.length === 0) return null;
-  return { conceptId: 5, conceptKey: "assignment_operator", details: { operators: ops } };
-}
-
-function detectLogicalOperator(code: string): DetectedConcept | null {
-  const ops: string[] = [];
-  if (/\band\b/.test(code)) ops.push("and");
-  if (/\bor\b/.test(code)) ops.push("or");
-  if (/\bnot\b/.test(code)) ops.push("not");
-  if (ops.length === 0) return null;
-  return { conceptId: 6, conceptKey: "logical_operator", details: { operators: ops } };
-}
-
-function detectNumberType(code: string): DetectedConcept | null {
-  const usesMath = /\bmath\.\w+/.test(code);
-  const usesRandom = /\brandom\.\w+/.test(code);
-  const usesBuiltins = /\b(abs|round|int|float)\s*\(/.test(code);
-  if (!usesMath && !usesRandom && !usesBuiltins) return null;
-  return { conceptId: 7, conceptKey: "number_type", details: { usesMath, usesRandom } };
-}
-
-function detectStringType(code: string): DetectedConcept | null {
-  const usesFormatting = /f"[^"]*\{|f'[^']*\{|\.format\s*\(|%\s*["'(]/.test(code);
-  const usesSlicing = /\w+\[\s*[-\d:]+\s*\]/.test(code);
-  if (!usesFormatting && !usesSlicing) return null;
-  return { conceptId: 8, conceptKey: "string_type", details: { usesFormatting, usesSlicing } };
-}
-
-function detectList(code: string): DetectedConcept | null {
-  const hasList = /\[[^\]]*\]/.test(code);
-  const hasListMethod = /\.(append|index|sort|remove|pop|insert)\s*\(|\blen\s*\(/.test(code);
-  if (!hasList && !hasListMethod) return null;
-  return { conceptId: 9, conceptKey: "list", details: {} };
-}
-
-function detectBoolean(code: string): DetectedConcept | null {
-  if (!/\bTrue\b|\bFalse\b|\bbool\s*\(/.test(code)) return null;
-  return { conceptId: 10, conceptKey: "boolean", details: {} };
-}
-
-function detectConditional(code: string): DetectedConcept | null {
-  if (!/^\s*if\s+.+:/m.test(code)) return null;
-  const hasElif = /^\s*elif\s+/m.test(code);
-  const hasElse = /^\s*else\s*:/m.test(code);
-  const branchType = hasElif ? "if_elif_else" : hasElse ? "if_else" : "if_only";
-  return { conceptId: 11, conceptKey: "conditional", details: { branchType } };
-}
-
-function detectForLoop(code: string): DetectedConcept | null {
-  if (!/^\s*for\s+\w+\s+in\s+/m.test(code)) return null;
-  let rangeCount: number | null = null;
-  const rangeMatch = code.match(/range\s*\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\)/);
-  if (rangeMatch) {
-    if (rangeMatch[2] !== undefined) {
-      rangeCount = Math.min(parseInt(rangeMatch[2]) - parseInt(rangeMatch[1]), 10);
-    } else {
-      rangeCount = Math.min(parseInt(rangeMatch[1]), 10);
-    }
-  }
-  return { conceptId: 12, conceptKey: "for_loop", details: { rangeCount } };
-}
-
-function detectWhileLoop(code: string): DetectedConcept | null {
-  if (!/^\s*while\s+/m.test(code)) return null;
-  const hasBreak = /\bbreak\b/.test(code);
-  return { conceptId: 13, conceptKey: "while_loop", details: { hasBreak } };
-}
-
-function detectFunction(code: string): DetectedConcept | null {
-  const matches = code.match(/^\s*def\s+(\w+)\s*\(/gm);
-  if (!matches) return null;
-  const functionNames = matches.map((m) => m.replace(/^\s*def\s+/, "").replace(/\s*\(.*/, ""));
-  const hasReturn = /\breturn\b/.test(code);
-  const hasGlobal = /\bglobal\b/.test(code);
-  return { conceptId: 14, conceptKey: "function", details: { functionNames, hasReturn, hasGlobal } };
-}
-
-function detectClass(code: string): DetectedConcept | null {
-  const matches = code.match(/^\s*class\s+(\w+)\s*(?:\((\w+)\))?:/gm);
-  if (!matches) return null;
-  const classNames = matches.map((m) => {
-    const nm = m.match(/class\s+(\w+)/);
-    return nm ? nm[1] : "";
-  }).filter(Boolean);
-  const hasInheritance = /class\s+\w+\s*\(\w+\)/.test(code);
-  const characters: ("warrior" | "archer")[] = [];
-  for (const name of classNames) {
-    if (/전사|warrior|Warrior/i.test(name)) characters.push("warrior");
-    if (/궁수|archer|Archer/i.test(name)) characters.push("archer");
-  }
-  return {
-    conceptId: 15,
-    conceptKey: "class",
-    details: { classNames, hasInheritance, characters },
-  };
-}
-
-function detectModule(code: string): DetectedConcept | null {
-  if (!/^\s*(import\s+\w+|from\s+\w+\s+import)/m.test(code)) return null;
-  const imports = (code.match(/import\s+(\w+)/g) || []).map((m) => m.replace("import ", ""));
-  return { conceptId: 16, conceptKey: "module", details: { moduleNames: imports } };
+function concept(conceptId: number, conceptKey: string, details: Record<string, unknown> = {}): DetectedConcept {
+  return { conceptId, conceptKey, details };
 }
 
 const PRIORITY_ORDER = [15, 14, 12, 11, 13, 1, 2, 8, 9, 16, 7, 6, 5, 4, 3, 10];
 
 export function parsePython(code: string): ParseResult {
-  const detectors = [
-    detectPrint,
-    detectVariable,
-    detectArithmeticOperator,
-    detectComparisonOperator,
-    detectAssignmentOperator,
-    detectLogicalOperator,
-    detectNumberType,
-    detectStringType,
-    detectList,
-    detectBoolean,
-    detectConditional,
-    detectForLoop,
-    detectWhileLoop,
-    detectFunction,
-    detectClass,
-    detectModule,
-  ];
-
+  const { nodes, syntaxValid } = collectNodes(code);
+  const textOf = (node: AstNode) => code.slice(node.from, node.to);
+  const byName = (name: string) => nodes.filter((node) => node.name === name);
   const concepts: DetectedConcept[] = [];
-  for (const detector of detectors) {
-    const result = detector(code);
-    if (result) concepts.push(result);
+
+  const calls = byName("CallExpression").map(textOf);
+  const printCalls = calls.filter((text) => /^print\s*\(/.test(text));
+  if (printCalls.length) concepts.push(concept(1, "print", { callCount: printCalls.length }));
+
+  const assignments = byName("AssignStatement").map(textOf);
+  const variables = assignments
+    .map((text) => text.match(/^\s*([a-zA-Z_가-힣]\w*)\s*=(?!=)\s*([\s\S]*)$/))
+    .filter((match): match is RegExpMatchArray => Boolean(match));
+  if (variables.length) {
+    const last = variables.at(-1)!;
+    concepts.push(concept(2, "variable", {
+      varNames: variables.map((match) => match[1]),
+      lastVarName: last[1],
+      lastVarValue: last[2].trim(),
+    }));
   }
 
-  let primaryConcept: DetectedConcept | null = null;
-  for (const pid of PRIORITY_ORDER) {
-    const found = concepts.find((c) => c.conceptId === pid);
-    if (found) {
-      primaryConcept = found;
-      break;
-    }
+  const arithmeticOps = unique(byName("ArithOp").map(textOf));
+  if (arithmeticOps.length) concepts.push(concept(3, "arithmetic_operator", { operators: arithmeticOps }));
+
+  const comparisonOps = unique(byName("CompareOp").map(textOf));
+  if (comparisonOps.length) concepts.push(concept(4, "comparison_operator", { operators: comparisonOps }));
+
+  const assignmentOps = unique(byName("UpdateOp").map(textOf));
+  if (assignmentOps.length) concepts.push(concept(5, "assignment_operator", { operators: assignmentOps }));
+
+  const expressionTexts = [...byName("BinaryExpression"), ...byName("UnaryExpression")].map(textOf);
+  const logicalOps = unique(expressionTexts.flatMap((text) => ["and", "or", "not"].filter((op) => new RegExp(`\\b${op}\\b`).test(text))));
+  if (logicalOps.length) concepts.push(concept(6, "logical_operator", { operators: logicalOps }));
+
+  const imports = [...byName("ImportStatement"), ...byName("ImportFromStatement")].map(textOf);
+  const usesMath = imports.some((text) => /\bmath\b/.test(text)) || calls.some((text) => /^math\./.test(text));
+  const usesRandom = imports.some((text) => /\brandom\b/.test(text)) || calls.some((text) => /^random\./.test(text));
+  const usesNumberBuiltin = calls.some((text) => /^(abs|round|int|float)\s*\(/.test(text));
+  if (usesMath || usesRandom || usesNumberBuiltin) concepts.push(concept(7, "number_type", { usesMath, usesRandom }));
+
+  const hasFormatString = byName("FormatString").length > 0 || calls.some((text) => /\.format\s*\(/.test(text));
+  const hasStringSubscript = byName("SubscriptExpression").some((node) => {
+    const text = textOf(node);
+    return /\[[\s\d:-]+\]$/.test(text);
+  });
+  if (hasFormatString || hasStringSubscript) concepts.push(concept(8, "string_type", { usesFormatting: hasFormatString, usesSlicing: hasStringSubscript }));
+
+  if (byName("ListExpression").length || calls.some((text) => /\.(append|index|sort|remove|pop|insert)\s*\(|^len\s*\(/.test(text))) {
+    concepts.push(concept(9, "list"));
   }
 
-  return { concepts, primaryConcept };
+  if (byName("Boolean").length || calls.some((text) => /^bool\s*\(/.test(text))) concepts.push(concept(10, "boolean"));
+
+  const ifNodes = byName("IfStatement");
+  if (ifNodes.length) {
+    const text = ifNodes.map(textOf).join("\n");
+    concepts.push(concept(11, "conditional", { branchType: /\belif\b/.test(text) ? "if_elif_else" : /\belse\b/.test(text) ? "if_else" : "if_only" }));
+  }
+
+  const forNodes = byName("ForStatement");
+  if (forNodes.length) {
+    const match = forNodes.map(textOf).join("\n").match(/range\s*\(\s*(\d+)(?:\s*,\s*(\d+))?/);
+    const rangeCount = match ? Math.min(Math.max(0, Number(match[2] ?? match[1]) - Number(match[2] ? match[1] : 0)), 10) : null;
+    concepts.push(concept(12, "for_loop", { rangeCount }));
+  }
+
+  const whileNodes = byName("WhileStatement");
+  if (whileNodes.length) concepts.push(concept(13, "while_loop", { hasBreak: whileNodes.some((node) => /\bbreak\b/.test(textOf(node))) }));
+
+  const functionNodes = byName("FunctionDefinition");
+  if (functionNodes.length) {
+    const texts = functionNodes.map(textOf);
+    concepts.push(concept(14, "function", {
+      functionNames: texts.map((text) => text.match(/^\s*def\s+(\w+)/)?.[1]).filter(Boolean),
+      hasReturn: texts.some((text) => /\breturn\b/.test(text)),
+      hasGlobal: texts.some((text) => /\bglobal\b/.test(text)),
+    }));
+  }
+
+  const classNodes = byName("ClassDefinition");
+  if (classNodes.length) {
+    const texts = classNodes.map(textOf);
+    const classNames = texts.map((text) => text.match(/^\s*class\s+(\w+)/)?.[1]).filter((name): name is string => Boolean(name));
+    concepts.push(concept(15, "class", {
+      classNames,
+      hasInheritance: texts.some((text) => /^\s*class\s+\w+\s*\(/.test(text)),
+      characters: classNames.flatMap((name) => /전사|warrior/i.test(name) ? ["warrior"] : /궁수|archer/i.test(name) ? ["archer"] : []),
+    }));
+  }
+
+  const learningImports = imports.filter((text) => !/^\s*(?:from\s+robot\s+import|import\s+robot\s*$)/.test(text));
+  if (learningImports.length) concepts.push(concept(16, "module", { moduleNames: learningImports }));
+
+  const primaryConcept = PRIORITY_ORDER.map((id) => concepts.find((item) => item.conceptId === id)).find(Boolean) ?? null;
+  return { concepts, primaryConcept, syntaxValid };
 }

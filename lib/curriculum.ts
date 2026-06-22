@@ -274,3 +274,5 @@ export const BADGE_METADATA = [
   { conceptId: 15, nameKo: "클래스 마스터", iconName: "Boxes", colorClass: "text-purple-500" },
   { conceptId: 16, nameKo: "모듈 마스터", iconName: "Package", colorClass: "text-orange-600" },
 ];
+
+export const TOTAL_CONCEPTS = BADGE_METADATA.length;

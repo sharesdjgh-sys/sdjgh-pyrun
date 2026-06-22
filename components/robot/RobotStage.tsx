@@ -101,7 +101,6 @@ export default function RobotStage({
   const [paths, setPaths] = useState<{ x: number; y: number }[]>([{ x: 0, y: 0 }]);
   const [clones, setClones] = useState<RobotClone[]>([]);
 
-  const [isRunning, setIsRunning] = useState(false);
   const executionIdRef = useRef(0);
 
   // 비동기 딜레이 헬퍼
@@ -135,7 +134,6 @@ export default function RobotStage({
 
     if (commands && commands.length > 0) {
       const run = async () => {
-        setIsRunning(true);
         // 초기화
         let currentPos = { x: 0, y: 0 };
         let currentDir: "left" | "right" = "right";
@@ -273,7 +271,6 @@ export default function RobotStage({
         setShapes([]);
         setPaths([{ x: 0, y: 0 }]);
 
-        setIsRunning(false);
         if (onAnimationComplete) {
           onAnimationComplete();
         }
@@ -291,9 +288,8 @@ export default function RobotStage({
       setShapes([]);
       setPaths([{ x: 0, y: 0 }]);
       setClones([]);
-      setIsRunning(false);
     }
-  }, [commands, isError]);
+  }, [commands, isError, onAnimationComplete]);
 
   // 논리 좌표 x/y를 백분율 스타일 좌표로 매핑
   const getPercentX = (x: number) => `${((200 + x) / 400) * 100}%`;

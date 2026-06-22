@@ -11,7 +11,6 @@ import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
 import { BADGE_METADATA, CONCEPT_EXAMPLES } from "@/lib/curriculum";
-import { COLOR_HEX } from "@/components/badges/colorMap";
 
 const CodeEditor = dynamic(() => import("@/components/editor/CodeEditor"), { ssr: false });
 
@@ -38,7 +37,6 @@ export default function LearnClient({ userName }: LearnClientProps) {
   const [speechText, setSpeechText] = useState("");
   const [showSpeech, setShowSpeech] = useState(false);
   const [newBadgeIds, setNewBadgeIds] = useState<number[]>([]);
-  const [earnedConceptIds, setEarnedConceptIds] = useState<Set<number>>(new Set());
   const [selectedConceptId, setSelectedConceptId] = useState(1);
 
   // 캐릭터 선택 스킨 상태
@@ -59,7 +57,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
 
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { loading: pyLoading, executeCode } = usePyodide();
+  const { loading: pyLoading, error: pyError, executeCode } = usePyodide();
 
   const showSpeechBubble = useCallback((text: string, duration = 8000) => {
     setSpeechText(text);
@@ -132,15 +130,6 @@ export default function LearnClient({ userName }: LearnClientProps) {
             feedback = `${friendlyExplanation}\n\n💡 힌트: ${feedback}`;
           }
         }
-
-        // 학습 뱃지 획득 여부 로컬 반영
-        setEarnedConceptIds((prev) => {
-          const next = new Set(prev);
-          if (success) {
-            parseResult.concepts.forEach((c) => next.add(c.conceptId));
-          }
-          return next;
-        });
 
         // 성공이고 애니메이션 명령이 있을 때만 피드백 예약을 하고, 에러 상황이거나 명령어가 없으면 즉시 띄움
         if (success && queueCommands.length > 0) {
@@ -265,7 +254,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
       </div>
 
       {/* Workspace */}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 18, padding: "8px 22px 22px" }}>
+      <div className="learn-workspace" style={{ flex: 1, minHeight: 0, display: "flex", gap: 18, padding: "8px 22px 22px" }}>
         {/* Editor column */}
         <div style={{ flex: 1.15, minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
           <div
@@ -519,6 +508,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
                   파이썬 로드 중...
                 </span>
               )}
+              {pyError && <span role="alert" style={{ fontSize: 12, color: "#D93668" }}>{pyError}</span>}
             </div>
           </div>
         </div>

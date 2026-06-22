@@ -1,122 +1,116 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { robotApi } from "@/lib/robot-api";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { animationQueue } from "@/lib/animation-queue";
-
-interface PyodideInterface {
-  runPythonAsync: (code: string) => Promise<unknown>;
-  loadPackagesFromImports: (code: string) => Promise<void>;
-  registerJsModule: (name: string, obj: any) => void;
-}
+import { robotApi } from "@/lib/robot-api";
 
 interface ExecuteResult {
   stdout: string;
   stderr: string;
   success: boolean;
+  timedOut?: boolean;
 }
 
-declare global {
-  interface Window {
-    __pyodidePromise?: Promise<PyodideInterface>;
-    loadPyodide?: (options: { indexURL: string }) => Promise<PyodideInterface>;
-  }
+interface PendingExecution {
+  resolve: (result: ExecuteResult) => void;
+  timer: ReturnType<typeof setTimeout>;
 }
+
+const EXECUTION_TIMEOUT_MS = 5_000;
+const ROBOT_COMMANDS = new Set(Object.keys(robotApi));
 
 export function usePyodide() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pyodideRef = useRef<PyodideInterface | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const pendingRef = useRef<Map<number, PendingExecution>>(new Map());
+  const sequenceRef = useRef(0);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const createWorker = useCallback(() => {
+    const worker = new Worker("/pyodide-worker.js");
+    workerRef.current = worker;
+    setLoading(true);
+    setError(null);
 
-    if (!window.__pyodidePromise) {
-      window.__pyodidePromise = new Promise<PyodideInterface>((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.js";
-        script.crossOrigin = "anonymous";
-        script.onload = () => {
-          if (window.loadPyodide) {
-            window
-              .loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/" })
-              .then(resolve)
-              .catch(reject);
-          } else {
-            reject(new Error("loadPyodide not found"));
-          }
-        };
-        script.onerror = () => reject(new Error("Pyodide 스크립트 로드 실패"));
-        document.head.appendChild(script);
-      });
-    }
-
-    window.__pyodidePromise
-      .then((py) => {
-        py.registerJsModule("robot", robotApi);
-        pyodideRef.current = py;
+    worker.onmessage = (event: MessageEvent) => {
+      const message = event.data;
+      if (message?.type === "ready") {
         setLoading(false);
-      })
-      .catch((err) => {
-        setError(String(err));
+        return;
+      }
+      if (message?.type === "init-error") {
+        setError(message.error || "Pyodide를 불러오지 못했습니다.");
         setLoading(false);
-      });
+        return;
+      }
+      if (message?.type === "robot-command" && ROBOT_COMMANDS.has(message.command)) {
+        try {
+          const command = robotApi[message.command as keyof typeof robotApi] as (...args: unknown[]) => void;
+          command(...(Array.isArray(message.args) ? message.args : []));
+        } catch (commandError) {
+          console.error("Invalid robot command", commandError);
+        }
+        return;
+      }
+      if (message?.type === "result") {
+        const pending = pendingRef.current.get(message.id);
+        if (!pending) return;
+        clearTimeout(pending.timer);
+        pendingRef.current.delete(message.id);
+        pending.resolve({
+          stdout: String(message.stdout ?? ""),
+          stderr: String(message.stderr ?? ""),
+          success: Boolean(message.success),
+        });
+      }
+    };
+
+    worker.onerror = () => {
+      setError("Python 실행 Worker에서 오류가 발생했습니다.");
+      setLoading(false);
+    };
+    worker.postMessage({ type: "init" });
+    return worker;
   }, []);
 
-  async function executeCode(code: string): Promise<ExecuteResult> {
-    if (!pyodideRef.current) {
+  useEffect(() => {
+    const worker = createWorker();
+    const pendingExecutions = pendingRef.current;
+    return () => {
+      worker.terminate();
+      for (const pending of pendingExecutions.values()) {
+        clearTimeout(pending.timer);
+        pending.resolve({ stdout: "", stderr: "실행이 취소되었습니다.", success: false });
+      }
+      pendingExecutions.clear();
+    };
+  }, [createWorker]);
+
+  const executeCode = useCallback(async (code: string): Promise<ExecuteResult> => {
+    const worker = workerRef.current;
+    if (!worker || loading) {
       return { stdout: "", stderr: "Pyodide가 아직 로드 중입니다.", success: false };
     }
 
-    const py = pyodideRef.current;
-
-    // 실행 전 이전 애니메이션 큐 초기화
     animationQueue.clear();
+    const id = ++sequenceRef.current;
+    return new Promise<ExecuteResult>((resolve) => {
+      const timer = setTimeout(() => {
+        pendingRef.current.delete(id);
+        worker.terminate();
+        resolve({
+          stdout: "",
+          stderr: `실행 제한 시간(${EXECUTION_TIMEOUT_MS / 1000}초)을 초과했습니다. 무한 반복을 확인해주세요.`,
+          success: false,
+          timedOut: true,
+        });
+        createWorker();
+      }, EXECUTION_TIMEOUT_MS);
 
-    try {
-      try {
-        await py.loadPackagesFromImports(code);
-      } catch {
-        // Some packages are not available in Pyodide — ignore
-      }
-
-      await py.runPythonAsync(`
-import sys
-import io
-import time
-
-time.sleep = lambda s: None
-_stdout_capture = io.StringIO()
-_stderr_capture = io.StringIO()
-sys.stdout = _stdout_capture
-sys.stderr = _stderr_capture
-`);
-
-      let success = true;
-      let stderr = "";
-
-      try {
-        await py.runPythonAsync(code);
-      } catch (e: any) {
-        success = false;
-        stderr = e.message || String(e);
-      }
-
-      const stdout = String(
-        await py.runPythonAsync(`
-_out = _stdout_capture.getvalue()
-sys.stdout = sys.__stdout__
-sys.stderr = sys.__stderr__
-_out
-`)
-      );
-
-      return { stdout: stdout.trim(), stderr: stderr.trim(), success };
-    } catch (e) {
-      return { stdout: "", stderr: String(e), success: false };
-    }
-  }
+      pendingRef.current.set(id, { resolve, timer });
+      worker.postMessage({ type: "execute", id, code });
+    });
+  }, [createWorker, loading]);
 
   return { loading, error, executeCode };
 }
-
