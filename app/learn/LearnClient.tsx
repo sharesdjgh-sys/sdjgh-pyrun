@@ -43,6 +43,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
 
   // 캐릭터 선택 스킨 상태
   const [characterType, setCharacterType] = useState<"robot" | "dog" | "game">("robot");
+  const [isError, setIsError] = useState(false);
 
   // 로봇 제어 관련 상태
   const [commands, setCommands] = useState<RobotCommand[]>([]);
@@ -86,11 +87,13 @@ export default function LearnClient({ userName }: LearnClientProps) {
     setCommands([]);
     setPendingFeedback(null);
     setShowVariable(false);
+    setIsError(false);
 
     // 1. 코드 실행 (이때 Pyodide 안에서 robotApi 함수들이 실행되며 animationQueue에 명령어 축적)
     const { stdout, stderr, success } = await executeCode(code);
     setOutput(stdout);
     setExecError(stderr);
+    setIsError(!success);
 
     // 문법 개념 파싱 (기존 뱃지 지급 감지용)
     const parseResult = parsePython(code);
@@ -117,11 +120,18 @@ export default function LearnClient({ userName }: LearnClientProps) {
 
       if (res.ok) {
         const data = await res.json();
-        const feedback: string = data.feedback;
+        let feedback: string = data.feedback;
         const badgeIds: number[] = data.newlyEarnedBadgeIds;
 
-        // 애니메이션이 끝나면 띄워줄 피드백 예약
-        setPendingFeedback({ feedback, badgeIds });
+        // 에러 상황이면 규칙 기반 설명과 AI 피드백을 결합
+        if (!success) {
+          const friendlyExplanation = getFriendlyErrorExplanation(stderr);
+          if (feedback.includes("코드에 오류가 있어요") || feedback.trim().length === 0) {
+            feedback = friendlyExplanation;
+          } else {
+            feedback = `${friendlyExplanation}\n\n💡 힌트: ${feedback}`;
+          }
+        }
 
         // 학습 뱃지 획득 여부 로컬 반영
         setEarnedConceptIds((prev) => {
@@ -132,20 +142,33 @@ export default function LearnClient({ userName }: LearnClientProps) {
           return next;
         });
 
-        // 만약 로봇 제어 명령이 하나도 없었다면 즉시 피드백을 노출
-        if (queueCommands.length === 0) {
+        // 성공이고 애니메이션 명령이 있을 때만 피드백 예약을 하고, 에러 상황이거나 명령어가 없으면 즉시 띄움
+        if (success && queueCommands.length > 0) {
+          setPendingFeedback({ feedback, badgeIds });
+        } else {
+          setPendingFeedback(null);
           showSpeechBubble(feedback);
-          if (badgeIds.length > 0) {
+          if (success && badgeIds.length > 0) {
             setNewBadgeIds(badgeIds);
             // 뱃지 획득 시 스테이지의 로봇이 춤을 추도록 지시
             setCommands([{ type: "dance", params: {} }]);
           }
         }
+      } else {
+        const fallback = success ? "잘 했어요! 코드가 잘 동작합니다." : getFriendlyErrorExplanation(stderr);
+        if (success && queueCommands.length > 0) {
+          setPendingFeedback({ feedback: fallback, badgeIds: [] });
+        } else {
+          setPendingFeedback(null);
+          showSpeechBubble(fallback);
+        }
       }
     } catch {
-      const fallback = success ? "잘 했어요! 코드가 잘 동작합니다." : "코드에 오류가 있어요. 에러 메시지를 읽어보세요.";
-      setPendingFeedback({ feedback: fallback, badgeIds: [] });
-      if (queueCommands.length === 0) {
+      const fallback = success ? "잘 했어요! 코드가 잘 동작합니다." : getFriendlyErrorExplanation(stderr);
+      if (success && queueCommands.length > 0) {
+        setPendingFeedback({ feedback: fallback, badgeIds: [] });
+      } else {
+        setPendingFeedback(null);
         showSpeechBubble(fallback);
       }
     }
@@ -180,6 +203,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
     setCommands([]);
     setPendingFeedback(null);
     setShowVariable(false);
+    setIsError(false);
   }, []);
 
   const unitTitle = BADGE_METADATA[selectedConceptId - 1]?.nameKo.replace(" 마스터", "") || "출력";
@@ -638,6 +662,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
                 varValue={varValue}
                 showVariable={showVariable}
                 characterType={characterType}
+                isError={isError}
               />
             </div>
 
@@ -649,4 +674,36 @@ export default function LearnClient({ userName }: LearnClientProps) {
       <BadgeCelebration badgeIds={newBadgeIds} onClose={() => setNewBadgeIds([])} />
     </div>
   );
+}
+
+function getFriendlyErrorExplanation(stderr: string): string {
+  if (!stderr) return "으앙! 코드에 오류가 발생했어. 아래 검은색 결과 창의 빨간색 에러 메시지를 참고해서 고쳐볼래?";
+  
+  if (/IndentationError/.test(stderr)) {
+    return "들여쓰기(IndentationError)가 잘못되었어요! 코드 줄 앞쪽의 빈칸(스페이스) 개수가 맞는지 확인해 줄래?";
+  }
+  if (/SyntaxError/.test(stderr)) {
+    return "문법 오류(SyntaxError)가 발생했어요! 괄호 짝이 안 맞거나 끝에 콜론(:)이 빠지지 않았는지 살펴봐!";
+  }
+  if (/NameError/.test(stderr)) {
+    const match = stderr.match(/name '([^']+)' is not defined/);
+    const missingName = match ? match[1] : "";
+    if (missingName === "robot") {
+      return "앗! 'import robot'을 코드 맨 위에 적었는지 확인해봐! 나를 사용하려면 꼭 불러와야 해.";
+    }
+    return `앗, '${missingName}'(은)는 정의되지 않은 이름(NameError)이야! 오타가 났거나 미리 선언하지 않은 것 같아.`;
+  }
+  if (/TypeError/.test(stderr)) {
+    return "서로 다른 종류의 데이터(숫자와 글자 등)를 섞어서 계산(TypeError)하려고 한 것 같아. 타입을 맞춰줘!";
+  }
+  if (/ZeroDivisionError/.test(stderr)) {
+    return "어라? 컴퓨터는 0으로 숫자를 나눌 수 없어(ZeroDivisionError)! 나누는 수를 다른 숫자로 바꿔봐.";
+  }
+  if (/AttributeError/.test(stderr)) {
+    const match = stderr.match(/attribute '([^']+)'/);
+    const attr = match ? match[1] : "";
+    return `나에게 '${attr}'(이)라는 동작(AttributeError)은 존재하지 않아! 내가 할 수 있는 동작 이름을 다시 확인해봐.`;
+  }
+  
+  return "코드에 에러가 발생해서 동작을 완료하지 못했어. 아래 빨간색 에러 메시지를 잘 읽고 코드를 수정해보자!";
 }

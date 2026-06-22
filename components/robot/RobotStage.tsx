@@ -17,6 +17,7 @@ interface RobotStageProps {
   varValue?: string;
   showVariable?: boolean;
   characterType?: "robot" | "dog" | "game";
+  isError?: boolean;
 }
 
 interface DrawnShape {
@@ -42,6 +43,7 @@ export default function RobotStage({
   varValue,
   showVariable,
   characterType = "robot",
+  isError = false,
 }: RobotStageProps) {
   // 로봇 상태 변수들
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -264,8 +266,8 @@ export default function RobotStage({
         setPos({ x: 0, y: 0 });
         setDirection("right");
         setScale(1.0);
-        setEmotion("idle");
-        setRobotState("idle");
+        setEmotion(isError ? "sad" : "idle");
+        setRobotState(isError ? "error" : "idle");
         setSpeech(null);
         setClones([]);
         setShapes([]);
@@ -283,15 +285,15 @@ export default function RobotStage({
       setPos({ x: 0, y: 0 });
       setDirection("right");
       setScale(1.0);
-      setEmotion("idle");
-      setRobotState("idle");
+      setEmotion(isError ? "sad" : "idle");
+      setRobotState(isError ? "error" : "idle");
       setSpeech(null);
       setShapes([]);
       setPaths([{ x: 0, y: 0 }]);
       setClones([]);
       setIsRunning(false);
     }
-  }, [commands]);
+  }, [commands, isError]);
 
   // 논리 좌표 x/y를 백분율 스타일 좌표로 매핑
   const getPercentX = (x: number) => `${((200 + x) / 400) * 100}%`;

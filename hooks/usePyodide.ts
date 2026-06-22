@@ -97,9 +97,9 @@ sys.stderr = _stderr_capture
 
       try {
         await py.runPythonAsync(code);
-      } catch (e) {
+      } catch (e: any) {
         success = false;
-        stderr = String(e);
+        stderr = e.message || String(e);
       }
 
       const stdout = String(
