@@ -27,7 +27,7 @@ export function usePyodide() {
   const sequenceRef = useRef(0);
 
   const createWorker = useCallback(() => {
-    const worker = new Worker("/pyodide-worker.js");
+    const worker = new Worker("/pyodide-worker.js?v=3");
     workerRef.current = worker;
     setLoading(true);
     setError(null);
@@ -41,6 +41,10 @@ export function usePyodide() {
       if (message?.type === "init-error") {
         setError(message.error || "Pyodide를 불러오지 못했습니다.");
         setLoading(false);
+        return;
+      }
+      if (message?.type === "worker-error") {
+        setError(`Python Worker 오류: ${message.error}`);
         return;
       }
       if (message?.type === "robot-command" && ROBOT_COMMANDS.has(message.command)) {
@@ -65,8 +69,9 @@ export function usePyodide() {
       }
     };
 
-    worker.onerror = () => {
-      setError("Python 실행 Worker에서 오류가 발생했습니다.");
+    worker.onerror = (event) => {
+      const location = event.filename ? ` (${event.filename}:${event.lineno})` : "";
+      setError(`Python 실행 Worker 오류: ${event.message || "알 수 없는 오류"}${location}`);
       setLoading(false);
     };
     worker.postMessage({ type: "init" });
