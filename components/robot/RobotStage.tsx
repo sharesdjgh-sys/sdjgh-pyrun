@@ -102,6 +102,8 @@ export default function RobotStage({
   const [clones, setClones] = useState<RobotClone[]>([]);
 
   const executionIdRef = useRef(0);
+  const onAnimationCompleteRef = useRef(onAnimationComplete);
+  useEffect(() => { onAnimationCompleteRef.current = onAnimationComplete; });
 
   // 비동기 딜레이 헬퍼
   const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -271,8 +273,8 @@ export default function RobotStage({
         setShapes([]);
         setPaths([{ x: 0, y: 0 }]);
 
-        if (onAnimationComplete) {
-          onAnimationComplete();
+        if (onAnimationCompleteRef.current) {
+          onAnimationCompleteRef.current();
         }
       };
 
@@ -289,7 +291,7 @@ export default function RobotStage({
       setPaths([{ x: 0, y: 0 }]);
       setClones([]);
     }
-  }, [commands, isError, onAnimationComplete]);
+  }, [commands, isError]);
 
   // 논리 좌표 x/y를 백분율 스타일 좌표로 매핑
   const getPercentX = (x: number) => `${((200 + x) / 400) * 100}%`;

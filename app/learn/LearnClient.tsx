@@ -61,6 +61,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
   const [showVariable, setShowVariable] = useState(false);
 
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const runningRef = useRef(false);
 
   const { loading: pyLoading, error: pyError, executeCode, restart: restartPyodide } = usePyodide();
 
@@ -83,7 +84,8 @@ export default function LearnClient({ userName }: LearnClientProps) {
   }, []);
 
   const handleRun = useCallback(async () => {
-    if (running || pyLoading) return;
+    if (runningRef.current || pyLoading) return;
+    runningRef.current = true;
     setRunning(true);
     setHasRun(true);
     setShowSpeech(false);
@@ -92,7 +94,12 @@ export default function LearnClient({ userName }: LearnClientProps) {
     setShowVariable(false);
     setIsError(false);
 
-    const { stdout, stderr, success } = await executeCode(code);
+    let stdout = "", stderr = "", success = false;
+    try {
+      ({ stdout, stderr, success } = await executeCode(code));
+    } finally {
+      runningRef.current = false;
+    }
     setOutput(stdout);
     setExecError(stderr);
     setIsError(!success);
@@ -161,7 +168,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
     }
 
     setRunning(false);
-  }, [running, pyLoading, code, executeCode, showSpeechBubble]);
+  }, [pyLoading, code, executeCode, showSpeechBubble]);
 
   const handleAnimationComplete = useCallback(() => {
     if (pendingFeedback) {
