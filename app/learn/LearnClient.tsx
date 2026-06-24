@@ -14,7 +14,6 @@ import { BADGE_METADATA, CONCEPT_EXAMPLES } from "@/lib/curriculum";
 
 const CodeEditor = dynamic(() => import("@/components/editor/CodeEditor"), { ssr: false });
 
-// 초기 코드는 학생들이 robot API를 바로 경험해볼 수 있도록 작성
 const INITIAL_CODE = `# 파이썬 코드를 여기에 입력하세요
 import robot
 
@@ -23,6 +22,13 @@ robot.move(2)
 robot.draw("star")
 robot.dance()
 `;
+
+const UNIT_GROUPS = [
+  { label: "자료형", emoji: "📦", ids: [1, 2, 7, 8, 9, 10] },
+  { label: "연산자", emoji: "🔢", ids: [3, 4, 5, 6] },
+  { label: "제어문", emoji: "🔀", ids: [11, 12, 13] },
+  { label: "함수/클래스", emoji: "⚙️", ids: [14, 15, 16] },
+];
 
 interface LearnClientProps {
   userName: string;
@@ -38,26 +44,25 @@ export default function LearnClient({ userName }: LearnClientProps) {
   const [showSpeech, setShowSpeech] = useState(false);
   const [newBadgeIds, setNewBadgeIds] = useState<number[]>([]);
   const [selectedConceptId, setSelectedConceptId] = useState(1);
+  const [conceptExpanded, setConceptExpanded] = useState(true);
+  const [showOutput, setShowOutput] = useState(false);
 
-  // 캐릭터 선택 스킨 상태
   const [characterType, setCharacterType] = useState<"robot" | "dog" | "game">("robot");
   const [isError, setIsError] = useState(false);
 
-  // 로봇 제어 관련 상태
   const [commands, setCommands] = useState<RobotCommand[]>([]);
   const [pendingFeedback, setPendingFeedback] = useState<{
     feedback: string;
     badgeIds: number[];
   } | null>(null);
 
-  // 변수 실시간 감지 상태
   const [varName, setVarName] = useState<string>("");
   const [varValue, setVarValue] = useState<string>("");
   const [showVariable, setShowVariable] = useState(false);
 
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { loading: pyLoading, error: pyError, executeCode } = usePyodide();
+  const { loading: pyLoading, error: pyError, executeCode, restart: restartPyodide } = usePyodide();
 
   const showSpeechBubble = useCallback((text: string, duration = 8000) => {
     setSpeechText(text);
@@ -69,7 +74,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
   useEffect(() => {
     const t = setTimeout(() => {
       showSpeechBubble(
-        `안녕, ${userName}! 나는 AI 코딩 친구야. 단원을 선택하고 예제를 불러오거나 코드를 직접 수정해봐! robot.move(2) 처럼 코드를 쓰면 내가 스테이지에서 직접 움직여!`,
+        `안녕, ${userName}! 나는 AI 코딩 친구야. 왼쪽에서 단원을 선택하고 예제를 불러오거나 코드를 직접 수정해봐! robot.move(2) 처럼 코드를 쓰면 내가 스테이지에서 직접 움직여!`,
         11000
       );
     }, 700);
@@ -87,29 +92,25 @@ export default function LearnClient({ userName }: LearnClientProps) {
     setShowVariable(false);
     setIsError(false);
 
-    // 1. 코드 실행 (이때 Pyodide 안에서 robotApi 함수들이 실행되며 animationQueue에 명령어 축적)
     const { stdout, stderr, success } = await executeCode(code);
     setOutput(stdout);
     setExecError(stderr);
     setIsError(!success);
+    if (stdout || stderr) setShowOutput(true);
 
-    // 문법 개념 파싱 (기존 뱃지 지급 감지용)
     const parseResult = parsePython(code);
     const primary = parseResult.primaryConcept;
 
-    // 변수 감지 시 스테이지에 전달할 변수 상태 설정
     if (success && primary && primary.conceptKey === "variable") {
       setVarName((primary.details.lastVarName as string) || "");
       setVarValue((primary.details.lastVarValue as string) || "");
       setShowVariable(true);
     }
 
-    // 2. 애니메이션 큐 추출 및 로봇 스테이지 전달
     const queueCommands = animationQueue.get();
     setCommands(queueCommands);
 
     try {
-      // 3. AI 피드백 호출
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -121,7 +122,6 @@ export default function LearnClient({ userName }: LearnClientProps) {
         let feedback: string = data.feedback;
         const badgeIds: number[] = data.newlyEarnedBadgeIds;
 
-        // 에러 상황이면 규칙 기반 설명과 AI 피드백을 결합
         if (!success) {
           const friendlyExplanation = getFriendlyErrorExplanation(stderr);
           if (feedback.includes("코드에 오류가 있어요") || feedback.trim().length === 0) {
@@ -131,7 +131,6 @@ export default function LearnClient({ userName }: LearnClientProps) {
           }
         }
 
-        // 성공이고 애니메이션 명령이 있을 때만 피드백 예약을 하고, 에러 상황이거나 명령어가 없으면 즉시 띄움
         if (success && queueCommands.length > 0) {
           setPendingFeedback({ feedback, badgeIds });
         } else {
@@ -139,7 +138,6 @@ export default function LearnClient({ userName }: LearnClientProps) {
           showSpeechBubble(feedback);
           if (success && badgeIds.length > 0) {
             setNewBadgeIds(badgeIds);
-            // 뱃지 획득 시 스테이지의 로봇이 춤을 추도록 지시
             setCommands([{ type: "dance", params: {} }]);
           }
         }
@@ -165,13 +163,11 @@ export default function LearnClient({ userName }: LearnClientProps) {
     setRunning(false);
   }, [running, pyLoading, code, executeCode, showSpeechBubble]);
 
-  // 애니메이션 큐 재생 완료 콜백
   const handleAnimationComplete = useCallback(() => {
     if (pendingFeedback) {
       showSpeechBubble(pendingFeedback.feedback);
       if (pendingFeedback.badgeIds.length > 0) {
         setNewBadgeIds(pendingFeedback.badgeIds);
-        // 뱃지 획득을 축하하며 로봇이 댄스를 춤
         setCommands([{ type: "dance", params: {} }]);
       }
       setPendingFeedback(null);
@@ -193,9 +189,10 @@ export default function LearnClient({ userName }: LearnClientProps) {
     setPendingFeedback(null);
     setShowVariable(false);
     setIsError(false);
+    setShowOutput(false);
   }, []);
 
-  const unitTitle = BADGE_METADATA[selectedConceptId - 1]?.nameKo.replace(" 마스터", "") || "출력";
+  const currentConcept = CONCEPT_EXAMPLES[selectedConceptId];
 
   return (
     <div
@@ -209,54 +206,181 @@ export default function LearnClient({ userName }: LearnClientProps) {
     >
       <Header />
 
-      {/* Unit tabs */}
-      <div style={{ flex: "none", padding: "12px 22px 4px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, overflowX: "auto", paddingBottom: 8 }}>
-          <span style={{ flex: "none", fontSize: 12.5, fontWeight: 700, color: "#A39CC0", marginRight: 2 }}>
-            단원
-          </span>
-          {BADGE_METADATA.map((badge, idx) => {
-            const cid = idx + 1;
-            const selected = cid === selectedConceptId;
-            return (
-              <button
-                key={cid}
-                onClick={() => {
-                  setSelectedConceptId(cid);
-                  const example = CONCEPT_EXAMPLES[cid];
-                  if (example) setCode(example.exampleCode);
-                }}
+      {pyError && (
+        <section className="runtime-error-panel" role="alert" aria-live="assertive">
+          <div>
+            <strong>Python 실행 환경 오류</strong>
+            <pre>{pyError}</pre>
+          </div>
+          <button type="button" onClick={restartPyodide}>실행 환경 다시 시작</button>
+        </section>
+      )}
+
+      {/* 3-column workspace */}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 14, padding: "10px 18px 18px" }}>
+
+        {/* ── LEFT SIDEBAR ── */}
+        <div
+          style={{
+            width: 192,
+            flex: "none",
+            display: "flex",
+            flexDirection: "column",
+            background: "#fff",
+            borderRadius: 20,
+            border: "1px solid #EFEAF8",
+            boxShadow: "0 8px 24px rgba(90,63,214,.06)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "13px 14px 10px",
+              borderBottom: "1px solid #F2EDF9",
+              fontSize: 11.5,
+              fontWeight: 700,
+              color: "#B0A8CC",
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+            }}
+          >
+            단원 목록
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 12px" }}>
+            {UNIT_GROUPS.map((group) => (
+              <div key={group.label} style={{ marginBottom: 6 }}>
+                <div
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: "#C8C0DE",
+                    letterSpacing: 0.5,
+                    padding: "6px 8px 3px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {group.emoji} {group.label}
+                </div>
+                {group.ids.map((id) => {
+                  const badge = BADGE_METADATA[id - 1];
+                  const name = badge.nameKo.replace(" 마스터", "");
+                  const selected = id === selectedConceptId;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => setSelectedConceptId(id)}
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        display: "block",
+                        padding: "7px 10px",
+                        borderRadius: 10,
+                        border: "none",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        fontSize: 13,
+                        fontWeight: selected ? 700 : 500,
+                        background: selected ? "linear-gradient(135deg,#9B7FFF,#7B5CF0)" : "transparent",
+                        color: selected ? "#fff" : "#7A6FA0",
+                        marginBottom: 1,
+                        transition: "all .13s",
+                        boxShadow: selected ? "0 3px 8px rgba(123,92,240,.22)" : "none",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!selected) e.currentTarget.style.background = "#F3EFFE";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!selected) e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── CENTER: Editor column ── */}
+        <div style={{ flex: 1.2, minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "relative" }}>
+
+          {/* Concept explanation panel (collapsible) */}
+          <div
+            style={{
+              flex: "none",
+              background: "#fff",
+              borderRadius: 16,
+              border: "1px solid #EFEAF8",
+              boxShadow: "0 4px 14px rgba(90,63,214,.05)",
+              overflow: "hidden",
+            }}
+          >
+            <button
+              onClick={() => setConceptExpanded(!conceptExpanded)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "11px 16px",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                textAlign: "left",
+              }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 800, color: "#7B5CF0" }}>
+                📖 {currentConcept.nameKo}
+              </span>
+              <span
                 style={{
-                  flex: "none",
-                  whiteSpace: "nowrap",
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  padding: "7px 14px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#9B7FFF",
+                  background: "#F2ECFD",
+                  padding: "2px 8px",
                   borderRadius: 99,
-                  transition: "all .15s",
-                  ...(selected
-                    ? {
-                        background: "linear-gradient(180deg,#8B6CFF,#7B5CF0)",
-                        color: "#fff",
-                        boxShadow: "0 4px 10px rgba(123,92,240,.34)",
-                      }
-                    : { background: "#fff", color: "#8B83A8", border: "1.5px solid #ECE7F8" }),
                 }}
               >
-                {badge.nameKo.replace(" 마스터", "")}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                {currentConcept.nameEn}
+              </span>
+              <span
+                style={{
+                  marginLeft: "auto",
+                  fontSize: 11,
+                  color: "#C4BDD8",
+                  transform: conceptExpanded ? "rotate(0deg)" : "rotate(180deg)",
+                  transition: "transform .2s",
+                  display: "inline-block",
+                }}
+              >
+                ▲
+              </span>
+            </button>
+            {conceptExpanded && (
+              <div
+                style={{
+                  padding: "0 16px 12px",
+                  borderTop: "1px solid #F5F0FF",
+                }}
+              >
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    fontSize: 13.5,
+                    color: "#5C5480",
+                    lineHeight: 1.65,
+                  }}
+                >
+                  {currentConcept.explanation}
+                </p>
+              </div>
+            )}
+          </div>
 
-      {/* Workspace */}
-      <div className="learn-workspace" style={{ flex: 1, minHeight: 0, display: "flex", gap: 18, padding: "8px 22px 22px" }}>
-        {/* Editor column */}
-        <div style={{ flex: 1.15, minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Code editor card */}
           <div
             style={{
               flex: 1,
@@ -277,7 +401,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: "12px 18px",
+                padding: "11px 16px",
                 borderBottom: "1px solid #F2EDF9",
               }}
             >
@@ -294,20 +418,8 @@ export default function LearnClient({ userName }: LearnClientProps) {
               >
                 main.py
               </span>
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ marginLeft: "auto" }}>
                 <RobotApiTooltip />
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#7B5CF0",
-                    background: "#F2ECFD",
-                    padding: "4px 11px",
-                    borderRadius: 99,
-                  }}
-                >
-                  {unitTitle} 단원
-                </span>
               </div>
             </div>
 
@@ -316,72 +428,36 @@ export default function LearnClient({ userName }: LearnClientProps) {
               <CodeEditor value={code} onChange={setCode} />
             </div>
 
-            {/* Output */}
-            <div style={{ flex: "none", borderTop: "1px solid #F2EDF9", background: "#FAF8FF" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 7,
-                  padding: "10px 18px 6px",
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  letterSpacing: 0.3,
-                  color: "#A39CC0",
-                  textTransform: "uppercase",
-                }}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="4 17 10 11 4 5" />
-                  <line x1="12" y1="19" x2="20" y2="19" />
-                </svg>
-                실행 결과
-              </div>
-              <OutputPanel output={output} error={execError} hasRun={hasRun} />
-            </div>
-
-            {/* Actions */}
+            {/* Action buttons */}
             <div
               style={{
                 flex: "none",
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                padding: "13px 18px",
+                gap: 8,
+                padding: "11px 16px",
                 borderTop: "1px solid #F2EDF9",
               }}
             >
+              {/* Run */}
               <button
                 onClick={handleRun}
                 disabled={running || pyLoading}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
-                  padding: "12px 24px",
+                  gap: 7,
+                  padding: "11px 22px",
                   border: "none",
-                  borderRadius: 14,
-                  background:
-                    running || pyLoading
-                      ? "#5ED4AA"
-                      : "linear-gradient(180deg,#34D9A6,#18C99A)",
+                  borderRadius: 13,
+                  background: running || pyLoading ? "#5ED4AA" : "linear-gradient(180deg,#34D9A6,#18C99A)",
                   color: "#fff",
                   fontFamily: "var(--font-jua), 'Jua', sans-serif",
-                  fontSize: 15.5,
+                  fontSize: 15,
                   cursor: running || pyLoading ? "not-allowed" : "pointer",
-                  boxShadow: "0 5px 0 #0FA37C,0 9px 18px rgba(24,201,154,.32)",
+                  boxShadow: "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)",
                   transition: "transform .12s,box-shadow .12s",
-                  animation:
-                    !hasRun && !running && !pyLoading ? "runPulse 1.8s ease-in-out infinite" : undefined,
+                  animation: !hasRun && !running && !pyLoading ? "runPulse 1.8s ease-in-out infinite" : undefined,
                 }}
                 onMouseDown={(e) => {
                   if (!running && !pyLoading) {
@@ -391,80 +467,93 @@ export default function LearnClient({ userName }: LearnClientProps) {
                 }}
                 onMouseUp={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.transform = "";
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                    "0 5px 0 #0FA37C,0 9px 18px rgba(24,201,154,.32)";
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)";
                 }}
               >
                 {running ? (
-                  <span
-                    style={{
-                      width: 18,
-                      height: 18,
-                      border: "2.5px solid #fff",
-                      borderTopColor: "transparent",
-                      borderRadius: "50%",
-                      display: "inline-block",
-                    }}
-                  />
+                  <span style={{ width: 16, height: 16, border: "2.5px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block" }} />
                 ) : (
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff" stroke="none">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" stroke="none">
                     <path d="M7 4l13 8-13 8z" />
                   </svg>
                 )}
                 {running ? "실행 중..." : "실행"}
               </button>
 
+              {/* Load example */}
               <button
                 onClick={handleLoadExample}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 7,
-                  padding: "12px 18px",
+                  gap: 6,
+                  padding: "11px 16px",
                   border: "1.5px solid #ECE7F8",
-                  borderRadius: 14,
+                  borderRadius: 13,
                   background: "#fff",
                   color: "#7B5CF0",
                   fontWeight: 700,
-                  fontSize: 14,
+                  fontSize: 13.5,
                   cursor: "pointer",
                   fontFamily: "inherit",
+                  transition: "background .13s",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#F6F2FE")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
                   <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
                 </svg>
                 예제 불러오기
               </button>
 
+              {/* Output toggle */}
+              {hasRun && (
+                <button
+                  onClick={() => setShowOutput(!showOutput)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "11px 16px",
+                    border: `1.5px solid ${showOutput ? "#7B5CF0" : "#ECE7F8"}`,
+                    borderRadius: 13,
+                    background: showOutput ? "#F2ECFD" : "#fff",
+                    color: showOutput ? "#7B5CF0" : "#A39CC0",
+                    fontWeight: 700,
+                    fontSize: 13.5,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    transition: "all .13s",
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="4 17 10 11 4 5" />
+                    <line x1="12" y1="19" x2="20" y2="19" />
+                  </svg>
+                  결과 {showOutput ? "닫기" : "보기"}
+                </button>
+              )}
+
+              {/* Reset */}
               <button
                 onClick={handleReset}
                 style={{
                   marginLeft: "auto",
                   display: "flex",
                   alignItems: "center",
-                  gap: 6,
-                  padding: "10px 14px",
+                  gap: 5,
+                  padding: "9px 12px",
                   border: "none",
-                  borderRadius: 12,
+                  borderRadius: 11,
                   background: "transparent",
                   color: "#A39CC0",
                   fontWeight: 600,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   cursor: "pointer",
                   fontFamily: "inherit",
+                  transition: "all .13s",
                 }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.color = "#7B5CF0";
@@ -475,16 +564,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
                   (e.currentTarget as HTMLButtonElement).style.background = "transparent";
                 }}
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="15"
-                  height="15"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="1 4 1 10 7 10" />
                   <path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10" />
                 </svg>
@@ -492,29 +572,94 @@ export default function LearnClient({ userName }: LearnClientProps) {
               </button>
 
               {pyLoading && (
-                <span
-                  style={{ fontSize: 12, color: "#A39CC0", display: "flex", alignItems: "center", gap: 5 }}
-                >
-                  <span
-                    style={{
-                      width: 12,
-                      height: 12,
-                      border: "2px solid #A39CC0",
-                      borderTopColor: "transparent",
-                      borderRadius: "50%",
-                      display: "inline-block",
-                    }}
-                  />
+                <span style={{ fontSize: 11.5, color: "#A39CC0", display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 11, height: 11, border: "2px solid #A39CC0", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block" }} />
                   파이썬 로드 중...
                 </span>
               )}
-              {pyError && <span role="alert" style={{ fontSize: 12, color: "#D93668" }}>{pyError}</span>}
+              {pyError && <span role="alert" style={{ fontSize: 11.5, color: "#D93668" }}>{pyError}</span>}
+            </div>
+          </div>
+
+          {/* ── FLOATING OUTPUT PANEL ── */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "44%",
+              transform: showOutput ? "translateY(0)" : "translateY(105%)",
+              transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+              background: "#16172A",
+              borderRadius: "18px 18px 0 0",
+              boxShadow: showOutput ? "0 -8px 40px rgba(0,0,0,0.28)" : "none",
+              zIndex: 50,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              pointerEvents: showOutput ? "all" : "none",
+            }}
+          >
+            {/* Panel header */}
+            <div
+              style={{
+                flex: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 16px",
+                borderBottom: "1px solid #252640",
+                background: "#1E1F36",
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: execError ? "#FF5C8A" : "#18C99A",
+                  display: "inline-block",
+                  boxShadow: execError ? "0 0 6px #FF5C8A88" : "0 0 6px #18C99A88",
+                }}
+              />
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#6B6B99" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="4 17 10 11 4 5" />
+                <line x1="12" y1="19" x2="20" y2="19" />
+              </svg>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: "#6B6B99", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                실행 결과
+              </span>
+              <button
+                onClick={() => setShowOutput(false)}
+                style={{
+                  marginLeft: "auto",
+                  background: "transparent",
+                  border: "none",
+                  color: "#4A4A6A",
+                  cursor: "pointer",
+                  fontSize: 17,
+                  lineHeight: 1,
+                  padding: "2px 6px",
+                  borderRadius: 6,
+                  transition: "color .13s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#9B7FFF")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#4A4A6A")}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Output content */}
+            <div style={{ flex: 1, overflow: "auto", padding: "14px 18px" }}>
+              <OutputPanel output={output} error={execError} hasRun={hasRun} dark />
             </div>
           </div>
         </div>
 
-        {/* Robot column */}
-        <div style={{ flex: 0.85, minWidth: 300, display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* ── RIGHT: Robot column ── */}
+        <div style={{ flex: 0.85, minWidth: 280, display: "flex", flexDirection: "column", gap: 10 }}>
           <div
             style={{
               flex: 1,
@@ -529,38 +674,27 @@ export default function LearnClient({ userName }: LearnClientProps) {
               position: "relative",
             }}
           >
-            {/* AI feedback speech bubble (오른쪽 헤더 쪽에 작게 멘토 팁처럼 제공) */}
-            <div
-              style={{
-                flex: "none",
-                minHeight: 70,
-                padding: "12px 18px 4px",
-                display: "flex",
-                justifyContent: "center",
-              }}
-            >
-              {/* 메인 로봇 캐릭터 말풍선 외에, 
-                  Gemini 피드백은 학생들에게 직접 조언하는 용도이므로 별도의 멘토 피드백 영역으로 배치 */}
+            {/* AI feedback bubble */}
+            <div style={{ flex: "none", minHeight: 66, padding: "12px 14px 4px" }}>
               <div
                 style={{
-                  position: "relative",
                   width: "100%",
                   background: showSpeech ? "#7B5CF0" : "#fff",
                   border: showSpeech ? "none" : "1.5px dashed #C9C1DE",
-                  borderRadius: 16,
-                  padding: "10px 14px",
-                  boxShadow: showSpeech ? "0 8px 16px rgba(123,92,240,.24)" : "none",
+                  borderRadius: 14,
+                  padding: "9px 13px",
+                  boxShadow: showSpeech ? "0 6px 14px rgba(123,92,240,.22)" : "none",
                   transition: "all .3s ease",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  minHeight: 52,
+                  minHeight: 48,
                 }}
               >
                 <div
                   style={{
-                    fontSize: 12.5,
-                    lineHeight: 1.4,
+                    fontSize: 12,
+                    lineHeight: 1.45,
                     color: showSpeech ? "#fff" : "#8B83A8",
                     textAlign: "center",
                   }}
@@ -570,8 +704,8 @@ export default function LearnClient({ userName }: LearnClientProps) {
               </div>
             </div>
 
-            {/* 캐릭터 선택 탭 */}
-            <div style={{ flex: "none", display: "flex", justifyContent: "center", gap: 6, padding: "2px 18px 10px" }}>
+            {/* Character selector */}
+            <div style={{ flex: "none", display: "flex", justifyContent: "center", gap: 5, padding: "2px 14px 8px" }}>
               {(["robot", "dog", "game"] as const).map((type) => {
                 const isSelected = characterType === type;
                 const labels = { robot: "🤖 로봇", dog: "🐶 강아지", game: "⚔️ 전사" };
@@ -582,14 +716,14 @@ export default function LearnClient({ userName }: LearnClientProps) {
                     style={{
                       background: isSelected ? "linear-gradient(180deg,#8B6CFF,#7B5CF0)" : "#fff",
                       color: isSelected ? "#fff" : "#8B83A8",
-                      fontSize: 12,
+                      fontSize: 11.5,
                       fontWeight: 700,
-                      padding: "5px 12px",
-                      borderRadius: 10,
+                      padding: "5px 11px",
+                      borderRadius: 9,
                       cursor: "pointer",
-                      boxShadow: isSelected ? "0 3px 8px rgba(123,92,240,.24)" : "none",
+                      boxShadow: isSelected ? "0 3px 8px rgba(123,92,240,.22)" : "none",
                       border: isSelected ? "none" : "1.5px solid #ECE7F8",
-                      transition: "all 0.15s ease",
+                      transition: "all 0.13s ease",
                     }}
                   >
                     {labels[type]}
@@ -598,12 +732,12 @@ export default function LearnClient({ userName }: LearnClientProps) {
               })}
             </div>
 
-            {/* Robot 2D Stage */}
+            {/* Robot stage */}
             <div
               style={{
                 flex: 1,
                 minHeight: 0,
-                padding: "0 18px 14px",
+                padding: "0 14px 12px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -625,26 +759,12 @@ export default function LearnClient({ userName }: LearnClientProps) {
                     borderRadius: 22,
                   }}
                 >
-                  <div
-                    style={{
-                      width: 40,
-                      height: 40,
-                      border: "3.5px solid #C6A2EC",
-                      borderTopColor: "#7B5CF0",
-                      borderRadius: "50%",
-                      animation: "spin 0.8s linear infinite",
-                    }}
-                  />
-                  <p style={{ fontSize: 13.5, color: "#8B83A8", margin: 0, fontWeight: 700 }}>
-                    파이썬 엔진 로드 중...
-                  </p>
-                  <p style={{ fontSize: 12, color: "#BDB6D4", margin: 0 }}>
-                    처음 준비할 때 약 10~30초 정도 소요됩니다.
-                  </p>
+                  <div style={{ width: 38, height: 38, border: "3.5px solid #C6A2EC", borderTopColor: "#7B5CF0", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                  <p style={{ fontSize: 13, color: "#8B83A8", margin: 0, fontWeight: 700 }}>파이썬 엔진 로드 중...</p>
+                  <p style={{ fontSize: 11.5, color: "#BDB6D4", margin: 0 }}>처음 준비할 때 약 10~30초 소요됩니다.</p>
                 </div>
               )}
 
-              {/* 2D 인터랙티브 스테이지 */}
               <RobotStage
                 commands={commands}
                 onAnimationComplete={handleAnimationComplete}
@@ -655,8 +775,6 @@ export default function LearnClient({ userName }: LearnClientProps) {
                 isError={isError}
               />
             </div>
-
-
           </div>
         </div>
       </div>
@@ -668,7 +786,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
 
 function getFriendlyErrorExplanation(stderr: string): string {
   if (!stderr) return "으앙! 코드에 오류가 발생했어. 아래 검은색 결과 창의 빨간색 에러 메시지를 참고해서 고쳐볼래?";
-  
+
   if (/IndentationError/.test(stderr)) {
     return "들여쓰기(IndentationError)가 잘못되었어요! 코드 줄 앞쪽의 빈칸(스페이스) 개수가 맞는지 확인해 줄래?";
   }
@@ -694,6 +812,6 @@ function getFriendlyErrorExplanation(stderr: string): string {
     const attr = match ? match[1] : "";
     return `나에게 '${attr}'(이)라는 동작(AttributeError)은 존재하지 않아! 내가 할 수 있는 동작 이름을 다시 확인해봐.`;
   }
-  
+
   return "코드에 에러가 발생해서 동작을 완료하지 못했어. 아래 빨간색 에러 메시지를 잘 읽고 코드를 수정해보자!";
 }

@@ -178,6 +178,36 @@ a:focus-visible {
   outline-offset: 3px;
 }
 
+.runtime-error-panel {
+  margin: 10px 22px 0;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #F2A9BC;
+  border-radius: 12px;
+  background: #FFF0F4;
+  color: #8F2044;
+}
+
+.runtime-error-panel pre {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 12px/1.5 var(--font-jetbrains), monospace;
+}
+
+.runtime-error-panel button {
+  flex: none;
+  padding: 8px 12px;
+  border: 1px solid #D93668;
+  border-radius: 9px;
+  background: #fff;
+  color: #A0234B;
+  cursor: pointer;
+}
+
 @media (max-width: 900px) {
   .learn-workspace {
     flex-direction: column;

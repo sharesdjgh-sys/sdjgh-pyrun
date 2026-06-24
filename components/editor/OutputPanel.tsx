@@ -25,12 +25,18 @@ interface OutputPanelProps {
   output: string;
   error: string;
   hasRun: boolean;
+  dark?: boolean;
 }
 
-export default function OutputPanel({ output, error, hasRun }: OutputPanelProps) {
+export default function OutputPanel({ output, error, hasRun, dark = false }: OutputPanelProps) {
+  const muted = dark ? "#4A4A6A" : "#BDB6D4";
+  const outputColor = dark ? "#4ECCA3" : "#16A37B";
+  const errorColor = dark ? "#FF6B9A" : "#E23E70";
+  const errorHintText = dark ? "#FF8FAE" : "#C0286A";
+
   if (!hasRun) {
     return (
-      <div style={{ height: 120, display: "flex", alignItems: "center", padding: "0 18px", color: "#BDB6D4", fontSize: 13.5 }}>
+      <div style={{ padding: "4px 0", color: muted, fontSize: 13.5 }}>
         실행 버튼을 눌러 코드를 실행해 보세요.
       </div>
     );
@@ -39,29 +45,29 @@ export default function OutputPanel({ output, error, hasRun }: OutputPanelProps)
   const errorHint = error ? getErrorHint(error) : null;
 
   return (
-    <div style={{ height: 120, overflow: "auto", padding: "12px 18px" }}>
+    <div style={{ padding: "4px 0" }}>
       {output && (
-        <pre style={{ margin: 0, fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace", fontSize: 14, lineHeight: 1.6, color: "#16A37B", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+        <pre style={{ margin: 0, fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace", fontSize: 13.5, lineHeight: 1.7, color: outputColor, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
           {output}
         </pre>
       )}
       {error && (
-        <div>
+        <div style={{ marginTop: output ? 12 : 0 }}>
           {errorHint && (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-              <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: "#fff", background: "#E23E70", borderRadius: 6, padding: "2px 8px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+              <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: "#fff", background: errorColor, borderRadius: 6, padding: "2px 8px", lineHeight: "20px" }}>
                 {errorHint.type}
               </span>
-              <span style={{ fontSize: 13, color: "#C0286A", lineHeight: 1.4 }}>{errorHint.hint}</span>
+              <span style={{ fontSize: 13, color: errorHintText, lineHeight: 1.5 }}>{errorHint.hint}</span>
             </div>
           )}
-          <pre style={{ margin: 0, fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace", fontSize: 12, lineHeight: 1.5, color: "#E23E70", whiteSpace: "pre-wrap", wordBreak: "break-word", opacity: 0.7 }}>
+          <pre style={{ margin: 0, fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace", fontSize: 12.5, lineHeight: 1.6, color: errorColor, whiteSpace: "pre-wrap", wordBreak: "break-word", opacity: 0.85 }}>
             {error}
           </pre>
         </div>
       )}
       {!output && !error && (
-        <span style={{ color: "#BDB6D4", fontSize: 13.5 }}>(출력 없음)</span>
+        <span style={{ color: muted, fontSize: 13.5 }}>(출력 없음)</span>
       )}
     </div>
   );

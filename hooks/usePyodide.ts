@@ -19,6 +19,16 @@ interface PendingExecution {
 const EXECUTION_TIMEOUT_MS = 5_000;
 const ROBOT_COMMANDS = new Set(Object.keys(robotApi));
 
+function formatWorkerError(message: Record<string, unknown>) {
+  const phase = String(message.phase || "알 수 없는 단계");
+  const detail = String(message.message || "알 수 없는 오류");
+  const location = message.filename
+    ? `\n위치: ${message.filename}:${message.line || 0}:${message.column || 0}`
+    : "";
+  const stack = message.stack ? `\n상세:\n${String(message.stack)}` : "";
+  return `발생 단계: ${phase}\n원인: ${detail}${location}${stack}`;
+}
+
 export function usePyodide() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +37,7 @@ export function usePyodide() {
   const sequenceRef = useRef(0);
 
   const createWorker = useCallback(() => {
-    const worker = new Worker("/pyodide-worker.js?v=3");
+    const worker = new Worker("/pyodide-worker.js?v=4");
     workerRef.current = worker;
     setLoading(true);
     setError(null);
@@ -39,12 +49,18 @@ export function usePyodide() {
         return;
       }
       if (message?.type === "init-error") {
-        setError(message.error || "Pyodide를 불러오지 못했습니다.");
+        setError(formatWorkerError(message));
         setLoading(false);
         return;
       }
       if (message?.type === "worker-error") {
-        setError(`Python Worker 오류: ${message.error}`);
+        const formatted = formatWorkerError(message);
+        setError(formatted);
+        for (const [id, pending] of pendingRef.current) {
+          clearTimeout(pending.timer);
+          pending.resolve({ stdout: "", stderr: formatted, success: false });
+          pendingRef.current.delete(id);
+        }
         return;
       }
       if (message?.type === "robot-command" && ROBOT_COMMANDS.has(message.command)) {
@@ -52,7 +68,8 @@ export function usePyodide() {
           const command = robotApi[message.command as keyof typeof robotApi] as (...args: unknown[]) => void;
           command(...(Array.isArray(message.args) ? message.args : []));
         } catch (commandError) {
-          console.error("Invalid robot command", commandError);
+          const detail = commandError instanceof Error ? commandError.message : String(commandError);
+          setError(`발생 단계: robot.${message.command} 명령 검증\n원인: ${detail}`);
         }
         return;
       }
@@ -71,7 +88,13 @@ export function usePyodide() {
 
     worker.onerror = (event) => {
       const location = event.filename ? ` (${event.filename}:${event.lineno})` : "";
-      setError(`Python 실행 Worker 오류: ${event.message || "알 수 없는 오류"}${location}`);
+      const formatted = `발생 단계: Worker 스크립트 로드/실행\n원인: ${event.message || "브라우저가 상세 원인을 제공하지 않았습니다."}${location}`;
+      setError(formatted);
+      for (const [id, pending] of pendingRef.current) {
+        clearTimeout(pending.timer);
+        pending.resolve({ stdout: "", stderr: formatted, success: false });
+        pendingRef.current.delete(id);
+      }
       setLoading(false);
     };
     worker.postMessage({ type: "init" });
@@ -117,5 +140,10 @@ export function usePyodide() {
     });
   }, [createWorker, loading]);
 
-  return { loading, error, executeCode };
+  const restart = useCallback(() => {
+    workerRef.current?.terminate();
+    createWorker();
+  }, [createWorker]);
+
+  return { loading, error, executeCode, restart };
 }
