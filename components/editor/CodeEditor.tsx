@@ -9,7 +9,7 @@ const lightTheme = EditorView.theme({
   "&": { height: "100%", backgroundColor: "#FCFBFF" },
   ".cm-scroller": {
     overflow: "auto",
-    fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+    fontFamily: "Consolas, 'JetBrains Mono', monospace",
     fontSize: "14px",
     lineHeight: "1.5",
   },
