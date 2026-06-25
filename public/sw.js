@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyrun-studio-v1";
+const CACHE_NAME = "pyrun-studio-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
