@@ -33,6 +33,14 @@ export const bodyVariants: Variants = {
     x: [0, -8, 8, -8, 8, 0],
     transition: { duration: 0.5, ease: "easeInOut" },
   },
+  spinning: {
+    rotate: [0, 360],
+    transition: { duration: 0.7, ease: "easeInOut" as const },
+  },
+  shaking: {
+    x: [0, -10, 10, -10, 10, -5, 5, 0],
+    transition: { duration: 0.5, ease: "easeOut" as const },
+  },
 };
 
 export const headVariants: Variants = {
@@ -55,6 +63,11 @@ export const headVariants: Variants = {
     transition: { duration: 0.4, repeat: 4, ease: "easeInOut" },
   },
   error: { rotate: [-5, 5, -5, 0], transition: { duration: 0.4 } },
+  spinning: {},
+  shaking: {
+    rotate: [0, -8, 8, -8, 8, 0],
+    transition: { duration: 0.5 },
+  },
 };
 
 export const leftArmVariants: Variants = {
@@ -71,6 +84,8 @@ export const leftArmVariants: Variants = {
     transition: { duration: 0.4, repeat: 3, ease: "easeInOut" },
   },
   error: { rotate: [0, -20, 0], transition: { duration: 0.3 } },
+  spinning: {},
+  shaking: {},
 };
 
 export const rightArmVariants: Variants = {
@@ -87,6 +102,8 @@ export const rightArmVariants: Variants = {
     transition: { duration: 0.4, repeat: 3, ease: "easeInOut" },
   },
   error: { rotate: [0, 20, 0], transition: { duration: 0.3 } },
+  spinning: {},
+  shaking: {},
 };
 
 export const leftLegVariants: Variants = {
@@ -100,6 +117,8 @@ export const leftLegVariants: Variants = {
   headShake: {},
   celebrating: {},
   error: {},
+  spinning: {},
+  shaking: {},
 };
 
 export const rightLegVariants: Variants = {
@@ -113,4 +132,6 @@ export const rightLegVariants: Variants = {
   headShake: {},
   celebrating: {},
   error: {},
+  spinning: {},
+  shaking: {},
 };

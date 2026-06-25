@@ -61,7 +61,9 @@ export type RobotState =
   | "jumping"
   | "headShake"
   | "celebrating"
-  | "error";
+  | "error"
+  | "spinning"
+  | "shaking";
 
 export interface RobotStateData {
   state: RobotState;

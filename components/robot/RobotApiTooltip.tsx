@@ -109,10 +109,22 @@ export default function RobotApiTooltip() {
               <span style={{ color: "#5A527A" }}>로봇 크기 변경 (0.5 ~ 3.0)</span>
 
               <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.draw("도형")</code>
-              <span style={{ color: "#5A527A" }}>도형 그리기 (circle/square/star/triangle)</span>
+              <span style={{ color: "#5A527A" }}>도형 그리기 (circle/square/star/triangle/heart/diamond)</span>
 
               <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.clone()</code>
               <span style={{ color: "#5A527A" }}>현재 자리에 로봇 복제하기 (최대 5개)</span>
+
+              <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.bounce(횟수)</code>
+              <span style={{ color: "#5A527A" }}>지정 횟수만큼 점프 반복 (1~5)</span>
+
+              <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.spin()</code>
+              <span style={{ color: "#5A527A" }}>제자리에서 한 바퀴 회전</span>
+
+              <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.shake()</code>
+              <span style={{ color: "#5A527A" }}>몸을 좌우로 흔들기</span>
+
+              <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.clear()</code>
+              <span style={{ color: "#5A527A" }}>스테이지에 그린 도형 전부 지우기</span>
             </div>
           </div>
         </div>

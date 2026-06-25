@@ -20,17 +20,19 @@ export const CONCEPT_EXAMPLES: Record<number, ConceptExample> = {
     nameEn: "print",
     exampleCode: `import robot
 
-# 숫자, 실수, 문자열 출력
+robot.say("안녕! 나는 AI 로봇이야!")
+robot.emotion("happy")
+robot.bounce(2)
+
 print(123)
 print(456.789)
 print("안녕하세요")
-
-# 콤마(,)로 여러 값 출력, *로 반복
 print("강아지가", "멍" * 3)
 print("1 + 2 =", 1 + 2)
 
-robot.say("print()로 뭐든 출력해봐!")
-robot.emotion("happy")`,
+robot.spin()
+robot.say("print() 완전 정복!")
+robot.draw("star")`,
     explanation: "print()는 괄호 안의 값을 화면에 출력합니다. 쉼표(,)로 여러 값을, *(곱셈)으로 반복을 출력할 수 있어요.",
     practiceCode: `# 문제: 아래 출력 결과가 정확히 나오도록 코드를 완성하세요.
 #
@@ -61,12 +63,18 @@ robot.emotion("happy")`,
 name = "홍길동"
 score = 95
 
+robot.say(f"안녕! 나는 {name}야!")
+robot.move(score // 20)
+
 print("이름:", name)
 print("점수:", score)
-print("2배 점수:", score * 2)
-print(name, "씨의 점수는", score, "점입니다.")
+print("2배:", score * 2)
+print(f"{name}의 점수는 {score}점!")
 
-robot.say(f"이름은 {name}이고 점수는 {score}점!")`,
+robot.emotion("happy")
+robot.bounce(2)
+robot.draw("star")
+robot.say(f"{score}점 달성!")`,
     explanation: "변수는 값을 저장하는 이름표입니다. =으로 값을 할당하고, f-string(f\"...\")으로 변수 값을 문자열 안에 넣을 수 있어요.",
     practiceCode: `# 문제: 변수를 만들어 나를 소개하는 코드를 완성하세요.
 # 조건:
@@ -92,16 +100,19 @@ robot.emotion("happy")`,
 a = 7
 b = 3
 
-print("a + b =", a + b)    # 덧셈: 10
-print("a - b =", a - b)    # 뺄셈: 4
-print("a * b =", a * b)    # 곱셈: 21
-print("a / b =", a / b)    # 나눗셈: 2.333...
-print("a ** b =", a ** b)  # 거듭제곱: 343
-print("a // b =", a // b)  # 몫: 2
-print("a % b =", a % b)    # 나머지: 1
-
+print("a + b =", a + b)
 robot.move(a + b)
-robot.say(f"7 + 3 = {a + b}!")`,
+
+print("a * b =", a * b)
+robot.size(round(a / b, 1))
+
+print("a % b =", a % b)
+robot.bounce(a % b)
+
+print("a ** b =", a ** b)
+robot.say(f"7³ = {a**b}!")
+robot.spin()
+robot.draw("star")`,
     explanation: "+, -, *, /는 기본 사칙연산, //(몫), %(나머지), **(거듭제곱)도 자주 씁니다.",
     practiceCode: `# 문제: 가로 5, 세로 3인 직사각형의 넓이와 둘레를 계산하세요.
 # 조건:
@@ -131,19 +142,23 @@ robot.say(f"넓이는 {area}!")`,
 a = 7
 b = 3
 
-print("a == b:", a == b)   # 같다
-print("a != b:", a != b)   # 다르다
-print("a > b:", a > b)     # 크다
-print("a < b:", a < b)     # 작다
-print("a >= b:", a >= b)   # 크거나 같다
-print("a <= b:", a <= b)   # 작거나 같다
-
-# 문자열 비교 (알파벳 순)
-print("apple < banana:", "apple" < "banana")
+print("a == b:", a == b)
+print("a != b:", a != b)
+print("a > b:", a > b)
+print("a < b:", a < b)
 
 if a > b:
     robot.emotion("happy")
-    robot.say(f"{a} > {b} 이므로 참(True)!")`,
+    robot.say(f"{a} > {b} 참!")
+    robot.jump()
+    robot.draw("circle")
+else:
+    robot.emotion("sad")
+    robot.shake()
+
+print("apple < banana:", "apple" < "banana")
+robot.bounce(2)
+robot.say("비교 연산 완료!")`,
     explanation: "비교 연산자는 두 값을 비교해 True 또는 False를 반환합니다. ==은 '같다', !=은 '다르다'를 의미해요.",
     practiceCode: `# 문제: score를 기준값과 비교하는 코드를 완성하세요.
 # 조건:
@@ -173,22 +188,31 @@ else:
     nameEn: "assignment_operator",
     exampleCode: `import robot
 
-a = 0
-print("시작:", a)
+hp = 100
+robot.size(hp / 50)
+robot.say(f"시작 HP: {hp}!")
+print("시작:", hp)
 
-a = a + 7
-print("a = a + 7 →", a)
+hp -= 30
+robot.size(hp / 50)
+robot.emotion("sad")
+robot.shake()
+robot.say(f"피해! HP: {hp}")
+print("피해 후:", hp)
 
-a += 2      # a = a + 2
-print("a += 2 →", a)
-a -= 3      # a = a - 3
-print("a -= 3 →", a)
-a *= 4      # a = a * 4
-print("a *= 4 →", a)
-a /= 6      # a = a / 6
-print("a /= 6 →", a)
+hp += 20
+robot.size(hp / 50)
+robot.emotion("happy")
+robot.bounce(2)
+robot.say(f"회복! HP: {hp}")
+print("회복 후:", hp)
 
-robot.say(f"최종값: {a}")`,
+hp *= 2
+robot.size(min(hp / 50, 3.0))
+robot.spin()
+robot.dance()
+robot.say(f"강해짐! HP: {hp}!")
+print("최종:", hp)`,
     explanation: "+=, -=, *=, /= 는 변수에 연산 후 결과를 다시 저장하는 복합 할당 연산자입니다.",
     practiceCode: `# 문제: 로봇 체력(hp)을 복합 할당 연산자로 관리하세요.
 # 조건:
@@ -225,18 +249,30 @@ else:
 
 a = 6
 
-print("a % 2 == 0:", a % 2 == 0)  # True (2의 배수)
-print("a % 3 == 0:", a % 3 == 0)  # True (3의 배수)
-print("a % 4 == 0:", a % 4 == 0)  # False (4의 배수 아님)
+is_even = a % 2 == 0
+is_three = a % 3 == 0
+is_four = a % 4 == 0
 
-print("2의배수 and 3의배수:", a % 2 == 0 and a % 3 == 0)  # True
-print("2의배수 and 4의배수:", a % 2 == 0 and a % 4 == 0)  # False
-print("2의배수 or 4의배수:", a % 2 == 0 or a % 4 == 0)    # True
-print("not (2의배수):", not (a % 2 == 0))                  # False
+print(f"{a}은 2의 배수:", is_even)
+print(f"{a}은 3의 배수:", is_three)
+print(f"{a}은 4의 배수:", is_four)
 
-if a % 2 == 0 and a % 3 == 0:
+print("2의배수 and 3의배수:", is_even and is_three)
+print("2의배수 or 4의배수:", is_even or is_four)
+print("not 2의배수:", not is_even)
+
+if is_even and is_three:
     robot.say(f"{a}은 2와 3의 공배수!")
-    robot.dance()`,
+    robot.emotion("happy")
+    robot.spin()
+    robot.dance()
+    robot.draw("star")
+elif is_even or is_four:
+    robot.say("적어도 하나는 맞아!")
+    robot.bounce(2)
+else:
+    robot.emotion("sad")
+    robot.shake()`,
     explanation: "and(그리고), or(또는), not(반전) 으로 여러 조건을 조합할 수 있습니다.",
     practiceCode: `# 문제: 놀이터 입장 조건을 판단하는 코드를 완성하세요.
 # 조건:
@@ -270,19 +306,27 @@ else:
 import math
 import random
 
+rand_steps = random.randint(1, 5)
+print("랜덤 이동:", rand_steps)
+robot.move(rand_steps)
+
+emotions = ["happy", "sad", "angry", "surprised"]
+rand_emotion = random.choice(emotions)
+print("랜덤 감정:", rand_emotion)
+robot.emotion(rand_emotion)
+
+rand_size = round(random.uniform(0.7, 2.0), 1)
+print("랜덤 크기:", rand_size)
+robot.size(rand_size)
+
 print("절대값:", abs(-12.34))
 print("올림:", math.ceil(3.14))
-print("내림:", math.floor(3.14))
-print("반올림:", round(3.1415926535, 2))
-print("실수→정수:", int(12.34))
-print("문자→정수:", int("123"))
+print("반올림:", round(3.14159, 2))
+print("랜덤 정수:", random.randint(1, 10))
 
-rand_val = random.randint(1, 5)
-print("랜덤 정수(1~5):", rand_val)
-print("랜덤 실수(0~1):", round(random.random(), 3))
-
-robot.move(rand_val)
-robot.say(f"랜덤으로 {rand_val}칸 이동!")`,
+robot.bounce(random.randint(1, 3))
+robot.say("랜덤은 재미있어!")
+robot.draw("diamond")`,
     explanation: "abs(), round(), int()는 내장 함수, math.ceil()/floor()은 math 모듈, random.randint()는 random 모듈을 사용합니다.",
     practiceCode: `# 문제: 원의 넓이와 둘레를 계산하세요.
 # 조건:
@@ -312,20 +356,29 @@ robot.say(f"반지름 {radius}인 원!")`,
     nameEn: "string_type",
     exampleCode: `import robot
 
-text = "안녕하세요"
+text = "파이썬 코딩 놀이터"
 print("전체:", text)
-print("첫 글자:", text[0])
-print("뒤에서 두번째:", text[-2])
-print("3~4번째:", text[2:4])
-print("중간:", text[1:-1])
+robot.say(text)
+robot.move(3)
+
+head = text[0:3]
+print("앞 3글자:", head)
+robot.say(f"앞: {head}")
+robot.bounce(1)
+
+tail = text[-3:]
+print("뒤 3글자:", tail)
+robot.say(f"뒤: {tail}")
+robot.jump()
 
 name = "앨리스"
 age = 30
-print("% 방식:", "이름은 %s이고 나이는 %d입니다." % (name, age))
-print("format():", "이름은 {}이고 나이는 {}입니다.".format(name, age))
-print("f-string:", f"이름은 {name}이고 나이는 {age}입니다.")
-
-robot.say(f"{text[0:3]}!")`,
+msg = f"{name}는 {age}살"
+print(msg)
+robot.emotion("happy")
+robot.spin()
+robot.say(msg)
+robot.draw("heart")`,
     explanation: "문자열은 인덱스([0], [-1])로 글자를 꺼내거나, 슬라이싱([2:4])으로 일부를 잘라낼 수 있습니다.",
     practiceCode: `# 문제: 문자열 슬라이싱과 포매팅을 사용해보세요.
 # 조건:
@@ -354,20 +407,23 @@ robot.emotion("happy")`,
     nameEn: "list",
     exampleCode: `import robot
 
-subject = ["국어", "영어", "수학", "정보"]
-score = [95, 87, 91, 100]
+shapes = ["circle", "star", "triangle", "square", "heart"]
+scores = [85, 92, 78, 95, 88]
 
-print("과목:", subject)
-print("점수:", score)
-print("정보 인덱스:", subject.index("정보"))
-print("첫번째 점수:", score[0])
-print("정보 점수:", score[subject.index("정보")])
-print("리스트 길이:", len(subject))
+robot.say("도형을 하나씩 그릴게!")
+robot.clear()
 
-for title in subject:
-    print(title, ":", score[subject.index(title)])
+for i, shape in enumerate(shapes):
+    print(f"{i+1}번: {shape} ({scores[i]}점)")
+    robot.draw(shape)
+    robot.move(1)
 
-robot.say(f"총 {len(subject)}과목!")`,
+best = max(scores)
+print("최고점:", best)
+robot.emotion("happy")
+robot.bounce(2)
+robot.say(f"최고점 {best}점!")
+robot.dance()`,
     explanation: "리스트는 여러 값을 순서대로 저장합니다. 인덱스로 값을 꺼내고, for문으로 모든 요소를 순회할 수 있어요.",
     practiceCode: `# 문제: 친구들의 점수 리스트를 만들어 최고점을 찾으세요.
 # 조건:
@@ -395,26 +451,33 @@ robot.dance()`,
     nameEn: "boolean",
     exampleCode: `import robot
 
-print(True)
-print(False)
-print(3 > 2)
-print(bool(1))
-print(bool(0))
-print(bool("a"))
-print(bool(""))
-
 isDoorOpen = False
 isUserHasKey = True
 
-print("자료형:", type(isDoorOpen))
 print("문 열림:", isDoorOpen)
-print("키 소유:", isUserHasKey)
-print("문 열리고 키 있음:", isDoorOpen and isUserHasKey)
-print("문 안열리고 키 있음:", not isDoorOpen and isUserHasKey)
+print("키 소지:", isUserHasKey)
+
+robot.say("문이 잠겼어...")
+robot.emotion("sad")
+robot.shake()
+
+print("열쇠로 열 수 있나:", not isDoorOpen and isUserHasKey)
 
 if not isDoorOpen and isUserHasKey:
-    robot.say("열쇠로 문을 열어!")
-    robot.emotion("happy")`,
+    robot.say("열쇠 발견!")
+    robot.emotion("surprised")
+    robot.bounce(2)
+    isDoorOpen = True
+
+if isDoorOpen:
+    robot.emotion("happy")
+    robot.say("문이 열렸어!")
+    robot.spin()
+    robot.dance()
+    robot.draw("star")
+
+print("최종 문 상태:", isDoorOpen)
+print("자료형:", type(isDoorOpen))`,
     explanation: "불리언은 True(참) 또는 False(거짓)만 가집니다. bool()로 다른 자료형을 불리언으로 변환할 수 있어요.",
     practiceCode: `# 문제: 게임 캐릭터 상태를 불리언으로 관리하세요.
 # 조건:
@@ -449,23 +512,32 @@ else:
 
 score = 85
 print("점수:", score)
+robot.say(f"점수는 {score}점!")
 
 if score >= 90:
-    print("A등급")
     robot.emotion("happy")
-    robot.jump()
-    robot.say("A등급! 최고야!")
+    robot.say("A등급! 완벽해!")
+    robot.spin()
+    robot.dance()
+    robot.draw("star")
+    robot.draw("star")
 elif score >= 80:
-    print("B등급")
     robot.emotion("happy")
     robot.say("B등급! 잘했어!")
+    robot.jump()
+    robot.bounce(2)
+    robot.draw("circle")
 elif score >= 70:
-    print("C등급")
+    robot.emotion("surprised")
     robot.say("C등급! 조금만 더!")
+    robot.bounce(1)
+    robot.draw("triangle")
 else:
-    print("D등급")
     robot.emotion("sad")
-    robot.say("더 노력하자!")`,
+    robot.say("더 노력하자!")
+    robot.shake()
+
+print("결과:", "합격" if score >= 60 else "불합격")`,
     explanation: "if/elif/else로 조건에 따라 다른 코드를 실행합니다. 조건이 True인 블록만 실행돼요.",
     practiceCode: `# 문제: 신호등 색상에 따라 로봇이 다르게 행동하도록 하세요.
 # 조건:
@@ -496,17 +568,25 @@ else:
     nameEn: "for_loop",
     exampleCode: `import robot
 
-# 1~10 홀짝 판별
-for num in range(1, 11):
-    if num % 2 == 0:
-        print(num, "은 짝수")
-    else:
-        print(num, "은 홀수")
+robot.say("반복 시작!")
+robot.clear()
 
-# 역순 카운트다운
-for i in range(5, 0, -1):
-    print(i)
-robot.say("발사!")
+for i in range(1, 6):
+    print(f"{i}번째: {'짝수' if i % 2 == 0 else '홀수'}")
+    robot.move(1)
+    if i % 2 == 0:
+        robot.draw("circle")
+        robot.emotion("happy")
+    else:
+        robot.draw("star")
+        robot.bounce(1)
+
+for i in range(3, 0, -1):
+    print(f"{i}초 전!")
+    robot.say(str(i))
+
+robot.spin()
+robot.say("5번 반복 완료!")
 robot.dance()`,
     explanation: "for문은 반복 횟수가 정해진 반복에 씁니다. range(시작, 끝, 간격)으로 반복 범위를 설정해요.",
     practiceCode: `# 문제: for문으로 구구단 한 단을 출력하세요.
@@ -532,18 +612,25 @@ robot.dance()`,
     exampleCode: `import robot
 
 num = 2
-goal = 1000
+robot.say("2의 거듭제곱!")
+robot.clear()
 
-while True:
+step = 0
+while num <= 100:
     print(num)
-    if num > goal:
-        break
+    robot.move(1)
+    robot.bounce(1)
+    if step % 2 == 0:
+        robot.draw("diamond")
+    else:
+        robot.draw("circle")
     num *= 2
+    step += 1
 
-print("반복 끝!")
-print(goal, "보다 크면서 가장 작은 2의 거듭제곱:", num)
-
-robot.say(f"2를 계속 곱해서 {num}!")
+print("결과:", num)
+robot.emotion("surprised")
+robot.say(f"100 초과! {num}!")
+robot.spin()
 robot.dance()`,
     explanation: "while문은 조건이 참인 동안 계속 반복합니다. break로 즉시 탈출할 수 있어요.",
     practiceCode: `# 문제: while문으로 1부터 시작해 누적 합이 50을 넘을 때까지 더하세요.
@@ -572,18 +659,16 @@ robot.dance()`,
     nameEn: "function",
     exampleCode: `import robot
 
-def say(num):
-    print(num, "번 손님, 안녕하세요.")
+def move_and_draw(shape, steps):
+    robot.move(steps)
+    robot.draw(shape)
+    robot.bounce(1)
 
-say(1)
-say(2)
-say(3)
-
-def greet(name):
-    return f"안녕하세요, {name}님!"
-
-print(greet("홍길동"))
-print(greet("이순신"))
+def celebrate(msg):
+    robot.emotion("happy")
+    robot.spin()
+    robot.say(msg)
+    robot.dance()
 
 def score_grade(score):
     if score >= 90:
@@ -593,8 +678,15 @@ def score_grade(score):
     else:
         return "C"
 
-result = score_grade(85)
-robot.say(f"85점은 {result}등급!")`,
+robot.clear()
+move_and_draw("circle", 2)
+move_and_draw("star", 1)
+move_and_draw("heart", 2)
+
+grade = score_grade(85)
+print("85점 등급:", grade)
+
+celebrate(f"함수 완성! {grade}등급!")`,
     explanation: "함수는 반복되는 코드를 묶어 이름을 붙인 것입니다. def로 정의하고, return으로 값을 돌려줘요.",
     practiceCode: `# 문제: 두 숫자를 받아 합과 평균을 반환하는 함수를 완성하세요.
 # 조건:
@@ -623,24 +715,34 @@ robot.say(f"평균은 {result_avg}!")`,
     nameEn: "class",
     exampleCode: `import robot
 
-class Dog:
-    def __init__(self, name, breed):
+class Pet:
+    def __init__(self, name, mood):
         self.name = name
-        self.breed = breed
+        self.mood = mood
 
-    def bark(self):
-        print("Woof!")
+    def introduce(self):
+        robot.say(f"나는 {self.name}!")
+        robot.emotion(self.mood)
 
-my_dog1 = Dog("Buddy", "Golden Retriever")
-my_dog2 = Dog("Coco", "Poodle")
+    def play(self):
+        robot.bounce(2)
+        robot.draw("heart")
+        robot.spin()
 
-print(my_dog1.name, my_dog1.breed)
-print(my_dog2.name, my_dog2.breed)
-my_dog1.bark()
-my_dog2.bark()
+p1 = Pet("바둑이", "happy")
+p2 = Pet("나비", "surprised")
 
-robot.say(f"{my_dog1.name}이 짖어!")
-robot.clone()`,
+p1.introduce()
+p1.play()
+
+robot.clone()
+
+p2.introduce()
+p2.play()
+
+print(f"{p1.name}과 {p2.name} 등장!")
+robot.dance()
+robot.say("클래스로 만든 친구들!")`,
     explanation: "클래스는 속성(변수)과 행동(메서드)을 묶은 설계도입니다. __init__은 객체 생성 시 자동 호출돼요.",
     practiceCode: `# 문제: 학생(Student) 클래스를 완성하세요.
 # 조건:
@@ -677,22 +779,29 @@ else:
     nameKo: "모듈",
     nameEn: "module",
     exampleCode: `import robot
-import math
 import random
+import math
 import keyword as k
 
-print("파이:", math.pi)
-print("팩토리얼(5!):", math.factorial(5))
-print("제곱근:", math.sqrt(16))
+lotto = sorted(random.sample(range(1, 46), 6))
+print("로또:", lotto)
 
-print("랜덤 정수(1~10):", random.randint(1, 10))
-print("로또 6개:", random.sample(range(1, 46), 6))
+rand_steps = random.randint(1, 4)
+robot.move(rand_steps)
 
-print("파이썬 예약어 수:", len(k.kwlist))
+emotions = ["happy", "surprised", "sad", "angry"]
+robot.emotion(random.choice(emotions))
 
-rand_move = random.randint(1, 4)
-robot.move(rand_move)
-robot.say(f"랜덤으로 {rand_move}칸 이동!")`,
+rand_size = round(random.uniform(0.8, 2.0), 1)
+robot.size(rand_size)
+
+print("파이:", round(math.pi, 4))
+print("예약어 수:", len(k.kwlist))
+
+robot.bounce(random.randint(1, 3))
+robot.say(f"로또: {lotto[:3]}...")
+robot.spin()
+robot.draw("star")`,
     explanation: "모듈은 기능이 담긴 파일입니다. import로 불러오고, as로 별칭을 붙일 수 있어요.",
     practiceCode: `# 문제: random 모듈로 로또 번호를 생성하는 코드를 완성하세요.
 # 조건:

@@ -54,14 +54,33 @@ export const robotApi = {
   },
 
   draw(shape: string) {
-    const validShapes = ["circle", "square", "star", "triangle"];
+    const validShapes = ["circle", "square", "star", "triangle", "heart", "diamond"];
     if (!validShapes.includes(shape)) {
-      throw new Error('shape는 "circle", "square", "star", "triangle" 중 하나여야 합니다.');
+      throw new Error('shape는 "circle", "square", "star", "triangle", "heart", "diamond" 중 하나여야 합니다.');
     }
     animationQueue.push({ type: "draw", params: { shape } });
   },
 
   clone() {
     animationQueue.push({ type: "clone", params: {} });
+  },
+
+  bounce(times: unknown = 1) {
+    const n = Math.min(Math.max(Math.floor(Number(times) || 1), 1), 5);
+    for (let i = 0; i < n; i++) {
+      animationQueue.push({ type: "jump", params: {} });
+    }
+  },
+
+  spin() {
+    animationQueue.push({ type: "spin", params: {} });
+  },
+
+  shake() {
+    animationQueue.push({ type: "shake", params: {} });
+  },
+
+  clear() {
+    animationQueue.push({ type: "clear", params: {} });
   },
 };

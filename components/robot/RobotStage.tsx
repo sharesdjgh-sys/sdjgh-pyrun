@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import RobotCharacter from "./RobotCharacter";
 import DogCharacter from "./DogCharacter";
 import GameCharacter from "./GameCharacter";
@@ -254,6 +255,26 @@ export default function RobotStage({
               break;
             }
 
+            case "spin": {
+              setRobotState("spinning");
+              await delay(800);
+              setRobotState("idle");
+              break;
+            }
+
+            case "shake": {
+              setRobotState("shaking");
+              await delay(650);
+              setRobotState("idle");
+              break;
+            }
+
+            case "clear": {
+              setShapes([]);
+              await delay(200);
+              break;
+            }
+
             default:
               break;
           }
@@ -384,6 +405,28 @@ export default function RobotStage({
                   opacity="0.85"
                 />
               );
+            case "heart":
+              return (
+                <g key={shape.id} transform={`translate(${cx}, ${cy})`}>
+                  <path
+                    d="M 0 -6 C -3 -12 -14 -9 -14 -2 C -14 5 -7 11 0 16 C 7 11 14 5 14 -2 C 14 -9 3 -12 0 -6 Z"
+                    fill="#FF6B9D"
+                    opacity="0.85"
+                    style={{ filter: "drop-shadow(0 1px 2px rgba(255,107,157,0.4))" }}
+                  />
+                </g>
+              );
+            case "diamond":
+              return (
+                <g key={shape.id} transform={`translate(${cx}, ${cy})`}>
+                  <polygon
+                    points="0,-14 14,0 0,14 -14,0"
+                    fill="#60A5FA"
+                    opacity="0.85"
+                    style={{ filter: "drop-shadow(0 1px 2px rgba(96,165,250,0.4))" }}
+                  />
+                </g>
+              );
             default:
               return null;
           }
@@ -429,7 +472,17 @@ export default function RobotStage({
           </div>
         )}
 
-        {renderCharacter(robotState, emotion, scale, direction, 70)}
+        <motion.div
+          animate={
+            robotState === "spinning"
+              ? { rotate: [0, 360], transition: { duration: 0.7, ease: "easeInOut" } }
+              : robotState === "shaking"
+              ? { x: [0, -10, 10, -10, 10, -5, 5, 0], transition: { duration: 0.5 } }
+              : { rotate: 0, x: 0 }
+          }
+        >
+          {renderCharacter(robotState, emotion, scale, direction, 70)}
+        </motion.div>
       </div>
     </div>
   );

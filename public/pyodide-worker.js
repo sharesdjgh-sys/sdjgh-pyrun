@@ -44,6 +44,10 @@ const robot = {
   size: (scale = 1) => send("robot-command", { command: "size", args: [scale] }),
   draw: (shape) => send("robot-command", { command: "draw", args: [shape] }),
   clone: () => send("robot-command", { command: "clone", args: [] }),
+  bounce: (times = 1) => send("robot-command", { command: "bounce", args: [times] }),
+  spin: () => send("robot-command", { command: "spin", args: [] }),
+  shake: () => send("robot-command", { command: "shake", args: [] }),
+  clear: () => send("robot-command", { command: "clear", args: [] }),
 };
 
 async function getPyodide() {
