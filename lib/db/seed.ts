@@ -29,12 +29,12 @@ async function seed() {
 
   await db.insert(badges).values({
     conceptId: 0,
-    nameKo: "로봇 탐험가",
+    nameKo: "Robot API",
     iconName: "Bot",
     colorClass: "text-purple-500",
   }).onConflictDoUpdate({
     target: badges.conceptId,
-    set: { nameKo: "로봇 탐험가", iconName: "Bot", colorClass: "text-purple-500" },
+    set: { nameKo: "Robot API", iconName: "Bot", colorClass: "text-purple-500" },
   });
 
   console.log("Seeding concepts...");

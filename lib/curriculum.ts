@@ -975,7 +975,7 @@ robot.dance()`,
 };
 
 export const BADGE_METADATA = [
-  { conceptId: 0, nameKo: "로봇 탐험가", iconName: "Bot", colorClass: "text-purple-500" },
+  { conceptId: 0, nameKo: "Robot API", iconName: "Bot", colorClass: "text-purple-500" },
   { conceptId: 1, nameKo: "출력 마스터", iconName: "Terminal", colorClass: "text-green-500" },
   { conceptId: 2, nameKo: "변수 마스터", iconName: "Variable", colorClass: "text-blue-500" },
   { conceptId: 3, nameKo: "연산 마스터", iconName: "Calculator", colorClass: "text-yellow-500" },

@@ -44,7 +44,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const [speechText, setSpeechText] = useState("");
   const [showSpeech, setShowSpeech] = useState(false);
   const [newBadgeIds, setNewBadgeIds] = useState<number[]>([]);
-  const [selectedConceptId, setSelectedConceptId] = useState(1);
+  const [selectedConceptId, setSelectedConceptId] = useState(0);
   const [conceptExpanded, setConceptExpanded] = useState(true);
   const [showOutput, setShowOutput] = useState(false);
   const [fontSize, setFontSize] = useState(9);
@@ -92,7 +92,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, []);
 
   useEffect(() => {
-    const firstId = level === 1 ? 1 : 17;
+    const firstId = level === 1 ? 0 : 17;
     setSelectedConceptId(firstId);
     const example = curriculum[firstId];
     if (example?.exampleCode) setCode(example.exampleCode);
