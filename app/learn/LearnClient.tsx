@@ -13,6 +13,7 @@ import Header from "@/components/layout/Header";
 import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2 } from "@/lib/curriculum";
 import type { CurriculumItem } from "@/lib/curriculum";
 import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword } from "lucide-react";
+import Image from "next/image";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert,
@@ -885,6 +886,17 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
       </div>
 
       <BadgeCelebration badgeIds={newBadgeIds} onClose={() => setNewBadgeIds([])} />
+
+      {/* 제작사 로고 */}
+      <div style={{ position: "fixed", bottom: 14, right: 18, zIndex: 5, opacity: 0.6 }}>
+        <Image
+          src="/lifeprofessor-logo.png"
+          alt="인생교수의 AI 연구소"
+          width={145}
+          height={31}
+          style={{ objectFit: "contain" }}
+        />
+      </div>
     </div>
   );
 }
