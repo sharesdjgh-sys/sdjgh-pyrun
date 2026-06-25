@@ -3,6 +3,40 @@ import { concepts, badges } from "./schema";
 import { BADGE_METADATA, CONCEPT_EXAMPLES, BADGE_METADATA_LV2, CONCEPT_EXAMPLES_LV2 } from "../curriculum";
 
 async function seed() {
+  // Robot API 소개 (id=0) 시딩
+  const robotIntro = CONCEPT_EXAMPLES[0];
+  await db.insert(concepts).values({
+    id: 0,
+    nameKo: robotIntro.nameKo,
+    nameEn: robotIntro.nameEn,
+    orderIndex: 0,
+    description: robotIntro.explanation,
+    exampleCode: robotIntro.exampleCode,
+    practiceCode: robotIntro.practiceCode,
+    level: 1,
+  }).onConflictDoUpdate({
+    target: concepts.id,
+    set: {
+      nameKo: robotIntro.nameKo,
+      nameEn: robotIntro.nameEn,
+      orderIndex: 0,
+      description: robotIntro.explanation,
+      exampleCode: robotIntro.exampleCode,
+      practiceCode: robotIntro.practiceCode,
+      level: 1,
+    },
+  });
+
+  await db.insert(badges).values({
+    conceptId: 0,
+    nameKo: "로봇 탐험가",
+    iconName: "Bot",
+    colorClass: "text-purple-500",
+  }).onConflictDoUpdate({
+    target: badges.conceptId,
+    set: { nameKo: "로봇 탐험가", iconName: "Bot", colorClass: "text-purple-500" },
+  });
+
   console.log("Seeding concepts...");
   for (const badge of BADGE_METADATA) {
     const example = CONCEPT_EXAMPLES[badge.conceptId];

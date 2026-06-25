@@ -15,6 +15,93 @@ export type CurriculumItem = {
 };
 
 export const CONCEPT_EXAMPLES: Record<number, ConceptExample> = {
+  0: {
+    nameKo: "Robot API 소개",
+    nameEn: "robot_api_intro",
+    exampleCode: `import robot
+
+# 🤖 파이썬으로 로봇을 움직여보자!
+
+# ① 말하기
+robot.say("안녕! 나는 AI 로봇이야!")
+
+# ② 감정 표현 - happy / sad / angry / surprised
+for feeling in ["happy", "sad", "angry", "surprised"]:
+    robot.emotion(feeling)
+    robot.say(feeling + "!")
+
+# ③ 이동 & 방향 전환
+robot.emotion("happy")
+robot.say("이동 시작!")
+robot.move(3)
+robot.turn("left")
+robot.move(2)
+
+# ④ 점프 & 바운스
+robot.say("점프!")
+robot.jump()
+robot.say("바운스!")
+robot.bounce(3)
+
+# ⑤ 회전 & 흔들기
+robot.say("빙글빙글!")
+robot.spin()
+robot.say("흔들흔들!")
+robot.shake()
+
+# ⑥ 크기 변경
+robot.say("크게!")
+robot.size(2.5)
+robot.say("작게!")
+robot.size(0.5)
+robot.size(1.0)
+
+# ⑦ 도형 그리기 & 지우기
+robot.say("그림 그리기!")
+robot.clear()
+for shape in ["circle", "star", "heart", "diamond", "square", "triangle"]:
+    robot.draw(shape)
+
+# ⑧ 복제
+robot.say("복제!")
+robot.clone()
+robot.clone()
+
+# ⑨ 댄스 타임!
+robot.say("다 같이 댄스!")
+robot.dance()
+robot.say("Robot API 완전 정복!")`,
+    explanation: "robot 모듈로 로봇을 자유자재로 움직여봐요! move, say, emotion, dance 등 다양한 명령으로 재미있는 코드를 만들 수 있어요.",
+    practiceCode: `# Robot API 자유 놀이터!
+# 아래 명령어들을 조합해서 나만의 로봇 공연을 만들어보세요.
+#
+# 사용 가능한 명령:
+#   robot.say("텍스트")          말하기
+#   robot.emotion("happy/sad/angry/surprised")  감정
+#   robot.move(칸수)             이동 (1~20)
+#   robot.turn("left"/"right")  방향 전환
+#   robot.jump()                점프
+#   robot.bounce(횟수)          바운스 (1~5)
+#   robot.spin()                360° 회전
+#   robot.shake()               흔들기
+#   robot.size(배율)            크기 변경 (0.5~3.0)
+#   robot.draw("circle/square/triangle/star/heart/diamond")  도형
+#   robot.clear()               도형 지우기
+#   robot.clone()               복제 (최대 5개)
+#   robot.dance()               댄스
+
+import robot
+
+# 여기에 자유롭게 코드를 작성하세요!
+robot.say("나만의 로봇 공연 시작!")
+
+# 힌트: for문으로 반복하면 더 재미있어요!
+for i in range(3):
+    robot.bounce(1)
+    robot.say(f"{i+1}번째 바운스!")
+
+robot.dance()`,
+  },
   1: {
     nameKo: "출력",
     nameEn: "print",
@@ -888,6 +975,7 @@ robot.dance()`,
 };
 
 export const BADGE_METADATA = [
+  { conceptId: 0, nameKo: "로봇 탐험가", iconName: "Bot", colorClass: "text-purple-500" },
   { conceptId: 1, nameKo: "출력 마스터", iconName: "Terminal", colorClass: "text-green-500" },
   { conceptId: 2, nameKo: "변수 마스터", iconName: "Variable", colorClass: "text-blue-500" },
   { conceptId: 3, nameKo: "연산 마스터", iconName: "Calculator", colorClass: "text-yellow-500" },
@@ -915,23 +1003,28 @@ export const CONCEPT_EXAMPLES_LV2: Record<number, { nameKo: string; nameEn: stri
     explanation: "int(정수), float(실수), complex(복소수) 타입과 type()으로 자료형을 확인합니다. 산술 연산자로 다양한 계산을 할 수 있어요.",
     exampleCode: `import robot
 
-# 세 가지 숫자 자료형
-a = 5         # int (정수)
-b = 3.14      # float (실수)
-c = 2 + 3j    # complex (복소수)
+a = 5
+b = 3.14
+c = 2 + 3j
 
-print("a:", a, "→ 자료형:", type(a))
-print("b:", b, "→ 자료형:", type(b))
-print("c:", c, "→ 자료형:", type(c))
+robot.say(f"int: {a}")
+print("type(a):", type(a).__name__)
+robot.bounce(1)
 
-# 산술 연산
-print("5 + 3 =", a + 3)
-print("5 ** 2 =", a ** 2)  # 거듭제곱
-print("5 // 2 =", a // 2)  # 몫
-print("5 % 2 =", a % 2)    # 나머지
+robot.say(f"float: {b}")
+print("type(b):", type(b).__name__)
+robot.move(1)
 
-robot.say(f"5의 제곱은 {a**2}!")
-robot.move(a % 3 + 1)`,
+robot.say(f"complex: {c}")
+print("type(c):", type(c).__name__)
+
+ops = [("+", a+3), ("**2", a**2), ("//3", a//3), ("%3", a%3)]
+for label, result in ops:
+    print(f"{a}{label} = {result}")
+    robot.say(f"{a}{label}={result}")
+
+robot.spin()
+robot.say("숫자형 완성!")`,
     practiceCode: `# 문제: 세 수 a=10, b=3, c=2.5를 이용한 계산
 # 조건:
 #   - 각 변수의 자료형을 type()으로 출력하세요
@@ -962,24 +1055,32 @@ robot.say(f"10 % 3 = {a % b}")`,
     explanation: "이스케이프 코드(\\n, \\t), 문자열 메서드(count, find, strip, replace, split, upper, lower)로 문자열을 자유롭게 다룹니다.",
     exampleCode: `import robot
 
-# 이스케이프 코드
-print("첫째 줄\\n둘째 줄")      # \\n: 줄바꿈
-print("이름\\t나이")             # \\t: 탭
-
 a = "Python is the best choice"
+robot.say("문자열 메서드 시작!")
 
-# 문자열 메서드
-print("find('b'):", a.find('b'))         # 처음 나오는 위치
-print("count('e'):", a.count('e'))       # 개수 세기
-print("upper:", a.upper())               # 대문자
-print("replace:", a.replace("Python", "파이썬"))  # 치환
-print("split:", a.split())               # 공백으로 나누기
+result = a.find('b')
+print("find('b'):", result)
+robot.say(f"'b' 위치: {result}")
+robot.move(1)
+
+upper = a.upper()
+print("upper:", upper[:10] + "...")
+robot.say("대문자로!")
+robot.bounce(1)
+
+replaced = a.replace("Python", "파이썬")
+print("replace:", replaced[:12])
+robot.say(replaced[:12])
+
+words = a.split()
+print("단어 수:", len(words))
+robot.say(f"단어 {len(words)}개!")
 
 b = "   hello   "
-print("strip:", b.strip())               # 양쪽 공백 제거
-
-robot.say("문자열 마스터!")
-robot.emotion("happy")`,
+stripped = b.strip()
+print("strip:", f"'{stripped}'")
+robot.say(f"공백 제거: '{stripped}'")
+robot.spin()`,
     practiceCode: `# 문제: 문자열 메서드를 활용해보세요.
 # 조건:
 #   - sentence = "life is too short, you need python"
@@ -1008,27 +1109,29 @@ robot.emotion("happy")`,
     exampleCode: `import robot
 
 a = [3, 1, 4, 1, 5, 9, 2, 6]
+robot.say(f"리스트: {a}")
 print("원본:", a)
 
-a.append(7)          # 맨 뒤에 추가
-print("append(7):", a)
+a.append(7)
+robot.say(f"append(7) → {a[-3:]}..")
+print("append:", a)
 
-a.sort()             # 오름차순 정렬
+a.sort()
+robot.say("정렬 완료!")
 print("sort:", a)
+robot.bounce(2)
 
-a.reverse()          # 역순
+a.reverse()
+robot.say("뒤집기!")
 print("reverse:", a)
 
-a.insert(0, 100)     # 0번 위치에 100 삽입
-print("insert(0,100):", a)
+popped = a.pop()
+robot.say(f"pop → {popped}")
+print("pop:", popped, "남은:", a)
 
-a.remove(1)          # 첫 번째 1 삭제
-print("remove(1):", a)
-
-popped = a.pop()     # 마지막 요소 꺼내기
-print("pop:", popped, "→ 남은 리스트:", a)
-
-robot.say(f"리스트 길이: {len(a)}")`,
+robot.say(f"최솟값: {min(a)}, 최댓값: {max(a)}")
+robot.spin()
+robot.dance()`,
     practiceCode: `# 문제: 리스트 메서드를 사용해서 점수를 관리하세요.
 # 조건:
 #   - scores = [85, 92, 78, 95, 88] 로 시작하세요
@@ -1058,29 +1161,33 @@ robot.dance()`,
     explanation: "튜플은 한 번 만들면 변경할 수 없는(불변) 리스트입니다. 괄호()로 만들고, 값을 바꾸려 하면 오류가 납니다.",
     exampleCode: `import robot
 
-# 튜플 정의
 t1 = (1, 2, 3)
 t2 = ('a', 'b', 'c')
-t3 = (1,)          # 요소가 1개일 때는 쉼표 필요
 
+robot.say(f"튜플 t1: {t1}")
 print("t1:", t1)
-print("t2:", t2)
-print("t3:", t3)
-print("t1[0]:", t1[0])     # 인덱싱
-print("t1+t2:", t1 + (4, 5))  # 튜플 더하기
+robot.bounce(1)
 
-# 튜플 언패킹
+robot.say(f"t1[0]={t1[0]}")
+print("t1[0]:", t1[0])
+robot.move(1)
+
 a, b, c = t1
+robot.say(f"언패킹! a={a}, b={b}, c={c}")
 print("언패킹:", a, b, c)
+robot.bounce(2)
 
-# 여러 값을 반환하는 함수는 튜플로 반환됨
+combined = t1 + (4, 5)
+print("t1+(4,5):", combined)
+robot.say(f"연결: {combined}")
+
 def min_max(lst):
     return min(lst), max(lst)
 
 result = min_max([3, 1, 4, 1, 5, 9])
 print("최솟값, 최댓값:", result)
-
-robot.say(f"최댓값은 {result[1]}!")`,
+robot.say(f"min={result[0]}, max={result[1]}")
+robot.spin()`,
     practiceCode: `# 문제: 튜플을 활용하세요.
 # 조건:
 #   - coords = (3, 5) 로 x, y 좌표를 튜플로 저장하세요
@@ -1113,25 +1220,25 @@ robot.move(result[0] % 4 + 1)`,
     exampleCode: `import robot
 
 person = {'name': '홍길동', 'age': 17, 'score': 95}
+robot.say("딕셔너리 순회!")
 
-print("이름:", person['name'])
-print("나이:", person['age'])
-print("keys:", list(person.keys()))
-print("values:", list(person.values()))
-print("items:", list(person.items()))
+for key, value in person.items():
+    print(f"{key}: {value}")
+    robot.say(f"{key}: {value}")
+    robot.bounce(1)
 
-# 값 추가 및 수정
 person['grade'] = 1
-person['score'] = 98
-print("수정 후:", person)
+robot.say(f"grade 추가: {person['grade']}")
+print("추가 후:", person)
 
-# get() - 없는 key도 안전하게 접근
-print("email:", person.get('email', '없음'))
+missing = person.get('email', '없음')
+print("email:", missing)
+robot.say(f"email? {missing}")
+robot.shake()
 
-# in 으로 key 확인
 print("'name' in person:", 'name' in person)
-
-robot.say(f"{person['name']}의 점수: {person['score']}!")`,
+robot.say(f"name 있어? {('name' in person)}")
+robot.spin()`,
     practiceCode: `# 문제: 딕셔너리로 학생 성적표를 만드세요.
 # 조건:
 #   - 딕셔너리 student에 name, korean, math, english 키를 추가하세요
@@ -1164,26 +1271,28 @@ robot.emotion("happy")`,
 
 s1 = {1, 2, 3, 4, 5, 6}
 s2 = {4, 5, 6, 7, 8, 9}
+robot.say(f"s1={s1}, s2={s2}")
 
-print("s1:", s1)
-print("s2:", s2)
-print("교집합:", s1 & s2)    # 공통 원소
-print("합집합:", s1 | s2)    # 모든 원소
-print("차집합:", s1 - s2)    # s1에만 있는 원소
+inter = s1 & s2
+print("교집합:", inter)
+robot.say(f"교집합: {inter}")
+robot.bounce(1)
 
-# 중복 제거에 활용
-numbers = [1, 2, 2, 3, 3, 3, 4]
-unique = set(numbers)
+union = s1 | s2
+print("합집합:", union)
+robot.say(f"합집합 {len(union)}개!")
+robot.move(1)
+
+diff = s1 - s2
+print("차집합:", diff)
+robot.say(f"s1만: {diff}")
+
+nums = [1, 2, 2, 3, 3, 3, 4]
+unique = set(nums)
 print("중복 제거:", unique)
-
-# 메서드
-s = {1, 2, 3}
-s.add(4)
-print("add(4):", s)
-s.remove(2)
-print("remove(2):", s)
-
-robot.say(f"교집합: {s1 & s2}")`,
+robot.say(f"중복 제거! {len(nums)}→{len(unique)}개")
+robot.spin()
+robot.dance()`,
     practiceCode: `# 문제: 세트로 반 학생 취미를 분석하세요.
 # 조건:
 #   - class_a = {"독서", "게임", "축구", "요리"}
@@ -1215,30 +1324,30 @@ robot.dance()`,
     explanation: "변수는 객체의 주소를 가리킵니다. 리스트를 그냥 대입하면 주소를 공유해서 같이 변합니다. 독립적인 복사본을 만들려면 슬라이싱이나 copy()를 사용하세요.",
     exampleCode: `import robot
 
-# 대입 - 같은 주소 공유
 a = [1, 2, 3]
-b = a              # b는 a와 같은 리스트를 가리킴
+b = a
 b.append(4)
-print("a:", a)     # a도 변함!
-print("b:", b)
-print("같은 객체?", a is b)
 
-# 슬라이싱으로 복사 - 독립적인 새 리스트
+print("대입 후 a:", a)
+print("대입 후 b:", b)
+robot.say(f"같은 객체! a={a}")
+robot.emotion("surprised")
+robot.shake()
+
 a = [1, 2, 3]
-c = a[:]           # 전체 슬라이싱 = 복사
-c.append(4)
-print("a:", a)     # a는 그대로
-print("c:", c)
-print("같은 객체?", a is c)
+c = a[:]
+c.append(5)
 
-# copy 모듈 사용
-from copy import copy
-d = copy(a)
-d.append(5)
-print("a:", a)
-print("d:", d)
+print("복사 후 a:", a)
+print("복사 후 c:", c)
+robot.say(f"독립 복사본!")
+robot.emotion("happy")
+robot.bounce(2)
 
-robot.say("복사 완료!")`,
+print("a is b:", a is b)
+print("a is c:", a is c)
+robot.say(f"a is c? {a is c}")
+robot.spin()`,
     practiceCode: `# 문제: 대입과 복사의 차이를 확인하세요.
 # 조건:
 #   - original = [10, 20, 30] 을 만드세요
@@ -1271,32 +1380,30 @@ robot.say("대입 vs 복사 차이 확인!")`,
     exampleCode: `import robot
 
 pocket = ['paper', 'handphone', 'money']
-
-# in / not in 으로 포함 여부 확인
-if 'money' in pocket:
-    print("돈이 있다!")
-    robot.emotion("happy")
-else:
-    print("돈이 없다!")
-    robot.emotion("sad")
-
-# 여러 조건 조합
 card = True
-if 'money' in pocket or card:
-    print("교통수단 이용 가능")
-    robot.move(2)
 
-# pass - 빈 블록
-if 'ticket' in pocket:
-    pass  # 나중에 처리할 것
+robot.say("주머니 확인!")
+if 'money' in pocket:
+    robot.emotion("happy")
+    robot.say("돈이 있어!")
+    robot.bounce(2)
 else:
-    print("티켓이 없어요")
+    robot.emotion("sad")
+    robot.say("돈이 없어!")
+    robot.shake()
 
-# 조건부 표현식 (삼항 연산)
+if 'money' in pocket or card:
+    robot.say("이동 수단 OK!")
+    robot.move(2)
+    robot.draw("circle")
+
 score = 85
 grade = "합격" if score >= 60 else "불합격"
 print(f"점수 {score}: {grade}")
-robot.say(grade)`,
+robot.say(f"{score}점→{grade}!")
+if grade == "합격":
+    robot.spin()
+    robot.dance()`,
     practiceCode: `# 문제: in/not in과 조건부 표현식을 활용하세요.
 # 조건:
 #   - fruits = ["사과", "바나나", "포도", "딸기"]
@@ -1329,30 +1436,26 @@ else:
     explanation: "중첩 for문으로 2차원 반복을, continue로 특정 값을 건너뛰고, 리스트 내포(list comprehension)로 반복을 한 줄로 표현합니다.",
     exampleCode: `import robot
 
-# continue - 특정 값 건너뛰기
-print("홀수만 출력:")
+robot.say("홀수 출력!")
 for i in range(1, 11):
     if i % 2 == 0:
         continue
     print(i, end=" ")
+    robot.say(str(i))
+    robot.bounce(1)
 print()
 
-# 중첩 for - 구구단 일부
-print("2단~3단:")
+robot.say("구구단 2단~3단!")
 for i in range(2, 4):
     for j in range(1, 6):
-        print(f"{i}×{j}={i*j}", end="  ")
+        result = i * j
+        print(f"{i}×{j}={result}", end="  ")
+        robot.say(f"{i}×{j}={result}")
     print()
 
-# 리스트 내포 (list comprehension)
-numbers = [1, 2, 3, 4, 5]
-squares = [n ** 2 for n in numbers]
+squares = [n**2 for n in range(1, 6)]
 print("제곱:", squares)
-
-evens = [n for n in range(1, 11) if n % 2 == 0]
-print("짝수:", evens)
-
-robot.say(f"짝수 개수: {len(evens)}")
+robot.say(f"제곱: {squares}")
 robot.dance()`,
     practiceCode: `# 문제: 리스트 내포와 for문을 사용하세요.
 # 조건:
@@ -1382,36 +1485,34 @@ robot.dance()`,
     explanation: "break로 반복문을 즉시 탈출하고, continue로 현재 회차를 건너뜁니다. while True 패턴으로 조건 기반 반복을 제어합니다.",
     exampleCode: `import robot
 
-# break - 특정 조건에서 즉시 탈출
 coffee = 5
 count = 0
+robot.say("커피 자판기!")
+
 while True:
     count += 1
     coffee -= 1
-    print(f"{count}번째 커피 제공. 남은 커피: {coffee}개")
+    print(f"{count}번째. 남은 커피: {coffee}개")
+    robot.say(f"커피 {coffee}개 남음")
+    robot.move(1)
     if coffee == 0:
-        print("커피 소진!")
+        robot.emotion("sad")
+        robot.say("커피 소진!")
+        robot.shake()
         break
 
-# continue - 특정 조건 건너뛰기
-print("\\n홀수만:")
-n = 0
-while n < 10:
-    n += 1
-    if n % 2 == 0:
+a = 0
+robot.say("홀수만 출력!")
+while a < 10:
+    a += 1
+    if a % 2 == 0:
         continue
-    print(n, end=" ")
+    print(a, end=" ")
+    robot.say(str(a))
+    robot.bounce(1)
 print()
 
-# 1부터 더해서 100 넘는 순간 출력
-total = 0
-num = 1
-while total <= 100:
-    total += num
-    num += 1
-print(f"\\n합계가 100을 처음 넘은 값: {total} (num={num-1})")
-
-robot.say(f"합계 {total}!")
+robot.spin()
 robot.dance()`,
     practiceCode: `# 문제: break와 continue를 활용하세요.
 # 조건:
@@ -1445,39 +1546,41 @@ robot.dance()`,
     explanation: "*args로 개수가 변하는 인수를, **kwargs로 키워드 인수를 받습니다. lambda는 간단한 함수를 한 줄로 쓰는 방법이고, global로 함수 안에서 전역 변수를 수정합니다.",
     exampleCode: `import robot
 
-# *args - 여러 인수를 튜플로 받기
 def add_many(*args):
-    return sum(args)
+    result = sum(args)
+    robot.say(f"합계: {result}!")
+    return result
 
-print("합:", add_many(1, 2, 3))
 print("합:", add_many(1, 2, 3, 4, 5))
+robot.bounce(1)
 
-# **kwargs - 키워드 인수를 딕셔너리로 받기
 def print_info(**kwargs):
     for k, v in kwargs.items():
         print(f"  {k}: {v}")
+        robot.say(f"{k}={v}")
+        robot.move(1)
 
 print_info(name="홍길동", age=17, score=95)
 
-# lambda - 한 줄 함수
 square = lambda x: x ** 2
-print("3의 제곱:", square(3))
+nums = [1, 2, 3, 4, 5]
+squares = list(map(square, nums))
+print("제곱:", squares)
+robot.say(f"제곱: {squares}")
+robot.bounce(2)
 
-nums = [3, 1, 4, 1, 5, 9]
-print("최댓값:", max(nums, key=lambda x: x))
-print("정렬:", sorted(nums, key=lambda x: -x))
-
-# global
 score = 0
 def score_up():
     global score
     score += 10
+    robot.say(f"점수+10={score}!")
+    robot.bounce(1)
 
+score_up()
 score_up()
 score_up()
 print("점수:", score)
-
-robot.say(f"점수: {score}점!")`,
+robot.dance()`,
     practiceCode: `# 문제: *args, lambda, global을 활용하세요.
 # 조건:
 #   - average(*args): 인수들의 평균을 반환하는 함수를 만드세요
@@ -1515,46 +1618,46 @@ robot.size(level * 0.3)`,
     explanation: "상속으로 기존 클래스를 확장하고, 메서드 오버라이딩으로 부모 기능을 재정의합니다. 클래스 변수는 모든 인스턴스가 공유합니다.",
     exampleCode: `import robot
 
-# 부모 클래스
 class Character:
-    species = "인간"  # 클래스 변수 (모든 인스턴스 공유)
+    species = "인간"
 
     def __init__(self, name, hp):
         self.name = name
         self.hp = hp
+        robot.say(f"{name} 생성! HP:{hp}")
+        robot.emotion("happy")
 
     def attack(self):
-        print(f"{self.name}: 공격!")
+        robot.say(f"{self.name}: 공격!")
+        robot.bounce(1)
 
-# 자식 클래스 - 상속
 class Warrior(Character):
     def __init__(self, name):
-        super().__init__(name, hp=200)  # 부모 생성자 호출
+        super().__init__(name, hp=200)
 
-    def attack(self):  # 메서드 오버라이딩
-        print(f"{self.name}: 강력한 일격!")
+    def attack(self):
+        robot.say(f"{self.name}: 강타!")
+        robot.spin()
 
 class Archer(Character):
     def __init__(self, name):
         super().__init__(name, hp=120)
 
     def attack(self):
-        print(f"{self.name}: 화살 발사!")
+        robot.say(f"{self.name}: 발사!")
+        robot.jump()
 
 w = Warrior("전사")
 a = Archer("궁수")
 
-print(w.species, w.name, w.hp)
-print(a.species, a.name, a.hp)
 w.attack()
+robot.clone()
 a.attack()
 
-Character.species = "영웅"  # 클래스 변수 변경
+Character.species = "영웅"
 print("전사 species:", w.species)
-print("궁수 species:", a.species)
-
-robot.say(f"{w.name} HP: {w.hp}")
-robot.clone()`,
+robot.say(f"모두 {w.species}!")
+robot.dance()`,
     practiceCode: `# 문제: Animal 클래스를 상속해서 Dog, Cat을 만드세요.
 # 조건:
 #   - Animal(name, sound): name, sound 속성 + speak() 메서드
@@ -1602,51 +1705,41 @@ robot.clone()`,
     explanation: "try/except로 오류를 잡아 프로그램이 멈추지 않게 합니다. else는 오류가 없을 때, finally는 항상 실행됩니다. raise로 직접 오류를 발생시킬 수도 있습니다.",
     exampleCode: `import robot
 
-# 기본 try/except
-try:
-    result = 10 / 0
-except ZeroDivisionError as e:
-    print("오류 발생:", e)
+robot.say("예외 처리 시작!")
 
-# 여러 오류 처리
+try:
+    result = 4 / 0
+except ZeroDivisionError as e:
+    print("오류:", e)
+    robot.emotion("sad")
+    robot.say(f"오류 발생! {e}")
+    robot.shake()
+
+robot.emotion("happy")
+robot.say("계속 실행됨!")
+robot.bounce(1)
+
 a = [1, 2, 3]
 try:
     print(a[10])
-    print(10 / 0)
 except IndexError as e:
     print("인덱스 오류:", e)
-except ZeroDivisionError as e:
-    print("0 나누기 오류:", e)
+    robot.emotion("surprised")
+    robot.say("인덱스 오류!")
+    robot.shake()
 
-# else, finally
 try:
     x = int("123")
+    robot.say(f"변환 성공: {x}!")
+    robot.bounce(2)
 except ValueError:
-    print("숫자가 아닙니다")
-else:
-    print("변환 성공:", x)
+    robot.say("변환 실패!")
 finally:
-    print("항상 실행됨")
+    print("finally 실행!")
+    robot.say("finally!")
 
-# 사용자 정의 예외
-class ScoreError(Exception):
-    def __str__(self):
-        return "점수는 0~100 사이여야 합니다"
-
-def check_score(s):
-    if not 0 <= s <= 100:
-        raise ScoreError()
-    return s
-
-try:
-    check_score(150)
-except ScoreError as e:
-    print(e)
-    robot.emotion("sad")
-
-check_score(85)
-robot.say("점수 정상!")
-robot.emotion("happy")`,
+robot.spin()
+robot.dance()`,
     practiceCode: `# 문제: try/except를 활용해서 안전한 나눗셈 함수를 만드세요.
 # 조건:
 #   - safe_divide(a, b): b가 0이면 ZeroDivisionError를 처리하고 None 반환
@@ -1690,36 +1783,34 @@ robot.emotion("happy")`,
     exampleCode: `import robot
 import math
 import random
-from datetime import date
 
-# filter - 조건에 맞는 것만 추출
 nums = [1, -3, 2, 0, -5, 6]
 positives = list(filter(lambda x: x > 0, nums))
-print("양수만:", positives)
+print("양수:", positives)
+robot.say(f"양수 {len(positives)}개!")
+robot.bounce(1)
 
-# map - 모든 요소에 함수 적용
-doubled = list(map(lambda x: x * 2, positives))
+doubled = list(map(lambda x: x*2, positives))
 print("2배:", doubled)
+robot.say(f"2배: {doubled}")
+robot.move(1)
 
-# zip - 두 리스트를 묶기
 names = ["민준", "서연", "지호"]
 scores = [88, 95, 72]
+robot.say("점수 발표!")
 for name, score in zip(names, scores):
-    print(f"{name}: {score}점")
+    print(f"{name}: {score}")
+    robot.say(f"{name}: {score}!")
+    robot.bounce(1)
 
-# math
-print("최대공약수:", math.gcd(60, 100, 80))
-print("π:", round(math.pi, 4))
+gcd = math.gcd(60, 100, 80)
+print("최대공약수:", gcd)
+robot.say(f"gcd={gcd}")
 
-# random
-print("로또:", sorted(random.sample(range(1, 46), 6)))
-
-# date
-d1 = date(2025, 3, 1)
-d2 = date(2025, 6, 25)
-print("D-day:", (d2 - d1).days, "일")
-
-robot.say("라이브러리 활용 완료!")
+lotto = sorted(random.sample(range(1, 46), 6))
+print("로또:", lotto)
+robot.say(f"로또: {lotto[0]},{lotto[1]},{lotto[2]}...")
+robot.spin()
 robot.dance()`,
     practiceCode: `# 문제: filter, map, zip을 활용하세요.
 # 조건:
@@ -1771,6 +1862,7 @@ export const BADGE_METADATA_LV2 = [
 ];
 
 export const UNIT_GROUPS_LV1 = [
+  { label: "로봇 소개", emoji: "🤖", ids: [0] },
   { label: "자료형", emoji: "📦", ids: [1, 2, 7, 8, 9, 10] },
   { label: "연산자", emoji: "🔢", ids: [3, 4, 5, 6] },
   { label: "제어문", emoji: "🔀", ids: [11, 12, 13] },
