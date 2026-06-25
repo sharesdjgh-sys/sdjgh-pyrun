@@ -736,3 +736,886 @@ export const BADGE_METADATA = [
 ];
 
 export const TOTAL_CONCEPTS = BADGE_METADATA.length;
+
+export const CONCEPT_EXAMPLES_LV2: Record<number, { nameKo: string; nameEn: string; explanation: string; exampleCode: string; practiceCode: string }> = {
+  17: {
+    nameKo: "숫자형 심화",
+    nameEn: "number_advanced",
+    explanation: "int(정수), float(실수), complex(복소수) 타입과 type()으로 자료형을 확인합니다. 산술 연산자로 다양한 계산을 할 수 있어요.",
+    exampleCode: `import robot
+
+# 세 가지 숫자 자료형
+a = 5         # int (정수)
+b = 3.14      # float (실수)
+c = 2 + 3j    # complex (복소수)
+
+print("a:", a, "→ 자료형:", type(a))
+print("b:", b, "→ 자료형:", type(b))
+print("c:", c, "→ 자료형:", type(c))
+
+# 산술 연산
+print("5 + 3 =", a + 3)
+print("5 ** 2 =", a ** 2)  # 거듭제곱
+print("5 // 2 =", a // 2)  # 몫
+print("5 % 2 =", a % 2)    # 나머지
+
+robot.say(f"5의 제곱은 {a**2}!")
+robot.move(a % 3 + 1)`,
+    practiceCode: `# 문제: 세 수 a=10, b=3, c=2.5를 이용한 계산
+# 조건:
+#   - 각 변수의 자료형을 type()으로 출력하세요
+#   - a를 b로 나눈 몫(//), 나머지(%)를 출력하세요
+#   - a ** c (10의 2.5승)를 계산하고 출력하세요
+#   - 로봇이 a % b 값만큼 이동하게 하세요
+
+import robot
+
+a = 10
+b = 3
+c = 2.5
+
+print("a 자료형:", type(a))
+print("b 자료형:", type(b))
+print("c 자료형:", type(c))
+
+print("10 // 3 =", a // b)
+print("10 % 3 =", a % b)
+print("10 ** 2.5 =", a ** c)
+
+robot.move(a % b)
+robot.say(f"10 % 3 = {a % b}")`,
+  },
+  18: {
+    nameKo: "문자형 심화",
+    nameEn: "string_advanced",
+    explanation: "이스케이프 코드(\\n, \\t), 문자열 메서드(count, find, strip, replace, split, upper, lower)로 문자열을 자유롭게 다룹니다.",
+    exampleCode: `import robot
+
+# 이스케이프 코드
+print("첫째 줄\\n둘째 줄")      # \\n: 줄바꿈
+print("이름\\t나이")             # \\t: 탭
+
+a = "Python is the best choice"
+
+# 문자열 메서드
+print("find('b'):", a.find('b'))         # 처음 나오는 위치
+print("count('e'):", a.count('e'))       # 개수 세기
+print("upper:", a.upper())               # 대문자
+print("replace:", a.replace("Python", "파이썬"))  # 치환
+print("split:", a.split())               # 공백으로 나누기
+
+b = "   hello   "
+print("strip:", b.strip())               # 양쪽 공백 제거
+
+robot.say("문자열 마스터!")
+robot.emotion("happy")`,
+    practiceCode: `# 문제: 문자열 메서드를 활용해보세요.
+# 조건:
+#   - sentence = "life is too short, you need python"
+#   - 대문자로 변환해서 출력하세요
+#   - "python"을 "파이썬"으로 바꿔서 출력하세요
+#   - 공백으로 나눈 단어 수를 출력하세요 (hint: len(sentence.split()))
+#   - 로봇이 단어 수를 말하게 하세요
+
+import robot
+
+sentence = "life is too short, you need python"
+
+print("대문자:", sentence.upper())
+print("치환:", sentence.replace("python", "파이썬"))
+
+words = sentence.split()
+print("단어 수:", len(words))
+
+robot.say(f"단어가 {len(words)}개!")
+robot.emotion("happy")`,
+  },
+  19: {
+    nameKo: "리스트 심화",
+    nameEn: "list_advanced",
+    explanation: "append(추가), extend(연결), sort(정렬), reverse(뒤집기), insert(삽입), remove(삭제), pop(꺼내기) 메서드로 리스트를 자유롭게 조작합니다.",
+    exampleCode: `import robot
+
+a = [3, 1, 4, 1, 5, 9, 2, 6]
+print("원본:", a)
+
+a.append(7)          # 맨 뒤에 추가
+print("append(7):", a)
+
+a.sort()             # 오름차순 정렬
+print("sort:", a)
+
+a.reverse()          # 역순
+print("reverse:", a)
+
+a.insert(0, 100)     # 0번 위치에 100 삽입
+print("insert(0,100):", a)
+
+a.remove(1)          # 첫 번째 1 삭제
+print("remove(1):", a)
+
+popped = a.pop()     # 마지막 요소 꺼내기
+print("pop:", popped, "→ 남은 리스트:", a)
+
+robot.say(f"리스트 길이: {len(a)}")`,
+    practiceCode: `# 문제: 리스트 메서드를 사용해서 점수를 관리하세요.
+# 조건:
+#   - scores = [85, 92, 78, 95, 88] 로 시작하세요
+#   - 점수 70을 추가(append)하세요
+#   - 오름차순 정렬(sort)하세요
+#   - 첫 번째 요소를 꺼내고(pop(0)) 출력하세요
+#   - 최종 리스트와 최고점(max)을 출력하세요
+
+import robot
+
+scores = [85, 92, 78, 95, 88]
+
+scores.append(70)
+scores.sort()
+
+lowest = scores.pop(0)
+print("제거된 점수:", lowest)
+print("최종 점수:", scores)
+print("최고점:", max(scores))
+
+robot.say(f"최고점 {max(scores)}점!")
+robot.dance()`,
+  },
+  20: {
+    nameKo: "튜플",
+    nameEn: "tuple",
+    explanation: "튜플은 한 번 만들면 변경할 수 없는(불변) 리스트입니다. 괄호()로 만들고, 값을 바꾸려 하면 오류가 납니다.",
+    exampleCode: `import robot
+
+# 튜플 정의
+t1 = (1, 2, 3)
+t2 = ('a', 'b', 'c')
+t3 = (1,)          # 요소가 1개일 때는 쉼표 필요
+
+print("t1:", t1)
+print("t2:", t2)
+print("t3:", t3)
+print("t1[0]:", t1[0])     # 인덱싱
+print("t1+t2:", t1 + (4, 5))  # 튜플 더하기
+
+# 튜플 언패킹
+a, b, c = t1
+print("언패킹:", a, b, c)
+
+# 여러 값을 반환하는 함수는 튜플로 반환됨
+def min_max(lst):
+    return min(lst), max(lst)
+
+result = min_max([3, 1, 4, 1, 5, 9])
+print("최솟값, 최댓값:", result)
+
+robot.say(f"최댓값은 {result[1]}!")`,
+    practiceCode: `# 문제: 튜플을 활용하세요.
+# 조건:
+#   - coords = (3, 5) 로 x, y 좌표를 튜플로 저장하세요
+#   - 언패킹으로 x, y에 각각 저장하세요
+#   - x + y 값을 출력하세요
+#   - 두 수의 합과 곱을 동시에 반환하는 함수 calc(a, b)를 만드세요
+#   - calc(x, y) 결과를 출력하고 로봇이 합을 말하게 하세요
+
+import robot
+
+coords = (3, 5)
+x, y = coords
+
+print("x:", x, "y:", y)
+print("x + y:", x + y)
+
+def calc(a, b):
+    return a + b, a * b
+
+result = calc(x, y)
+print("합:", result[0], "곱:", result[1])
+
+robot.say(f"합은 {result[0]}!")
+robot.move(result[0] % 4 + 1)`,
+  },
+  21: {
+    nameKo: "딕셔너리",
+    nameEn: "dictionary",
+    explanation: "딕셔너리는 key:value 쌍으로 데이터를 저장합니다. 순서 없이 key로 빠르게 검색할 수 있어 API 데이터에 자주 사용됩니다.",
+    exampleCode: `import robot
+
+person = {'name': '홍길동', 'age': 17, 'score': 95}
+
+print("이름:", person['name'])
+print("나이:", person['age'])
+print("keys:", list(person.keys()))
+print("values:", list(person.values()))
+print("items:", list(person.items()))
+
+# 값 추가 및 수정
+person['grade'] = 1
+person['score'] = 98
+print("수정 후:", person)
+
+# get() - 없는 key도 안전하게 접근
+print("email:", person.get('email', '없음'))
+
+# in 으로 key 확인
+print("'name' in person:", 'name' in person)
+
+robot.say(f"{person['name']}의 점수: {person['score']}!")`,
+    practiceCode: `# 문제: 딕셔너리로 학생 성적표를 만드세요.
+# 조건:
+#   - 딕셔너리 student에 name, korean, math, english 키를 추가하세요
+#   - 세 과목의 평균을 계산해서 'avg' 키에 저장하세요
+#   - 모든 항목을 출력하세요
+#   - 로봇이 평균 점수를 말하게 하세요
+
+import robot
+
+student = {
+    'name': '김철수',
+    'korean': 88,
+    'math': 92,
+    'english': 85,
+}
+
+student['avg'] = (student['korean'] + student['math'] + student['english']) / 3
+
+for key, value in student.items():
+    print(f"{key}: {value}")
+
+robot.say(f"평균 {student['avg']:.1f}점!")
+robot.emotion("happy")`,
+  },
+  22: {
+    nameKo: "세트",
+    nameEn: "set",
+    explanation: "세트(집합)는 중복 없는 값들의 모음입니다. 교집합(&), 합집합(|), 차집합(-)으로 집합 연산을 할 수 있습니다.",
+    exampleCode: `import robot
+
+s1 = {1, 2, 3, 4, 5, 6}
+s2 = {4, 5, 6, 7, 8, 9}
+
+print("s1:", s1)
+print("s2:", s2)
+print("교집합:", s1 & s2)    # 공통 원소
+print("합집합:", s1 | s2)    # 모든 원소
+print("차집합:", s1 - s2)    # s1에만 있는 원소
+
+# 중복 제거에 활용
+numbers = [1, 2, 2, 3, 3, 3, 4]
+unique = set(numbers)
+print("중복 제거:", unique)
+
+# 메서드
+s = {1, 2, 3}
+s.add(4)
+print("add(4):", s)
+s.remove(2)
+print("remove(2):", s)
+
+robot.say(f"교집합: {s1 & s2}")`,
+    practiceCode: `# 문제: 세트로 반 학생 취미를 분석하세요.
+# 조건:
+#   - class_a = {"독서", "게임", "축구", "요리"}
+#   - class_b = {"게임", "음악", "축구", "그림"}
+#   - 두 반 공통 취미(교집합)를 출력하세요
+#   - 전체 취미 종류(합집합)를 출력하세요
+#   - A반에만 있는 취미(차집합)를 출력하세요
+#   - 로봇이 공통 취미 개수를 말하게 하세요
+
+import robot
+
+class_a = {"독서", "게임", "축구", "요리"}
+class_b = {"게임", "음악", "축구", "그림"}
+
+common = class_a & class_b
+total = class_a | class_b
+only_a = class_a - class_b
+
+print("공통 취미:", common)
+print("전체 취미:", total)
+print("A반만:", only_a)
+
+robot.say(f"공통 취미 {len(common)}개!")
+robot.dance()`,
+  },
+  23: {
+    nameKo: "변수와 복사",
+    nameEn: "variable_copy",
+    explanation: "변수는 객체의 주소를 가리킵니다. 리스트를 그냥 대입하면 주소를 공유해서 같이 변합니다. 독립적인 복사본을 만들려면 슬라이싱이나 copy()를 사용하세요.",
+    exampleCode: `import robot
+
+# 대입 - 같은 주소 공유
+a = [1, 2, 3]
+b = a              # b는 a와 같은 리스트를 가리킴
+b.append(4)
+print("a:", a)     # a도 변함!
+print("b:", b)
+print("같은 객체?", a is b)
+
+# 슬라이싱으로 복사 - 독립적인 새 리스트
+a = [1, 2, 3]
+c = a[:]           # 전체 슬라이싱 = 복사
+c.append(4)
+print("a:", a)     # a는 그대로
+print("c:", c)
+print("같은 객체?", a is c)
+
+# copy 모듈 사용
+from copy import copy
+d = copy(a)
+d.append(5)
+print("a:", a)
+print("d:", d)
+
+robot.say("복사 완료!")`,
+    practiceCode: `# 문제: 대입과 복사의 차이를 확인하세요.
+# 조건:
+#   - original = [10, 20, 30] 을 만드세요
+#   - shared = original 로 대입하고, shared에 40을 추가한 뒤 original도 출력하세요
+#   - copied = original[:] 로 복사하고, copied에 50을 추가한 뒤 original도 출력하세요
+#   - 두 경우가 어떻게 다른지 확인하세요
+
+import robot
+
+original = [10, 20, 30]
+
+# 대입
+shared = original
+shared.append(40)
+print("대입 후 original:", original)  # 같이 변함
+
+# 복사
+original = [10, 20, 30]  # 초기화
+copied = original[:]
+copied.append(50)
+print("복사 후 original:", original)  # 변하지 않음
+print("복사본:", copied)
+
+robot.say("대입 vs 복사 차이 확인!")`,
+  },
+  24: {
+    nameKo: "조건문 심화",
+    nameEn: "conditional_advanced",
+    explanation: "in/not in으로 포함 여부를 확인하고, pass로 빈 블록을 만들고, 조건부 표현식(삼항 연산)으로 한 줄로 조건을 처리합니다.",
+    exampleCode: `import robot
+
+pocket = ['paper', 'handphone', 'money']
+
+# in / not in 으로 포함 여부 확인
+if 'money' in pocket:
+    print("돈이 있다!")
+    robot.emotion("happy")
+else:
+    print("돈이 없다!")
+    robot.emotion("sad")
+
+# 여러 조건 조합
+card = True
+if 'money' in pocket or card:
+    print("교통수단 이용 가능")
+    robot.move(2)
+
+# pass - 빈 블록
+if 'ticket' in pocket:
+    pass  # 나중에 처리할 것
+else:
+    print("티켓이 없어요")
+
+# 조건부 표현식 (삼항 연산)
+score = 85
+grade = "합격" if score >= 60 else "불합격"
+print(f"점수 {score}: {grade}")
+robot.say(grade)`,
+    practiceCode: `# 문제: in/not in과 조건부 표현식을 활용하세요.
+# 조건:
+#   - fruits = ["사과", "바나나", "포도", "딸기"]
+#   - "망고"가 fruits에 있는지 확인하고 결과를 출력하세요
+#   - "바나나"가 있으면 "있어요!", 없으면 "없어요!"를 조건부 표현식으로 출력하세요
+#   - temperature = 25 가 15 이상 30 미만이면 "쾌적", 아니면 "불쾌"를 출력하세요
+#   - 로봇이 쾌적 여부를 말하게 하세요
+
+import robot
+
+fruits = ["사과", "바나나", "포도", "딸기"]
+
+print("망고 있나?", "망고" in fruits)
+result = "있어요!" if "바나나" in fruits else "없어요!"
+print("바나나:", result)
+
+temperature = 25
+comfort = "쾌적" if 15 <= temperature < 30 else "불쾌"
+print(f"{temperature}도: {comfort}")
+
+robot.say(comfort)
+if comfort == "쾌적":
+    robot.emotion("happy")
+else:
+    robot.emotion("sad")`,
+  },
+  25: {
+    nameKo: "for 반복문 심화",
+    nameEn: "for_advanced",
+    explanation: "중첩 for문으로 2차원 반복을, continue로 특정 값을 건너뛰고, 리스트 내포(list comprehension)로 반복을 한 줄로 표현합니다.",
+    exampleCode: `import robot
+
+# continue - 특정 값 건너뛰기
+print("홀수만 출력:")
+for i in range(1, 11):
+    if i % 2 == 0:
+        continue
+    print(i, end=" ")
+print()
+
+# 중첩 for - 구구단 일부
+print("2단~3단:")
+for i in range(2, 4):
+    for j in range(1, 6):
+        print(f"{i}×{j}={i*j}", end="  ")
+    print()
+
+# 리스트 내포 (list comprehension)
+numbers = [1, 2, 3, 4, 5]
+squares = [n ** 2 for n in numbers]
+print("제곱:", squares)
+
+evens = [n for n in range(1, 11) if n % 2 == 0]
+print("짝수:", evens)
+
+robot.say(f"짝수 개수: {len(evens)}")
+robot.dance()`,
+    practiceCode: `# 문제: 리스트 내포와 중첩 for문을 사용하세요.
+# 조건:
+#   - 1~20 중 3의 배수를 리스트 내포로 만들어 출력하세요
+#   - 위 리스트의 각 요소를 2배 한 새 리스트를 만드세요
+#   - for문으로 i=1~3, j=1~3인 (i, j) 쌍을 모두 출력하세요
+#   - 로봇이 3의 배수 개수를 말하게 하세요
+
+import robot
+
+multiples_of_3 = [n for n in range(1, 21) if n % 3 == 0]
+print("3의 배수:", multiples_of_3)
+
+doubled = [n * 2 for n in multiples_of_3]
+print("2배:", doubled)
+
+for i in range(1, 4):
+    for j in range(1, 4):
+        print(f"({i},{j})", end=" ")
+    print()
+
+robot.say(f"3의 배수 {len(multiples_of_3)}개!")
+robot.dance()`,
+  },
+  26: {
+    nameKo: "while 반복문 심화",
+    nameEn: "while_advanced",
+    explanation: "break로 반복문을 즉시 탈출하고, continue로 현재 회차를 건너뜁니다. while True 패턴으로 조건 기반 반복을 제어합니다.",
+    exampleCode: `import robot
+
+# break - 특정 조건에서 즉시 탈출
+coffee = 5
+count = 0
+while True:
+    count += 1
+    coffee -= 1
+    print(f"{count}번째 커피 제공. 남은 커피: {coffee}개")
+    if coffee == 0:
+        print("커피 소진!")
+        break
+
+# continue - 특정 조건 건너뛰기
+print("\\n홀수만:")
+n = 0
+while n < 10:
+    n += 1
+    if n % 2 == 0:
+        continue
+    print(n, end=" ")
+print()
+
+# 1부터 더해서 100 넘는 순간 출력
+total = 0
+num = 1
+while total <= 100:
+    total += num
+    num += 1
+print(f"\\n합계가 100을 처음 넘은 값: {total} (num={num-1})")
+
+robot.say(f"합계 {total}!")
+robot.dance()`,
+    practiceCode: `# 문제: break와 continue를 활용하세요.
+# 조건:
+#   - 1부터 시작해서 5의 배수가 나오면 break로 멈추세요
+#   - break 전까지의 숫자와 합을 출력하세요
+#   - 1~20에서 3의 배수는 continue로 건너뛰고 나머지를 출력하세요
+
+import robot
+
+# break 문제
+i = 0
+total = 0
+while True:
+    i += 1
+    if i % 5 == 0:
+        print(f"5의 배수 {i} 발견! 중단")
+        break
+    total += i
+    print(i, end=" ")
+print(f"\\nbreak 전 합계: {total}")
+
+# continue 문제
+print("\\n3의 배수 제외:")
+n = 0
+while n < 20:
+    n += 1
+    if n % 3 == 0:
+        continue
+    print(n, end=" ")
+print()
+
+robot.say(f"합계: {total}")`,
+  },
+  27: {
+    nameKo: "함수 심화",
+    nameEn: "function_advanced",
+    explanation: "*args로 개수가 변하는 인수를, **kwargs로 키워드 인수를 받습니다. lambda는 간단한 함수를 한 줄로 쓰는 방법이고, global로 함수 안에서 전역 변수를 수정합니다.",
+    exampleCode: `import robot
+
+# *args - 여러 인수를 튜플로 받기
+def add_many(*args):
+    return sum(args)
+
+print("합:", add_many(1, 2, 3))
+print("합:", add_many(1, 2, 3, 4, 5))
+
+# **kwargs - 키워드 인수를 딕셔너리로 받기
+def print_info(**kwargs):
+    for k, v in kwargs.items():
+        print(f"  {k}: {v}")
+
+print_info(name="홍길동", age=17, score=95)
+
+# lambda - 한 줄 함수
+square = lambda x: x ** 2
+print("3의 제곱:", square(3))
+
+nums = [3, 1, 4, 1, 5, 9]
+print("최댓값:", max(nums, key=lambda x: x))
+print("정렬:", sorted(nums, key=lambda x: -x))
+
+# global
+score = 0
+def score_up():
+    global score
+    score += 10
+
+score_up()
+score_up()
+print("점수:", score)
+
+robot.say(f"점수: {score}점!")`,
+    practiceCode: `# 문제: *args, lambda, global을 활용하세요.
+# 조건:
+#   - average(*args): 인수들의 평균을 반환하는 함수를 만드세요
+#   - average(80, 90, 85, 95)를 호출하고 출력하세요
+#   - lambda로 두 수 중 큰 값을 반환하는 함수 bigger를 만드세요
+#   - bigger(7, 3)을 호출하고 출력하세요
+#   - 전역 변수 level = 1을 만들고 level_up() 함수로 1씩 증가시키세요
+
+import robot
+
+def average(*args):
+    return sum(args) / len(args)
+
+print("평균:", average(80, 90, 85, 95))
+
+bigger = lambda a, b: a if a > b else b
+print("큰 수:", bigger(7, 3))
+
+level = 1
+def level_up():
+    global level
+    level += 1
+
+level_up()
+level_up()
+level_up()
+print("레벨:", level)
+
+robot.say(f"레벨 {level}!")
+robot.size(level * 0.3)`,
+  },
+  28: {
+    nameKo: "클래스 심화",
+    nameEn: "class_advanced",
+    explanation: "상속으로 기존 클래스를 확장하고, 메서드 오버라이딩으로 부모 기능을 재정의합니다. 클래스 변수는 모든 인스턴스가 공유합니다.",
+    exampleCode: `import robot
+
+# 부모 클래스
+class Character:
+    species = "인간"  # 클래스 변수 (모든 인스턴스 공유)
+
+    def __init__(self, name, hp):
+        self.name = name
+        self.hp = hp
+
+    def attack(self):
+        print(f"{self.name}: 공격!")
+
+# 자식 클래스 - 상속
+class Warrior(Character):
+    def __init__(self, name):
+        super().__init__(name, hp=200)  # 부모 생성자 호출
+
+    def attack(self):  # 메서드 오버라이딩
+        print(f"{self.name}: 강력한 일격!")
+
+class Archer(Character):
+    def __init__(self, name):
+        super().__init__(name, hp=120)
+
+    def attack(self):
+        print(f"{self.name}: 화살 발사!")
+
+w = Warrior("전사")
+a = Archer("궁수")
+
+print(w.species, w.name, w.hp)
+print(a.species, a.name, a.hp)
+w.attack()
+a.attack()
+
+Character.species = "영웅"  # 클래스 변수 변경
+print("전사 species:", w.species)
+print("궁수 species:", a.species)
+
+robot.say(f"{w.name} HP: {w.hp}")
+robot.clone()`,
+    practiceCode: `# 문제: Animal 클래스를 상속해서 Dog, Cat을 만드세요.
+# 조건:
+#   - Animal(name, sound): name, sound 속성 + speak() 메서드
+#   - speak()는 "이름: 소리~" 형태로 출력
+#   - Dog는 Animal 상속, speak()를 오버라이딩해서 "멍멍!"으로 끝나게
+#   - Cat은 Animal 상속, speak()를 오버라이딩해서 "야옹!"으로 끝나게
+#   - Dog("바둑이"), Cat("나비") 인스턴스 생성 후 speak() 호출
+
+import robot
+
+class Animal:
+    def __init__(self, name, sound):
+        self.name = name
+        self.sound = sound
+
+    def speak(self):
+        print(f"{self.name}: {self.sound}~")
+
+class Dog(Animal):
+    def __init__(self, name):
+        super().__init__(name, "멍")
+
+    def speak(self):
+        print(f"{self.name}: 멍멍!")
+
+class Cat(Animal):
+    def __init__(self, name):
+        super().__init__(name, "야옹")
+
+    def speak(self):
+        print(f"{self.name}: 야옹!")
+
+dog = Dog("바둑이")
+cat = Cat("나비")
+
+dog.speak()
+cat.speak()
+
+robot.say(f"{dog.name}와 {cat.name}!")
+robot.clone()`,
+  },
+  29: {
+    nameKo: "예외 처리",
+    nameEn: "exception_handling",
+    explanation: "try/except로 오류를 잡아 프로그램이 멈추지 않게 합니다. else는 오류가 없을 때, finally는 항상 실행됩니다. raise로 직접 오류를 발생시킬 수도 있습니다.",
+    exampleCode: `import robot
+
+# 기본 try/except
+try:
+    result = 10 / 0
+except ZeroDivisionError as e:
+    print("오류 발생:", e)
+
+# 여러 오류 처리
+a = [1, 2, 3]
+try:
+    print(a[10])
+    print(10 / 0)
+except IndexError as e:
+    print("인덱스 오류:", e)
+except ZeroDivisionError as e:
+    print("0 나누기 오류:", e)
+
+# else, finally
+try:
+    x = int("123")
+except ValueError:
+    print("숫자가 아닙니다")
+else:
+    print("변환 성공:", x)
+finally:
+    print("항상 실행됨")
+
+# 사용자 정의 예외
+class ScoreError(Exception):
+    def __str__(self):
+        return "점수는 0~100 사이여야 합니다"
+
+def check_score(s):
+    if not 0 <= s <= 100:
+        raise ScoreError()
+    return s
+
+try:
+    check_score(150)
+except ScoreError as e:
+    print(e)
+    robot.emotion("sad")
+
+check_score(85)
+robot.say("점수 정상!")
+robot.emotion("happy")`,
+    practiceCode: `# 문제: try/except를 활용해서 안전한 나눗셈 함수를 만드세요.
+# 조건:
+#   - safe_divide(a, b): b가 0이면 ZeroDivisionError를 처리하고 None 반환
+#   - safe_divide(10, 2)와 safe_divide(10, 0) 각각 호출
+#   - 리스트 items = [1, 2, 3]에서 items[5]를 IndexError로 처리
+#   - try/else/finally 구조를 모두 사용하세요
+
+import robot
+
+def safe_divide(a, b):
+    try:
+        result = a / b
+    except ZeroDivisionError:
+        print(f"{a} / {b}: 0으로 나눌 수 없음")
+        return None
+    else:
+        print(f"{a} / {b} = {result}")
+        return result
+    finally:
+        print("safe_divide 실행 완료")
+
+safe_divide(10, 2)
+print()
+safe_divide(10, 0)
+
+print()
+items = [1, 2, 3]
+try:
+    print(items[5])
+except IndexError as e:
+    print("인덱스 오류:", e)
+    robot.emotion("sad")
+
+robot.say("예외 처리 완료!")
+robot.emotion("happy")`,
+  },
+  30: {
+    nameKo: "내장 함수와 표준 라이브러리",
+    nameEn: "builtin_library",
+    explanation: "filter(), map(), zip() 같은 내장 함수와 lambda를 조합하면 강력한 데이터 처리가 가능합니다. datetime, math 등 표준 라이브러리도 활용해봐요.",
+    exampleCode: `import robot
+import math
+import random
+from datetime import date
+
+# filter - 조건에 맞는 것만 추출
+nums = [1, -3, 2, 0, -5, 6]
+positives = list(filter(lambda x: x > 0, nums))
+print("양수만:", positives)
+
+# map - 모든 요소에 함수 적용
+doubled = list(map(lambda x: x * 2, positives))
+print("2배:", doubled)
+
+# zip - 두 리스트를 묶기
+names = ["민준", "서연", "지호"]
+scores = [88, 95, 72]
+for name, score in zip(names, scores):
+    print(f"{name}: {score}점")
+
+# math
+print("최대공약수:", math.gcd(60, 100, 80))
+print("π:", round(math.pi, 4))
+
+# random
+print("로또:", sorted(random.sample(range(1, 46), 6)))
+
+# date
+d1 = date(2025, 3, 1)
+d2 = date(2025, 6, 25)
+print("D-day:", (d2 - d1).days, "일")
+
+robot.say("라이브러리 활용 완료!")
+robot.dance()`,
+    practiceCode: `# 문제: filter, map, zip을 활용하세요.
+# 조건:
+#   - scores = [45, 82, 67, 91, 38, 76, 88]
+#   - filter로 60점 이상만 추출하세요
+#   - map으로 합격자 점수에 +3 보너스를 추가하세요
+#   - names = ["가", "나", "다", "라", "마", "바", "사"]와 zip으로 묶어 출력하세요
+#   - math.gcd(48, 18)을 계산하고 로봇이 말하게 하세요
+
+import robot
+import math
+
+scores = [45, 82, 67, 91, 38, 76, 88]
+names = ["가", "나", "다", "라", "마", "바", "사"]
+
+passing = list(filter(lambda x: x >= 60, scores))
+print("합격자 점수:", passing)
+
+bonused = list(map(lambda x: x + 3, passing))
+print("보너스 적용:", bonused)
+
+for name, score in zip(names, scores):
+    status = "합격" if score >= 60 else "불합격"
+    print(f"{name}: {score}점 → {status}")
+
+gcd = math.gcd(48, 18)
+print("최대공약수:", gcd)
+
+robot.say(f"최대공약수는 {gcd}!")
+robot.dance()`,
+  },
+};
+
+export const BADGE_METADATA_LV2 = [
+  { conceptId: 17, nameKo: "숫자형 마스터", iconName: "Binary", colorClass: "text-blue-600" },
+  { conceptId: 18, nameKo: "문자형 마스터", iconName: "FileText", colorClass: "text-purple-600" },
+  { conceptId: 19, nameKo: "리스트 마스터", iconName: "ListChecks", colorClass: "text-green-600" },
+  { conceptId: 20, nameKo: "튜플 마스터", iconName: "Parentheses", colorClass: "text-orange-600" },
+  { conceptId: 21, nameKo: "딕셔너리 마스터", iconName: "BookOpen", colorClass: "text-red-600" },
+  { conceptId: 22, nameKo: "세트 마스터", iconName: "Layers", colorClass: "text-teal-600" },
+  { conceptId: 23, nameKo: "변수복사 마스터", iconName: "Copy", colorClass: "text-indigo-600" },
+  { conceptId: 24, nameKo: "조건문 마스터", iconName: "GitBranch", colorClass: "text-pink-600" },
+  { conceptId: 25, nameKo: "for심화 마스터", iconName: "Repeat", colorClass: "text-emerald-600" },
+  { conceptId: 26, nameKo: "while심화 마스터", iconName: "RefreshCcw", colorClass: "text-lime-600" },
+  { conceptId: 27, nameKo: "함수심화 마스터", iconName: "Braces", colorClass: "text-violet-600" },
+  { conceptId: 28, nameKo: "클래스심화 마스터", iconName: "Network", colorClass: "text-amber-600" },
+  { conceptId: 29, nameKo: "예외처리 마스터", iconName: "ShieldAlert", colorClass: "text-red-700" },
+  { conceptId: 30, nameKo: "라이브러리 마스터", iconName: "Library", colorClass: "text-sky-600" },
+];
+
+export const UNIT_GROUPS_LV1 = [
+  { label: "자료형", emoji: "📦", ids: [1, 2, 7, 8, 9, 10] },
+  { label: "연산자", emoji: "🔢", ids: [3, 4, 5, 6] },
+  { label: "제어문", emoji: "🔀", ids: [11, 12, 13] },
+  { label: "함수/클래스", emoji: "⚙️", ids: [14, 15, 16] },
+];
+
+export const UNIT_GROUPS_LV2 = [
+  { label: "자료형(심화)", emoji: "📦", ids: [17, 18, 19, 20, 21, 22, 23] },
+  { label: "제어문(심화)", emoji: "🔀", ids: [24, 25, 26] },
+  { label: "함수/클래스(심화)", emoji: "⚙️", ids: [27, 28] },
+  { label: "예외처리/라이브러리", emoji: "🛡️", ids: [29, 30] },
+];

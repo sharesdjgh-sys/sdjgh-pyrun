@@ -11,6 +11,7 @@ export async function register() {
     // concepts 테이블에 커리큘럼 컬럼 추가 (없을 때만)
     await sql`ALTER TABLE concepts ADD COLUMN IF NOT EXISTS example_code text`;
     await sql`ALTER TABLE concepts ADD COLUMN IF NOT EXISTS practice_code text`;
+    await sql`ALTER TABLE concepts ADD COLUMN IF NOT EXISTS level integer NOT NULL DEFAULT 1`;
 
     console.log("[DB] 스키마 동기화 완료");
   } catch (e) {

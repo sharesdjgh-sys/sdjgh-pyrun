@@ -10,7 +10,7 @@ import RobotApiTooltip from "@/components/robot/RobotApiTooltip";
 import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
-import { BADGE_METADATA } from "@/lib/curriculum";
+import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2 } from "@/lib/curriculum";
 import type { CurriculumItem } from "@/lib/curriculum";
 
 const CodeEditor = dynamic(() => import("@/components/editor/CodeEditor"), { ssr: false });
@@ -23,13 +23,6 @@ robot.move(2)
 robot.draw("star")
 robot.dance()
 `;
-
-const UNIT_GROUPS = [
-  { label: "자료형", emoji: "📦", ids: [1, 2, 7, 8, 9, 10] },
-  { label: "연산자", emoji: "🔢", ids: [3, 4, 5, 6] },
-  { label: "제어문", emoji: "🔀", ids: [11, 12, 13] },
-  { label: "함수/클래스", emoji: "⚙️", ids: [14, 15, 16] },
-];
 
 interface LearnClientProps {
   userName: string;
@@ -50,6 +43,11 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const [showOutput, setShowOutput] = useState(false);
   const [fontSize, setFontSize] = useState(9);
   const fontSizeStr = `${fontSize}pt`;
+
+  const [level, setLevel] = useState<1 | 2>(1);
+
+  const currentBadges = level === 1 ? BADGE_METADATA : BADGE_METADATA_LV2;
+  const currentUnitGroups = level === 1 ? UNIT_GROUPS_LV1 : UNIT_GROUPS_LV2;
 
   const [characterType, setCharacterType] = useState<"robot" | "dog" | "game">("robot");
   const [isError, setIsError] = useState(false);
@@ -86,6 +84,14 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const firstId = level === 1 ? 1 : 17;
+    setSelectedConceptId(firstId);
+    const example = curriculum[firstId];
+    if (example?.exampleCode) setCode(example.exampleCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level]);
 
   const handleRun = useCallback(async () => {
     if (runningRef.current || pyLoading) return;
@@ -262,8 +268,32 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
           >
             단원 목록
           </div>
+          {/* Level toggle */}
+          <div style={{ display: "flex", gap: 4, padding: "8px 8px 4px" }}>
+            {([1, 2] as const).map((lv) => (
+              <button
+                key={lv}
+                onClick={() => setLevel(lv)}
+                style={{
+                  flex: 1,
+                  padding: "5px 0",
+                  border: "none",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  background: level === lv ? "linear-gradient(135deg,#9B7FFF,#7B5CF0)" : "#F3EFFE",
+                  color: level === lv ? "#fff" : "#9B7FFF",
+                  transition: "all .13s",
+                }}
+              >
+                Lv.{lv}
+              </button>
+            ))}
+          </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 12px" }}>
-            {UNIT_GROUPS.map((group) => (
+            {currentUnitGroups.map((group) => (
               <div key={group.label} style={{ marginBottom: 6 }}>
                 <div
                   style={{
@@ -278,7 +308,8 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                   {group.emoji} {group.label}
                 </div>
                 {group.ids.map((id) => {
-                  const badge = BADGE_METADATA[id - 1];
+                  const badge = currentBadges.find(b => b.conceptId === id);
+                  if (!badge) return null;
                   const name = badge.nameKo.replace(" 마스터", "");
                   const selected = id === selectedConceptId;
                   return (

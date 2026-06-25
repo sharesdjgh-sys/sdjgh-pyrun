@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2 } from "@/lib/curriculum";
 
 interface Concept {
   id: number;
@@ -10,6 +11,7 @@ interface Concept {
   description: string | null;
   exampleCode: string | null;
   practiceCode: string | null;
+  level: number;
 }
 
 interface AdminClientProps {
@@ -36,6 +38,7 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [levelFilter, setLevelFilter] = useState<1 | 2>(1);
 
   function handleSelectConcept(concept: Concept) {
     setSelectedId(concept.id);
@@ -88,13 +91,7 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
   }
 
   const selectedConcept = concepts.find((c) => c.id === selectedId);
-
-  const UNIT_GROUPS = [
-    { label: "자료형", emoji: "📦", ids: [1, 2, 7, 8, 9, 10] },
-    { label: "연산자", emoji: "🔢", ids: [3, 4, 5, 6] },
-    { label: "제어문", emoji: "🔀", ids: [11, 12, 13] },
-    { label: "함수/클래스", emoji: "⚙️", ids: [14, 15, 16] },
-  ];
+  const filteredGroups = levelFilter === 1 ? UNIT_GROUPS_LV1 : UNIT_GROUPS_LV2;
 
   return (
     <div
@@ -193,8 +190,32 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
           >
             개념 목록
           </div>
+          {/* Level toggle */}
+          <div style={{ display: "flex", gap: 4, padding: "8px 8px 4px" }}>
+            {([1, 2] as const).map((lv) => (
+              <button
+                key={lv}
+                onClick={() => setLevelFilter(lv)}
+                style={{
+                  flex: 1,
+                  padding: "5px 0",
+                  border: "none",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  background: levelFilter === lv ? "linear-gradient(135deg,#9B7FFF,#7B5CF0)" : "#F3EFFE",
+                  color: levelFilter === lv ? "#fff" : "#9B7FFF",
+                  transition: "all .13s",
+                }}
+              >
+                Lv.{lv}
+              </button>
+            ))}
+          </div>
           <div style={{ padding: "8px 8px 12px" }}>
-            {UNIT_GROUPS.map((group) => (
+            {filteredGroups.map((group) => (
               <div key={group.label} style={{ marginBottom: 6 }}>
                 <div
                   style={{
