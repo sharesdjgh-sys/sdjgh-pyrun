@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 
 export default function Header() {
@@ -20,19 +21,15 @@ export default function Header() {
       }}
     >
       {/* Logo */}
-      <Link href="/learn" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none" }}>
-        <div style={{ width: 40, height: 40, borderRadius: 13, background: "linear-gradient(140deg,#8B6CFF,#7B5CF0)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 14px rgba(123,92,240,.35)" }}>
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="10" rx="3" />
-            <circle cx="12" cy="5" r="2" />
-            <path d="M12 7v4" />
-            <line x1="8" y1="16" x2="8" y2="16" />
-            <line x1="16" y1="16" x2="16" y2="16" />
-          </svg>
-        </div>
-        <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, letterSpacing: -0.3, color: "#2C2747", whiteSpace: "nowrap" }}>
-          파이썬 학습 놀이터
-        </div>
+      <Link href="/learn" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+        <Image
+          src="/pyrun_studio-logo.png"
+          alt="PyRun Studio"
+          width={160}
+          height={44}
+          style={{ objectFit: "contain" }}
+          priority
+        />
       </Link>
 
       {/* Right side */}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import RobotCharacter from "@/components/robot/RobotCharacter";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,15 +45,17 @@ export default function LoginPage() {
 
       <div style={{ position: "relative", width: "100%", maxWidth: 400 }}>
         {/* Logo area */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginBottom: 22 }}>
-          <RobotCharacter state="idle" size={100} />
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 26, color: "#2C2747", letterSpacing: -0.5, whiteSpace: "nowrap" }}>
-              파이썬 학습 놀이터
-            </div>
-            <div style={{ fontSize: 13.5, color: "#8B83A8", marginTop: 2, whiteSpace: "nowrap" }}>
-              코드를 실행하면 로봇 친구가 반응해요
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 22 }}>
+          <Image
+            src="/pyrun_studio-1대1-logo.png"
+            alt="PyRun Studio"
+            width={160}
+            height={160}
+            style={{ objectFit: "contain" }}
+            priority
+          />
+          <div style={{ fontSize: 13.5, color: "#8B83A8", marginTop: 6 }}>
+            코딩하면 캐릭터가 반응하는 실습형 파이썬
           </div>
         </div>
 
