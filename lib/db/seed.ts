@@ -12,9 +12,18 @@ async function seed() {
       nameEn: example.nameEn,
       orderIndex: badge.conceptId,
       description: example.explanation,
+      exampleCode: example.exampleCode,
+      practiceCode: example.practiceCode,
     }).onConflictDoUpdate({
       target: concepts.id,
-      set: { nameKo: example.nameKo, nameEn: example.nameEn, orderIndex: badge.conceptId, description: example.explanation },
+      set: {
+        nameKo: example.nameKo,
+        nameEn: example.nameEn,
+        orderIndex: badge.conceptId,
+        description: example.explanation,
+        exampleCode: example.exampleCode,
+        practiceCode: example.practiceCode,
+      },
     });
   }
 

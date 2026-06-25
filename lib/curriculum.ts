@@ -6,6 +6,14 @@ export interface ConceptExample {
   practiceCode: string;
 }
 
+export type CurriculumItem = {
+  nameKo: string;
+  nameEn: string;
+  explanation: string;
+  exampleCode: string;
+  practiceCode: string;
+};
+
 export const CONCEPT_EXAMPLES: Record<number, ConceptExample> = {
   1: {
     nameKo: "출력",

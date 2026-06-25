@@ -24,6 +24,8 @@ export const concepts = pgTable("concepts", {
   nameEn: varchar("name_en", { length: 50 }).notNull(),
   orderIndex: integer("order_index").notNull(),
   description: text("description"),
+  exampleCode: text("example_code"),
+  practiceCode: text("practice_code"),
 });
 
 export const badges = pgTable("badges", {

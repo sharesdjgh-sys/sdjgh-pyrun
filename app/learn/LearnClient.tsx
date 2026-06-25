@@ -10,7 +10,8 @@ import RobotApiTooltip from "@/components/robot/RobotApiTooltip";
 import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
-import { BADGE_METADATA, CONCEPT_EXAMPLES } from "@/lib/curriculum";
+import { BADGE_METADATA } from "@/lib/curriculum";
+import type { CurriculumItem } from "@/lib/curriculum";
 
 const CodeEditor = dynamic(() => import("@/components/editor/CodeEditor"), { ssr: false });
 
@@ -32,9 +33,10 @@ const UNIT_GROUPS = [
 
 interface LearnClientProps {
   userName: string;
+  curriculum: Record<number, CurriculumItem>;
 }
 
-export default function LearnClient({ userName }: LearnClientProps) {
+export default function LearnClient({ userName, curriculum }: LearnClientProps) {
   const [code, setCode] = useState(INITIAL_CODE);
   const [output, setOutput] = useState("");
   const [execError, setExecError] = useState("");
@@ -182,14 +184,14 @@ export default function LearnClient({ userName }: LearnClientProps) {
   }, [pendingFeedback, showSpeechBubble]);
 
   const handleLoadExample = useCallback(() => {
-    const example = CONCEPT_EXAMPLES[selectedConceptId];
+    const example = curriculum[selectedConceptId];
     if (example) setCode(example.exampleCode);
-  }, [selectedConceptId]);
+  }, [selectedConceptId, curriculum]);
 
   const handleLoadPractice = useCallback(() => {
-    const example = CONCEPT_EXAMPLES[selectedConceptId];
+    const example = curriculum[selectedConceptId];
     if (example?.practiceCode) setCode(example.practiceCode);
-  }, [selectedConceptId]);
+  }, [selectedConceptId, curriculum]);
 
   const handleReset = useCallback(() => {
     setCode(INITIAL_CODE);
@@ -204,7 +206,7 @@ export default function LearnClient({ userName }: LearnClientProps) {
     setShowOutput(false);
   }, []);
 
-  const currentConcept = CONCEPT_EXAMPLES[selectedConceptId];
+  const currentConcept = curriculum[selectedConceptId];
 
   return (
     <div
