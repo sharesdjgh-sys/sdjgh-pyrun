@@ -48,6 +48,8 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const [selectedConceptId, setSelectedConceptId] = useState(1);
   const [conceptExpanded, setConceptExpanded] = useState(true);
   const [showOutput, setShowOutput] = useState(false);
+  const [fontSize, setFontSize] = useState(9);
+  const fontSizeStr = `${fontSize}pt`;
 
   const [characterType, setCharacterType] = useState<"robot" | "dog" | "game">("robot");
   const [isError, setIsError] = useState(false);
@@ -436,14 +438,28 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
               >
                 main.py
               </span>
-              <div style={{ marginLeft: "auto" }}>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                {/* Font size controls */}
+                <div style={{ display: "flex", alignItems: "center", gap: 3, background: "#F4F0FE", borderRadius: 8, padding: "2px 4px" }}>
+                  <button
+                    onClick={() => setFontSize(s => Math.max(7, s - 1))}
+                    title="글자 크기 줄이기"
+                    style={{ width: 22, height: 22, border: "none", background: "transparent", cursor: "pointer", color: "#7B5CF0", fontWeight: 700, fontSize: 14, lineHeight: 1, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >−</button>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#7B5CF0", minWidth: 28, textAlign: "center" }}>{fontSize}pt</span>
+                  <button
+                    onClick={() => setFontSize(s => Math.min(16, s + 1))}
+                    title="글자 크기 키우기"
+                    style={{ width: 22, height: 22, border: "none", background: "transparent", cursor: "pointer", color: "#7B5CF0", fontWeight: 700, fontSize: 14, lineHeight: 1, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >+</button>
+                </div>
                 <RobotApiTooltip />
               </div>
             </div>
 
             {/* Code editor */}
             <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-              <CodeEditor value={code} onChange={setCode} />
+              <CodeEditor value={code} onChange={setCode} fontSize={fontSizeStr} />
             </div>
 
             {/* Action buttons */}

@@ -3,14 +3,13 @@
 import { useEffect, useRef } from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { python } from "@codemirror/lang-python";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Compartment } from "@codemirror/state";
 
-const lightTheme = EditorView.theme({
+const baseTheme = EditorView.theme({
   "&": { height: "100%", backgroundColor: "#FCFBFF" },
   ".cm-scroller": {
     overflow: "auto",
     fontFamily: "Consolas, 'JetBrains Mono', monospace",
-    fontSize: "9pt",
     lineHeight: "1.5",
   },
   ".cm-content": { padding: "12px 0" },
@@ -25,16 +24,24 @@ const lightTheme = EditorView.theme({
   ".cm-focused .cm-selectionBackground": { backgroundColor: "#DDD0FA !important" },
 });
 
+function fontSizeTheme(size: string) {
+  return EditorView.theme({
+    ".cm-scroller": { fontSize: size },
+  });
+}
+
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   readOnly?: boolean;
+  fontSize?: string;
 }
 
-export default function CodeEditor({ value, onChange, readOnly = false }: CodeEditorProps) {
+export default function CodeEditor({ value, onChange, readOnly = false, fontSize = "9pt" }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const fontCompartment = useRef(new Compartment());
   onChangeRef.current = onChange;
 
   useEffect(() => {
@@ -44,7 +51,8 @@ export default function CodeEditor({ value, onChange, readOnly = false }: CodeEd
       extensions: [
         basicSetup,
         python(),
-        lightTheme,
+        baseTheme,
+        fontCompartment.current.of(fontSizeTheme(fontSize)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChangeRef.current(update.state.doc.toString());
         }),
@@ -63,6 +71,13 @@ export default function CodeEditor({ value, onChange, readOnly = false }: CodeEd
       viewRef.current.dispatch({ changes: { from: 0, to: current.length, insert: value } });
     }
   }, [value]);
+
+  useEffect(() => {
+    if (!viewRef.current) return;
+    viewRef.current.dispatch({
+      effects: fontCompartment.current.reconfigure(fontSizeTheme(fontSize)),
+    });
+  }, [fontSize]);
 
   return <div ref={containerRef} style={{ height: "100%", width: "100%", overflow: "hidden" }} />;
 }
