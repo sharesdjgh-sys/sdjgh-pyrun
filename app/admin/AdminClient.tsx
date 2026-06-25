@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2 } from "@/lib/curriculum";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert } from "lucide-react";
+
+const GROUP_ICON_MAP: Record<string, React.ElementType> = {
+  Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert,
+};
 
 interface Concept {
   id: number;
@@ -227,7 +232,8 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
                     textTransform: "uppercase" as const,
                   }}
                 >
-                  {group.emoji} {group.label}
+                  {(() => { const Icon = GROUP_ICON_MAP[group.icon]; return Icon ? <Icon size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} /> : null; })()}
+                  {group.label}
                 </div>
                 {group.ids.map((id) => {
                   const concept = concepts.find((c) => c.id === id);

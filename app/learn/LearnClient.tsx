@@ -12,6 +12,11 @@ import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
 import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2 } from "@/lib/curriculum";
 import type { CurriculumItem } from "@/lib/curriculum";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword } from "lucide-react";
+
+const GROUP_ICON_MAP: Record<string, React.ElementType> = {
+  Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert,
+};
 
 const CodeEditor = dynamic(() => import("@/components/editor/CodeEditor"), { ssr: false });
 
@@ -305,7 +310,8 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     textTransform: "uppercase",
                   }}
                 >
-                  {group.emoji} {group.label}
+                  {(() => { const Icon = GROUP_ICON_MAP[group.icon]; return Icon ? <Icon size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} /> : null; })()}
+                  {group.label}
                 </div>
                 {group.ids.map((id) => {
                   const badge = currentBadges.find(b => b.conceptId === id);
@@ -801,7 +807,9 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
             <div style={{ flex: "none", display: "flex", justifyContent: "center", gap: 5, padding: "2px 14px 8px" }}>
               {(["robot", "dog", "game"] as const).map((type) => {
                 const isSelected = characterType === type;
-                const labels = { robot: "🤖 로봇", dog: "🐶 강아지", game: "⚔️ 전사" };
+                const labels = { robot: "로봇", dog: "강아지", game: "전사" };
+                const icons = { robot: Bot, dog: PawPrint, game: Sword };
+                const Icon = icons[type];
                 return (
                   <button
                     key={type}
@@ -817,8 +825,12 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                       boxShadow: isSelected ? "0 3px 8px rgba(123,92,240,.22)" : "none",
                       border: isSelected ? "none" : "1.5px solid #ECE7F8",
                       transition: "all 0.13s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
+                    <Icon size={12} />
                     {labels[type]}
                   </button>
                 );

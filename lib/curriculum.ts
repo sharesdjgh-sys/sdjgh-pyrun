@@ -1862,16 +1862,16 @@ export const BADGE_METADATA_LV2 = [
 ];
 
 export const UNIT_GROUPS_LV1 = [
-  { label: "로봇 소개", emoji: "🤖", ids: [0] },
-  { label: "자료형", emoji: "📦", ids: [1, 2, 7, 8, 9, 10] },
-  { label: "연산자", emoji: "🔢", ids: [3, 4, 5, 6] },
-  { label: "제어문", emoji: "🔀", ids: [11, 12, 13] },
-  { label: "함수/클래스", emoji: "⚙️", ids: [14, 15, 16] },
+  { label: "로봇 소개", icon: "Bot", ids: [0] },
+  { label: "자료형", icon: "Layers", ids: [1, 2, 7, 8, 9, 10] },
+  { label: "연산자", icon: "Calculator", ids: [3, 4, 5, 6] },
+  { label: "제어문", icon: "GitBranch", ids: [11, 12, 13] },
+  { label: "함수/클래스", icon: "Braces", ids: [14, 15, 16] },
 ];
 
 export const UNIT_GROUPS_LV2 = [
-  { label: "자료형(심화)", emoji: "📦", ids: [17, 18, 19, 20, 21, 22, 23] },
-  { label: "제어문(심화)", emoji: "🔀", ids: [24, 25, 26] },
-  { label: "함수/클래스(심화)", emoji: "⚙️", ids: [27, 28] },
-  { label: "예외처리/라이브러리", emoji: "🛡️", ids: [29, 30] },
+  { label: "자료형(심화)", icon: "Layers", ids: [17, 18, 19, 20, 21, 22, 23] },
+  { label: "제어문(심화)", icon: "GitBranch", ids: [24, 25, 26] },
+  { label: "함수/클래스(심화)", icon: "Braces", ids: [27, 28] },
+  { label: "예외처리/라이브러리", icon: "ShieldAlert", ids: [29, 30] },
 ];
