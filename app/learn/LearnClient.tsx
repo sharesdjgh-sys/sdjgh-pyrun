@@ -186,6 +186,11 @@ export default function LearnClient({ userName }: LearnClientProps) {
     if (example) setCode(example.exampleCode);
   }, [selectedConceptId]);
 
+  const handleLoadPractice = useCallback(() => {
+    const example = CONCEPT_EXAMPLES[selectedConceptId];
+    if (example?.practiceCode) setCode(example.practiceCode);
+  }, [selectedConceptId]);
+
   const handleReset = useCallback(() => {
     setCode(INITIAL_CODE);
     setOutput("");
@@ -513,6 +518,34 @@ export default function LearnClient({ userName }: LearnClientProps) {
                   <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
                 </svg>
                 예제 불러오기
+              </button>
+
+              {/* Load practice */}
+              <button
+                onClick={handleLoadPractice}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "11px 16px",
+                  border: "1.5px solid #E8F5E9",
+                  borderRadius: 13,
+                  background: "#fff",
+                  color: "#18C99A",
+                  fontWeight: 700,
+                  fontSize: 13.5,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "background .13s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#F0FDF4")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                문제 풀기
               </button>
 
               {/* Output toggle */}
