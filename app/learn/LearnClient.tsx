@@ -282,7 +282,11 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                   return (
                     <button
                       key={id}
-                      onClick={() => setSelectedConceptId(id)}
+                      onClick={() => {
+                        setSelectedConceptId(id);
+                        const example = curriculum[id];
+                        if (example?.exampleCode) setCode(example.exampleCode);
+                      }}
                       style={{
                         width: "100%",
                         textAlign: "left",
