@@ -66,25 +66,33 @@ async function execute(id, code) {
   try {
     currentPhase = "Python 실행 환경 준비";
     const pyodide = await getPyodide();
+    pyodide.globals.set('_user_code', code);
+
+    currentPhase = "사용자 Python 코드 실행";
     await pyodide.runPythonAsync(`
-import sys
-import io
-import time
-time.sleep = lambda _seconds: None
+import sys, io, time, traceback as _tb
+time.sleep = lambda _: None
 _stdout_capture = io.StringIO()
 _stderr_capture = io.StringIO()
 sys.stdout = _stdout_capture
 sys.stderr = _stderr_capture
+_exec_success = True
+_exec_error = ""
+try:
+    exec(compile(_user_code, '<main.py>', 'exec'))
+except Exception:
+    _exec_success = False
+    _exec_error = _tb.format_exc()
 `);
 
-    let success = true;
+    const success = Boolean(pyodide.globals.get('_exec_success'));
+    const rawError = String(pyodide.globals.get('_exec_error') || '');
+
     let stderr = "";
-    try {
-      currentPhase = "사용자 Python 코드 실행";
-      await pyodide.runPythonAsync(code);
-    } catch (error) {
-      success = false;
-      stderr = `[사용자 Python 코드 실행]\n${error instanceof Error ? error.message : String(error)}`;
+    if (!success && rawError) {
+      // Filter internal Pyodide frames (<exec>, <string>) from traceback
+      const lines = rawError.split('\n');
+      stderr = lines.filter(line => !/File "<(exec|string)>"/.test(line)).join('\n').trim();
     }
 
     const stdout = String(await pyodide.runPythonAsync(`
@@ -94,12 +102,12 @@ sys.stderr = sys.__stderr__
 _output
 `));
     currentPhase = "실행 대기";
-    send("result", { id, stdout: stdout.trim(), stderr: stderr.trim(), success });
+    send("result", { id, stdout: stdout.trim(), stderr, success });
   } catch (error) {
     send("result", {
       id,
       stdout: "",
-      stderr: `[${currentPhase}]\n${error instanceof Error ? error.stack || error.message : String(error)}`,
+      stderr: `[${currentPhase}]\n${error instanceof Error ? (error.message || String(error)) : String(error)}`,
       success: false,
     });
   }
