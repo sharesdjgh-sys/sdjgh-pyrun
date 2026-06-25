@@ -1,0 +1,24 @@
+{
+  "name": "PyRun Studio",
+  "short_name": "PyRun",
+  "description": "코딩하면 캐릭터가 반응하는 실습형 파이썬",
+  "start_url": "/learn",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#F4EFFC",
+  "theme_color": "#7B5CF0",
+  "icons": [
+    {
+      "src": "/pyrun_studio-favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pyrun_studio-favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

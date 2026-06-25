@@ -3,6 +3,7 @@ import { Jua, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/lib/auth";
+import PwaRegister from "@/components/PwaRegister";
 
 const jua = Jua({
   weight: "400",
@@ -18,8 +19,18 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "파이썬 학습 놀이터",
-  description: "AI 로봇과 함께 배우는 인터랙티브 파이썬 학습 플랫폼",
+  title: "PyRun Studio",
+  description: "코딩하면 캐릭터가 반응하는 실습형 파이썬",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/pyrun_studio-favicon.png",
+    apple: "/pyrun_studio-favicon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PyRun Studio",
+  },
 };
 
 export default async function RootLayout({
@@ -45,6 +56,7 @@ export default async function RootLayout({
       >
         <SessionProvider session={session}>
           {children}
+          <PwaRegister />
         </SessionProvider>
       </body>
     </html>
