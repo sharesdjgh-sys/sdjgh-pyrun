@@ -7,6 +7,8 @@ export default function Header() {
   const { data: session } = useSession();
   const name = session?.user?.name || "학생";
   const initial = name.slice(0, 1);
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const isTeacher = role === "teacher" || role === "admin";
 
   return (
     <header
@@ -42,6 +44,21 @@ export default function Header() {
           </div>
           <span style={{ fontSize: 14, fontWeight: 600, color: "#544D70" }}>{name}</span>
         </div>
+
+        {/* Admin link — teacher/admin only */}
+        {isTeacher && (
+          <Link
+            href="/admin"
+            style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #C9BFEE", borderRadius: 99, padding: "8px 14px", fontSize: 13.5, fontWeight: 700, color: "#7B5CF0", textDecoration: "none", whiteSpace: "nowrap" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#F6F2FE")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            관리자
+          </Link>
+        )}
 
         {/* Progress link */}
         <Link
