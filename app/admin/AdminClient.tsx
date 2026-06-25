@@ -226,7 +226,7 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
                   style={{
                     fontSize: 10.5,
                     fontWeight: 700,
-                    color: "#C8C0DE",
+                    color: group.color,
                     letterSpacing: 0.5,
                     padding: "6px 8px 3px",
                     textTransform: "uppercase" as const,
