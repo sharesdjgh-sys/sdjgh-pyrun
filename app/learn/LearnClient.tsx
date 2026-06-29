@@ -7,6 +7,7 @@ import { parsePython } from "@/lib/python-parser";
 import { animationQueue, type RobotCommand } from "@/lib/animation-queue";
 import RobotStage from "@/components/robot/RobotStage";
 import RobotApiTooltip from "@/components/robot/RobotApiTooltip";
+import MechdogApiTooltip from "@/components/robot/MechdogApiTooltip";
 import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
@@ -25,14 +26,58 @@ interface MecdogExample {
   id: string;
   category: string;
   label: string;
+  description: string;
   code: string;
 }
 
 const MECDOG_EXAMPLES: MecdogExample[] = [
   {
+    id: "intro",
+    category: "📖 소개",
+    label: "mecdog 소개",
+    description: "mecdog는 Hiwonder의 AI 교육용 4족 보행 로봇이에요! from HW_MechDog import MechDog 로 불러온 뒤, move()로 걷고 action_run()으로 15가지 동작을 실행할 수 있어요. 실제 mecdog 소스코드를 그대로 입력하고 실행해보세요!",
+    code: `from HW_MechDog import MechDog
+import time
+
+# 🐾 mecdog를 만들어요!
+mechdog = MechDog()
+mechdog.set_default_pose()  # 기본 자세로 준비
+time.sleep(1)
+
+# ① 전진 / 후진
+mechdog.move(80, 0)   # 앞으로 (양수 → 전진)
+time.sleep(2)
+mechdog.move(0, 0)    # 멈추기
+time.sleep(0.5)
+
+# ② 회전하며 걷기
+mechdog.move(60, 25)  # 왼쪽 방향으로 전진
+time.sleep(2)
+mechdog.move(0, 0)
+time.sleep(0.5)
+
+# ③ 인사 동작
+mechdog.action_run("nodding_motion")  # 고개 끄덕이기
+time.sleep(2)
+mechdog.action_run("handshake")       # 악수
+time.sleep(2)
+
+# ④ 자세 변환 (높이 올리기)
+mechdog.transform([0, 0, 20], [0, 0, 0], 1000)
+time.sleep(1.5)
+mechdog.set_default_pose()
+time.sleep(1)
+
+# ⑤ 마무리
+mechdog.action_run("stretch_oneself")  # 기지개 켜기
+time.sleep(2)
+`,
+  },
+  {
     id: "forward_backward",
     category: "4.2 이동 제어",
     label: "전진 / 후진",
+    description: "move(속도, 각도)로 mecdog를 걷게 해요. 속도는 -120~120 (양수=전진, 음수=후진), 각도는 -50~50 (회전 방향)이에요. time.sleep(초)으로 얼마나 이동할지 시간을 조절합니다.",
     code: `from HW_MechDog import MechDog
 import time
 
@@ -56,6 +101,7 @@ mechdog.move(0, 0)
     id: "wheel",
     category: "4.2 이동 제어",
     label: "회전 이동",
+    description: "move()의 두 번째 값(각도)으로 회전을 조절해요. 양수 각도는 왼쪽, 음수 각도는 오른쪽으로 회전하며 이동합니다. 호(곡선) 모양 경로로 이동시킬 수 있어요.",
     code: `from HW_MechDog import MechDog
 import time
 
@@ -77,6 +123,7 @@ mechdog.move(0, 0)
     id: "body_height",
     category: "4.2 이동 제어",
     label: "높이 / 기울기",
+    description: "transform([tx,ty,tz], [pitch,roll,yaw], ms)으로 몸통 높이와 기울기를 조절해요. tz는 높이(mm, 양수=올리기), pitch는 앞뒤 기울기(도), roll은 좌우 기울기(도)입니다.",
     code: `from HW_MechDog import MechDog
 import time
 
@@ -99,6 +146,7 @@ mechdog.set_default_pose()
     id: "action_run",
     category: "4.3 동작 실행",
     label: "동작 실행",
+    description: "action_run(\"동작이름\")으로 미리 정의된 동작을 실행해요. mecdog는 악수, 인사, 권투, 기지개 등 총 15가지 동작을 지원합니다. time.sleep(초)으로 동작 완료를 충분히 기다려야 자연스러워요.",
     code: `from HW_MechDog import MechDog
 import time
 
@@ -120,6 +168,7 @@ time.sleep(3)
     id: "sit_stand",
     category: "4.3 동작 실행",
     label: "앉기 / 서기",
+    description: "앉기(sit_dowm), 네 발로 서기(stand_four_legs), 두 발로 서기(stand_two_legs) 동작을 순서대로 실행해요. 각 동작마다 충분한 time.sleep을 주어야 동작이 완료된 후 다음 동작으로 이어져요.",
     code: `from HW_MechDog import MechDog
 import time
 
@@ -141,6 +190,7 @@ time.sleep(3)
     id: "homeostasis",
     category: "4.3 동작 실행",
     label: "균형 유지",
+    description: "homeostasis(True)를 켜면 mecdog가 외부 충격을 받아도 자동으로 균형을 잡아요. 실제 로봇을 손으로 밀어도 스스로 자세를 교정합니다. False로 끄면 일반 자세로 돌아와요.",
     code: `from HW_MechDog import MechDog
 import time
 
@@ -159,6 +209,7 @@ time.sleep(1)
     id: "ultrasonic",
     category: "4.3 센서 활용",
     label: "초음파 거리 센서",
+    description: "I2CSonar 센서로 앞 물체까지의 거리(cm)를 측정하고, 거리에 따라 LED 색상을 바꿔요. Digitaltube에 거리 수치도 표시됩니다. 시뮬레이션에서는 거리가 항상 50cm로 반환돼요.",
     code: `import Hiwonder
 import Hiwonder_IIC
 from HW_MechDog import MechDog
@@ -190,6 +241,7 @@ for i in range(5):
     id: "color_tracking",
     category: "4.5 AI 비전",
     label: "색상 추적",
+    description: "ESP32S3 카메라로 특정 색상을 추적해요. 물체의 X 위치에 따라 mecdog가 방향을 조정하며 이동합니다. 시뮬레이션에서는 카메라가 색상을 감지하지 않아 항상 정지 상태로 표시돼요.",
     code: `import Hiwonder_IIC
 from HW_MechDog import MechDog
 import time
@@ -439,11 +491,13 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
 
   const currentConcept = curriculum[selectedConceptId];
 
+  const selectedMecdogExample = MECDOG_EXAMPLES.find(e => e.id === selectedMecdogId);
+
   const displayConcept = mode === "mecdog"
     ? {
-        nameKo: "mecdog 시뮬레이션",
-        nameEn: "Robot Dog Simulator",
-        explanation: "실제 mecdog 파이썬 코드를 그대로 입력하고 실행해보세요! from HW_MechDog import MechDog 처럼 실제 코드를 그대로 사용할 수 있어요. 왼쪽에서 예제를 선택하거나 직접 코드를 작성해보세요.",
+        nameKo: selectedMecdogExample?.label ?? "mecdog 시뮬레이션",
+        nameEn: selectedMecdogExample?.category ?? "Robot Dog Simulator",
+        explanation: selectedMecdogExample?.description ?? "실제 mecdog 파이썬 코드를 그대로 입력하고 실행해보세요!",
       }
     : currentConcept;
 
@@ -779,7 +833,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     style={{ width: 22, height: 22, border: "none", background: "transparent", cursor: "pointer", color: "#7B5CF0", fontWeight: 700, fontSize: 14, lineHeight: 1, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}
                   >+</button>
                 </div>
-                <RobotApiTooltip />
+                {mode === "mecdog" ? <MechdogApiTooltip /> : <RobotApiTooltip />}
               </div>
             </div>
 
