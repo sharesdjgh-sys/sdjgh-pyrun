@@ -45,7 +45,7 @@ export default function RobotApiTooltip() {
             top: "calc(100% + 8px)",
             right: 0,
             zIndex: 100,
-            width: 330,
+            width: 440,
             background: "#fff",
             border: "1px solid #ECE7F8",
             borderRadius: 16,
@@ -76,7 +76,7 @@ export default function RobotApiTooltip() {
               display: "flex",
               flexDirection: "column",
               gap: 10,
-              maxHeight: 250,
+              maxHeight: 380,
               overflowY: "auto",
               paddingRight: 4,
             }}
@@ -91,7 +91,7 @@ export default function RobotApiTooltip() {
               <span style={{ color: "#5A527A" }}>지정한 칸수만큼 앞으로 이동 (1~20)</span>
 
               <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.turn("방향")</code>
-              <span style={{ color: "#5A527A" }}>좌우 방향 전환 ("left" / "right")</span>
+              <span style={{ color: "#5A527A" }}>방향 전환 ("left" / "right" / "up" / "down")</span>
 
               <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.jump()</code>
               <span style={{ color: "#5A527A" }}>제자리에서 껑충 뛰어오르기</span>

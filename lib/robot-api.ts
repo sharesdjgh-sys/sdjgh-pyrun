@@ -12,8 +12,8 @@ export const robotApi = {
   },
 
   turn(direction: string) {
-    if (direction !== "left" && direction !== "right") {
-      throw new Error('direction은 "left" 또는 "right"여야 합니다.');
+    if (!["left", "right", "up", "down"].includes(direction)) {
+      throw new Error('direction은 "left", "right", "up", "down" 중 하나여야 합니다.');
     }
     animationQueue.push({ type: "turn", params: { direction } });
   },

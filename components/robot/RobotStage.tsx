@@ -28,11 +28,13 @@ interface DrawnShape {
   y: number;
 }
 
+type Direction4 = "left" | "right" | "up" | "down";
+
 interface RobotClone {
   id: string;
   x: number;
   y: number;
-  direction: "left" | "right";
+  direction: Direction4;
   scale: number;
   emotion: RobotEmotion;
 }
@@ -48,7 +50,7 @@ export default function RobotStage({
 }: RobotStageProps) {
   // 로봇 상태 변수들
   const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [direction, setDirection] = useState<"left" | "right">("right");
+  const [direction, setDirection] = useState<Direction4>("right");
   const [scale, setScale] = useState(1.0);
   const [emotion, setEmotion] = useState<RobotEmotion>("idle");
   const [robotState, setRobotState] = useState<RobotState>("idle");
@@ -139,7 +141,7 @@ export default function RobotStage({
       const run = async () => {
         // 초기화
         let currentPos = { x: 0, y: 0 };
-        let currentDir: "left" | "right" = "right";
+        let currentDir: Direction4 = "right";
         let currentScale = 1.0;
         let currentEmotion: RobotEmotion = "idle";
 
@@ -164,12 +166,19 @@ export default function RobotStage({
               // 1걸음 = 30px 이동
               const stepDistance = 30;
               const distance = steps * stepDistance;
-              const newX = currentPos.x + (currentDir === "right" ? distance : -distance);
 
-              // 영역 한계 (-200 ~ 200) 체크 및 보정
+              let newX = currentPos.x;
+              let newY = currentPos.y;
+              if (currentDir === "right") newX += distance;
+              else if (currentDir === "left") newX -= distance;
+              else if (currentDir === "up") newY += distance;
+              else if (currentDir === "down") newY -= distance;
+
+              // 영역 한계 체크 및 보정
               const finalX = Math.max(-170, Math.min(170, newX));
+              const finalY = Math.max(-120, Math.min(120, newY));
 
-              currentPos = { x: finalX, y: currentPos.y };
+              currentPos = { x: finalX, y: finalY };
               setRobotState("walking");
               setPos(currentPos);
               setPaths((prev) => [...prev, currentPos]);
@@ -182,7 +191,7 @@ export default function RobotStage({
 
             case "turn": {
               const dir = cmd.params.direction;
-              currentDir = dir === "left" || dir === "right" ? dir : "right";
+              currentDir = (["left", "right", "up", "down"].includes(dir) ? dir : "right") as Direction4;
               setDirection(currentDir);
               await delay(400);
               break;
@@ -313,6 +322,15 @@ export default function RobotStage({
       setClones([]);
     }
   }, [commands, isError]);
+
+  // 4방향 헬퍼: up/down은 캐릭터를 회전시키고 left/right는 그대로
+  const toBaseDir = (dir: Direction4): "left" | "right" =>
+    dir === "up" || dir === "down" ? "right" : dir;
+  const toDirRotate = (dir: Direction4): string | undefined => {
+    if (dir === "up") return "rotate(-90deg)";
+    if (dir === "down") return "rotate(90deg)";
+    return undefined;
+  };
 
   // 논리 좌표 x/y를 백분율 스타일 좌표로 매핑
   const getPercentX = (x: number) => `${((200 + x) / 400) * 100}%`;
@@ -445,7 +463,9 @@ export default function RobotStage({
             opacity: 0.75,
           }}
         >
-          {renderCharacter("idle", clone.emotion, clone.scale, clone.direction, 70)}
+          <div style={{ transform: toDirRotate(clone.direction) }}>
+            {renderCharacter("idle", clone.emotion, clone.scale, toBaseDir(clone.direction), 70)}
+          </div>
         </div>
       ))}
 
@@ -481,7 +501,9 @@ export default function RobotStage({
               : { rotate: 0, x: 0 }
           }
         >
-          {renderCharacter(robotState, emotion, scale, direction, 70)}
+          <div style={{ transform: toDirRotate(direction) }}>
+            {renderCharacter(robotState, emotion, scale, toBaseDir(direction), 70)}
+          </div>
         </motion.div>
       </div>
     </div>
