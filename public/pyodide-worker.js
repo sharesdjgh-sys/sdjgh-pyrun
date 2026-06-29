@@ -1,6 +1,140 @@
 /* global importScripts, loadPyodide */
 
 const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/";
+
+// ── mecdog mock 모듈 ───────────────────────────────────────────────────────────
+const MOCK_HW_MECHDOG = `
+import robot as _r
+
+class MechDog:
+    def set_default_pose(self, duration=1000):
+        _r.mechdog_action("default_pose")
+    def move(self, speed=0, angle=0):
+        _r.mechdog_move(int(speed), int(angle))
+    def transform(self, pos=None, rot=None, duration=1000):
+        p = pos or [0, 0, 0]
+        r = rot or [0, 0, 0]
+        _r.mechdog_transform(p[0], p[1], p[2], r[0], r[1], r[2], int(duration))
+    def set_pose(self, pos=None, rot=None, duration=1000):
+        self.transform(pos, rot, duration)
+    def set_gait_params(self, lift_time=150, land_time=350, height=30):
+        _r.mechdog_gait(int(lift_time), int(land_time), int(height))
+    def action_run(self, name=""):
+        _r.mechdog_action(str(name))
+    def homeostasis(self, enabled=False):
+        _r.mechdog_homeostasis(bool(enabled))
+    def read_homeostasis_status(self):
+        return True
+`;
+
+const MOCK_HIWONDER = `
+import robot as _r
+
+class LED:
+    def on(self): _r.mechdog_led(255, 200, 0)
+    def off(self): _r.mechdog_led(0, 0, 0)
+    def set_color(self, r=0, g=0, b=0): _r.mechdog_led(int(r), int(g), int(b))
+
+class Buzzer:
+    def freq(self, f=0, d=0): _r.mechdog_buzz(int(f), int(d))
+    def on(self, f=440): _r.mechdog_buzz(int(f), 100)
+    def off(self): pass
+
+class Button:
+    def Clicked(self): return False
+    def isPressed(self): return False
+
+class LightSensor:
+    def read(self): return _r.mechdog_sensor_get("light")
+
+class Digitaltube:
+    def showNum(self, n=0): _r.mechdog_display(str(int(n)))
+    def showStr(self, s=""): _r.mechdog_display(str(s))
+    def setBrightness(self, b=4): pass
+    def clear(self): _r.mechdog_display("")
+
+class UART:
+    def __init__(self, baud=9600): pass
+    def contains_data(self, s=""): return False
+    def read_uart_cmd(self): return ""
+    def send_data(self, d=""): pass
+    def parse_uart_cmd(self, d=""): return []
+
+def Battery_power(): return 8.0
+
+def startMain(func):
+    try:
+        func()
+    except Exception:
+        pass
+`;
+
+const MOCK_HIWONDER_IIC = `
+import robot as _r
+
+class IIC:
+    def __init__(self, port=1): self.port = port
+
+class I2CSonar:
+    def __init__(self, i2c=None): pass
+    def getDistance(self): return _r.mechdog_sensor_get("distance")
+    def setRGB(self, index=0, r=0, g=0, b=0): _r.mechdog_led(int(r), int(g), int(b))
+
+class asr_module:
+    def __init__(self, i2c=None): pass
+    def getResult(self): return 0
+    def speak(self, index=0, value=0): pass
+
+class ESP32S3Cam:
+    RED = 1
+    GREEN = 3
+    BLUE = 4
+    YELLOW = 2
+    def __init__(self, i2c=None): pass
+    def color_recognition(self): return []
+    def color_follow(self, color=None): return None
+    def face_recognition(self): return False
+    def line_follow(self, color=None): return (0, 0)
+
+class MPU:
+    def __init__(self, i2c=None): pass
+    def read_angle(self): return [0.0, 0.0, 0.0]
+`;
+
+const MOCK_HIWONDER_BLE = `
+class BLE:
+    def __init__(self, port=3, name=""):
+        self.connected_callback = None
+        self.disconnected_callback = None
+    def is_connected(self): return False
+    def contains_data(self, s=""): return False
+    def read_uart_cmd(self): return ""
+    def parse_uart_cmd(self, d=""): return []
+    def send_data(self, d=""): pass
+`;
+
+const MOCK_HIWONDER_WIFI = `
+class _WLan:
+    def isconnected(self): return False
+
+class WIFI_CL:
+    def __init__(self, ssid="", pwd=""):
+        self.wlan = _WLan()
+        self.listenSocket = None
+    def connect_wifi(self): pass
+    def disconnect_wifi(self): pass
+    def wait_connect(self): pass
+    def read_data(self): return None
+    def read_uart_cmd(self, data=""): return ""
+    def parse_uart_cmd(self, d=""): return []
+    def send_data(self, d=""): pass
+    def send_ID(self): pass
+`;
+
+const MOCK_MACHINE = `
+def unique_id():
+    return b'\\x00\\x00\\x00\\x00\\x00\\x38'
+`;
 let pyodidePromise;
 let currentPhase = "Worker 시작";
 
@@ -48,6 +182,23 @@ const robot = {
   spin: () => send("robot-command", { command: "spin", args: [] }),
   shake: () => send("robot-command", { command: "shake", args: [] }),
   clear: () => send("robot-command", { command: "clear", args: [] }),
+  // ── mecdog 시뮬레이션 ──
+  mechdog_move: (speed, angle) => send("robot-command", { command: "mechdog_move", args: [speed, angle] }),
+  mechdog_action: (name) => send("robot-command", { command: "mechdog_action", args: [String(name)] }),
+  mechdog_transform: (tx, ty, tz, pitch, roll, yaw, duration) => send("robot-command", { command: "mechdog_transform", args: [tx, ty, tz, pitch, roll, yaw, duration] }),
+  mechdog_wait: (seconds) => send("robot-command", { command: "mechdog_wait", args: [seconds] }),
+  mechdog_homeostasis: (enabled) => send("robot-command", { command: "mechdog_homeostasis", args: [enabled] }),
+  mechdog_gait: (liftTime, landTime, height) => send("robot-command", { command: "mechdog_gait", args: [liftTime, landTime, height] }),
+  mechdog_led: (r, g, b) => send("robot-command", { command: "mechdog_led", args: [r, g, b] }),
+  mechdog_buzz: (freq, duration) => send("robot-command", { command: "mechdog_buzz", args: [freq, duration] }),
+  mechdog_display: (text) => send("robot-command", { command: "mechdog_display", args: [String(text)] }),
+  // 동기 반환: 센서 값을 Python 으로 즉시 돌려줌 (postMessage 아님)
+  mechdog_sensor_get: (sensorType) => {
+    const t = String(sensorType);
+    if (t === "distance") return 50;
+    if (t === "light") return 500;
+    return 0;
+  },
 };
 
 async function getPyodide() {
@@ -59,6 +210,13 @@ async function getPyodide() {
       const pyodide = await loadPyodide({ indexURL: PYODIDE_URL });
       currentPhase = "robot JS 모듈 등록";
       pyodide.registerJsModule("robot", robot);
+      currentPhase = "mecdog mock 모듈 설치";
+      pyodide.FS.writeFile("/home/pyodide/HW_MechDog.py", MOCK_HW_MECHDOG);
+      pyodide.FS.writeFile("/home/pyodide/Hiwonder.py", MOCK_HIWONDER);
+      pyodide.FS.writeFile("/home/pyodide/Hiwonder_IIC.py", MOCK_HIWONDER_IIC);
+      pyodide.FS.writeFile("/home/pyodide/Hiwonder_BLE.py", MOCK_HIWONDER_BLE);
+      pyodide.FS.writeFile("/home/pyodide/Hiwonder_WIFI.py", MOCK_HIWONDER_WIFI);
+      pyodide.FS.writeFile("/home/pyodide/machine.py", MOCK_MACHINE);
       currentPhase = "실행 대기";
       return pyodide;
     })();
@@ -75,7 +233,9 @@ async function execute(id, code) {
     currentPhase = "사용자 Python 코드 실행";
     await pyodide.runPythonAsync(`
 import sys, io, time, traceback as _tb
-time.sleep = lambda _: None
+import robot as _robot_mod
+time.sleep = lambda n: _robot_mod.mechdog_wait(n)
+time.sleep_ms = lambda n: _robot_mod.mechdog_wait(n / 1000.0)
 _stdout_capture = io.StringIO()
 _stderr_capture = io.StringIO()
 sys.stdout = _stdout_capture

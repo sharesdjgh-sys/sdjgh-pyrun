@@ -83,4 +83,44 @@ export const robotApi = {
   clear() {
     animationQueue.push({ type: "clear", params: {} });
   },
+
+  // ── mecdog 시뮬레이션 API ──
+  mechdog_move(speed: unknown, angle: unknown) {
+    animationQueue.push({ type: "mechdog_move", params: { speed: Number(speed) || 0, angle: Number(angle) || 0 } });
+  },
+
+  mechdog_action(name: unknown) {
+    animationQueue.push({ type: "mechdog_action", params: { name: String(name) } });
+  },
+
+  mechdog_transform(tx: unknown, ty: unknown, tz: unknown, pitch: unknown, roll: unknown, yaw: unknown, duration: unknown) {
+    animationQueue.push({ type: "mechdog_transform", params: { tx: Number(tx) || 0, ty: Number(ty) || 0, tz: Number(tz) || 0, pitch: Number(pitch) || 0, roll: Number(roll) || 0, yaw: Number(yaw) || 0, duration: Number(duration) || 1000 } });
+  },
+
+  mechdog_wait(seconds: unknown) {
+    const s = Math.min(Math.max(0, Number(seconds) || 0), 5);
+    if (s >= 0.05) {
+      animationQueue.push({ type: "mechdog_wait", params: { seconds: s } });
+    }
+  },
+
+  mechdog_homeostasis(enabled: unknown) {
+    animationQueue.push({ type: "mechdog_homeostasis", params: { enabled: Boolean(enabled) } });
+  },
+
+  mechdog_gait(liftTime: unknown, landTime: unknown, height: unknown) {
+    animationQueue.push({ type: "mechdog_gait", params: { liftTime: Number(liftTime) || 150, landTime: Number(landTime) || 350, height: Number(height) || 30 } });
+  },
+
+  mechdog_led(r: unknown, g: unknown, b: unknown) {
+    animationQueue.push({ type: "mechdog_led", params: { r: Number(r) || 0, g: Number(g) || 0, b: Number(b) || 0 } });
+  },
+
+  mechdog_buzz(freq: unknown, duration: unknown) {
+    animationQueue.push({ type: "mechdog_buzz", params: { freq: Number(freq) || 0, duration: Number(duration) || 0 } });
+  },
+
+  mechdog_display(text: unknown) {
+    animationQueue.push({ type: "mechdog_display", params: { text: String(text) } });
+  },
 };

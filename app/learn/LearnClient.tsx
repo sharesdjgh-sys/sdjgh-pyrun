@@ -19,6 +19,209 @@ const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert,
 };
 
+type AppMode = "lv1" | "lv2" | "mecdog";
+
+interface MecdogExample {
+  id: string;
+  category: string;
+  label: string;
+  code: string;
+}
+
+const MECDOG_EXAMPLES: MecdogExample[] = [
+  {
+    id: "forward_backward",
+    category: "4.2 이동 제어",
+    label: "전진 / 후진",
+    code: `from HW_MechDog import MechDog
+import time
+
+mechdog = MechDog()
+mechdog.set_default_pose()
+time.sleep(1)
+
+mechdog.move(80, 0)   # 앞으로 (양수 → 전진)
+time.sleep(3)
+
+mechdog.move(0, 0)    # 멈추기
+time.sleep(1)
+
+mechdog.move(-50, 0)  # 뒤로 (음수 → 후진)
+time.sleep(3)
+
+mechdog.move(0, 0)
+`,
+  },
+  {
+    id: "wheel",
+    category: "4.2 이동 제어",
+    label: "회전 이동",
+    code: `from HW_MechDog import MechDog
+import time
+
+mechdog = MechDog()
+mechdog.set_default_pose()
+time.sleep(1)
+
+mechdog.move(50, -20)  # 오른쪽으로 회전하며 이동
+time.sleep(3)
+mechdog.move(0, 0)
+time.sleep(1)
+
+mechdog.move(50, 20)   # 왼쪽으로 회전하며 이동
+time.sleep(3)
+mechdog.move(0, 0)
+`,
+  },
+  {
+    id: "body_height",
+    category: "4.2 이동 제어",
+    label: "높이 / 기울기",
+    code: `from HW_MechDog import MechDog
+import time
+
+mechdog = MechDog()
+mechdog.set_default_pose()
+time.sleep(1)
+
+mechdog.transform([0, 0, 20], [0, 0, 0], 1000)   # 몸 올리기
+time.sleep(2)
+mechdog.transform([0, 0, -20], [0, 0, 0], 1000)  # 몸 낮추기
+time.sleep(2)
+mechdog.transform([0, 0, 0], [15, 0, 0], 500)    # 앞으로 기울기
+time.sleep(1.5)
+mechdog.transform([0, 0, 0], [-15, 0, 0], 500)   # 뒤로 기울기
+time.sleep(1.5)
+mechdog.set_default_pose()
+`,
+  },
+  {
+    id: "action_run",
+    category: "4.3 동작 실행",
+    label: "동작 실행",
+    code: `from HW_MechDog import MechDog
+import time
+
+mechdog = MechDog()
+mechdog.set_default_pose()
+time.sleep(1)
+
+mechdog.action_run("handshake")       # 악수
+time.sleep(3)
+
+mechdog.action_run("nodding_motion")  # 고개 끄덕이기
+time.sleep(3)
+
+mechdog.action_run("boxing")          # 권투
+time.sleep(3)
+`,
+  },
+  {
+    id: "sit_stand",
+    category: "4.3 동작 실행",
+    label: "앉기 / 서기",
+    code: `from HW_MechDog import MechDog
+import time
+
+mechdog = MechDog()
+mechdog.set_default_pose()
+time.sleep(1)
+
+mechdog.action_run("sit_dowm")         # 앉기
+time.sleep(3)
+
+mechdog.action_run("stand_four_legs")  # 네 발로 서기
+time.sleep(2)
+
+mechdog.action_run("stand_two_legs")   # 두 발로 서기
+time.sleep(3)
+`,
+  },
+  {
+    id: "homeostasis",
+    category: "4.3 동작 실행",
+    label: "균형 유지",
+    code: `from HW_MechDog import MechDog
+import time
+
+mechdog = MechDog()
+mechdog.set_default_pose()
+time.sleep(1)
+
+mechdog.homeostasis(True)   # 균형 유지 ON
+time.sleep(3)
+
+mechdog.homeostasis(False)  # 균형 유지 OFF
+time.sleep(1)
+`,
+  },
+  {
+    id: "ultrasonic",
+    category: "4.3 센서 활용",
+    label: "초음파 거리 센서",
+    code: `import Hiwonder
+import Hiwonder_IIC
+from HW_MechDog import MechDog
+import time
+
+mechdog = MechDog()
+tm = Hiwonder.Digitaltube()
+i2c1 = Hiwonder_IIC.IIC(1)
+i2csonar = Hiwonder_IIC.I2CSonar(i2c1)
+
+mechdog.set_default_pose()
+time.sleep(1)
+
+for i in range(5):
+    distance = i2csonar.getDistance()
+    tm.showNum(distance)           # 숫자판에 거리 표시
+
+    if distance < 15:
+        i2csonar.setRGB(0, 0xff, 0x00, 0x00)  # 빨강: 가까움
+    elif distance > 40:
+        i2csonar.setRGB(0, 0x00, 0x00, 0x99)  # 파랑: 멈
+    else:
+        i2csonar.setRGB(0, 0xfd, 0xd0, 0x00)  # 노랑: 중간
+
+    time.sleep(0.5)
+`,
+  },
+  {
+    id: "color_tracking",
+    category: "4.5 AI 비전",
+    label: "색상 추적",
+    code: `import Hiwonder_IIC
+from HW_MechDog import MechDog
+import time
+
+iic2 = Hiwonder_IIC.IIC(2)
+cam = Hiwonder_IIC.ESP32S3Cam(iic2)
+mechdog = MechDog()
+
+mechdog.set_default_pose()
+time.sleep(2)
+
+# 시뮬레이션: 카메라는 색상 미감지 → 정지 상태 표시
+for _ in range(5):
+    color = cam.color_follow(cam.GREEN)
+
+    if color and color[0] == 3:    # 초록색 감지
+        if color[1] < 60:
+            mechdog.move(50, 25)   # 왼쪽으로 이동
+        elif color[1] > 100:
+            mechdog.move(50, -25)  # 오른쪽으로 이동
+        else:
+            mechdog.move(50, 0)    # 직진
+    else:
+        mechdog.move(0, 0)         # 색상 미감지: 정지
+
+    time.sleep(0.3)
+
+mechdog.move(0, 0)
+`,
+  },
+];
+
 const CodeEditor = dynamic(() => import("@/components/editor/CodeEditor"), { ssr: false });
 
 const INITIAL_CODE = `# 파이썬 코드를 여기에 입력하세요
@@ -50,10 +253,11 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const [fontSize, setFontSize] = useState(9);
   const fontSizeStr = `${fontSize}pt`;
 
-  const [level, setLevel] = useState<1 | 2>(1);
+  const [mode, setMode] = useState<AppMode>("lv1");
+  const [selectedMecdogId, setSelectedMecdogId] = useState(MECDOG_EXAMPLES[0].id);
 
-  const currentBadges = level === 1 ? BADGE_METADATA : BADGE_METADATA_LV2;
-  const currentUnitGroups = level === 1 ? UNIT_GROUPS_LV1 : UNIT_GROUPS_LV2;
+  const currentBadges = mode === "lv2" ? BADGE_METADATA_LV2 : BADGE_METADATA;
+  const currentUnitGroups = mode === "lv2" ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV1;
 
   const [characterType, setCharacterType] = useState<"robot" | "dog" | "game">("robot");
   const [isError, setIsError] = useState(false);
@@ -92,12 +296,19 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, []);
 
   useEffect(() => {
-    const firstId = level === 1 ? 0 : 17;
+    if (mode === "mecdog") {
+      setCharacterType("dog");
+      const first = MECDOG_EXAMPLES[0];
+      setSelectedMecdogId(first.id);
+      setCode(first.code);
+      return;
+    }
+    const firstId = mode === "lv2" ? 17 : 0;
     setSelectedConceptId(firstId);
     const example = curriculum[firstId];
     if (example?.exampleCode) setCode(example.exampleCode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [level]);
+  }, [mode]);
 
   const handleRun = useCallback(async () => {
     if (runningRef.current || pyLoading) return;
@@ -198,14 +409,20 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, [pendingFeedback, showSpeechBubble]);
 
   const handleLoadExample = useCallback(() => {
+    if (mode === "mecdog") {
+      const ex = MECDOG_EXAMPLES.find(e => e.id === selectedMecdogId);
+      if (ex) setCode(ex.code);
+      return;
+    }
     const example = curriculum[selectedConceptId];
     if (example) setCode(example.exampleCode);
-  }, [selectedConceptId, curriculum]);
+  }, [mode, selectedMecdogId, selectedConceptId, curriculum]);
 
   const handleLoadPractice = useCallback(() => {
+    if (mode === "mecdog") return;
     const example = curriculum[selectedConceptId];
     if (example?.practiceCode) setCode(example.practiceCode);
-  }, [selectedConceptId, curriculum]);
+  }, [mode, selectedConceptId, curriculum]);
 
   const handleReset = useCallback(() => {
     setCode(INITIAL_CODE);
@@ -221,6 +438,14 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, []);
 
   const currentConcept = curriculum[selectedConceptId];
+
+  const displayConcept = mode === "mecdog"
+    ? {
+        nameKo: "mecdog 시뮬레이션",
+        nameEn: "Robot Dog Simulator",
+        explanation: "실제 mecdog 파이썬 코드를 그대로 입력하고 실행해보세요! from HW_MechDog import MechDog 처럼 실제 코드를 그대로 사용할 수 있어요. 왼쪽에서 예제를 선택하거나 직접 코드를 작성해보세요.",
+      }
+    : currentConcept;
 
   return (
     <div
@@ -274,90 +499,153 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
           >
             단원 목록
           </div>
-          {/* Level toggle */}
-          <div style={{ display: "flex", gap: 4, padding: "8px 8px 4px" }}>
-            {([1, 2] as const).map((lv) => (
-              <button
-                key={lv}
-                onClick={() => setLevel(lv)}
+          {/* Mode dropdown */}
+          <div style={{ padding: "8px 8px 4px" }}>
+            <div style={{ position: "relative" }}>
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as AppMode)}
                 style={{
-                  flex: 1,
-                  padding: "5px 0",
-                  border: "none",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  fontSize: 12,
+                  width: "100%",
+                  padding: "6px 28px 6px 10px",
+                  border: "1.5px solid #E0D8F8",
+                  borderRadius: 10,
+                  background: mode === "mecdog"
+                    ? "linear-gradient(135deg,#FFF4E6,#FFE8CC)"
+                    : "linear-gradient(135deg,#F8F5FF,#F0EAFF)",
+                  color: mode === "mecdog" ? "#C97B30" : "#7B5CF0",
+                  fontSize: 12.5,
                   fontWeight: 700,
-                  background: level === lv ? "linear-gradient(135deg,#9B7FFF,#7B5CF0)" : "#F3EFFE",
-                  color: level === lv ? "#fff" : "#9B7FFF",
-                  transition: "all .13s",
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  outline: "none",
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  transition: "all .15s",
                 }}
               >
-                Lv.{lv}
-              </button>
-            ))}
+                <option value="lv1">📚 Lv.1 기초</option>
+                <option value="lv2">🚀 Lv.2 심화</option>
+                <option value="mecdog">🐾 mecdog 시뮬</option>
+              </select>
+              <span
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                  color: mode === "mecdog" ? "#C97B30" : "#9B7FFF",
+                  fontSize: 10,
+                }}
+              >
+                ▼
+              </span>
+            </div>
           </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 12px" }}>
-            {currentUnitGroups.map((group) => (
-              <div key={group.label} style={{ marginBottom: 6 }}>
-                <div
-                  style={{
-                    fontSize: 10.5,
-                    fontWeight: 700,
-                    color: group.color,
-                    letterSpacing: 0.5,
-                    padding: "6px 8px 3px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {(() => { const Icon = GROUP_ICON_MAP[group.icon]; return Icon ? <Icon size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} /> : null; })()}
-                  {group.label}
+          {mode === "mecdog" ? (
+            /* mecdog 예제 목록 */
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 12px" }}>
+              {(() => {
+                const categories = [...new Set(MECDOG_EXAMPLES.map(e => e.category))];
+                return categories.map(category => (
+                  <div key={category} style={{ marginBottom: 6 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#C97B30", letterSpacing: 0.5, padding: "6px 8px 3px", textTransform: "uppercase" }}>
+                      🐾 {category}
+                    </div>
+                    {MECDOG_EXAMPLES.filter(ex => ex.category === category).map(ex => {
+                      const selected = selectedMecdogId === ex.id;
+                      return (
+                        <button
+                          key={ex.id}
+                          onClick={() => { setSelectedMecdogId(ex.id); setCode(ex.code); }}
+                          style={{
+                            width: "100%",
+                            textAlign: "left",
+                            display: "block",
+                            padding: "7px 10px",
+                            borderRadius: 10,
+                            border: "none",
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            fontSize: 13,
+                            fontWeight: selected ? 700 : 500,
+                            background: selected ? "linear-gradient(135deg,#F0A050,#C97B30)" : "transparent",
+                            color: selected ? "#fff" : "#7A6FA0",
+                            marginBottom: 1,
+                            transition: "all .13s",
+                            boxShadow: selected ? "0 3px 8px rgba(201,123,48,.22)" : "none",
+                          }}
+                          onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "#FFF4E6"; }}
+                          onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
+                        >
+                          {ex.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ));
+              })()}
+            </div>
+          ) : (
+            /* 기존 커리큘럼 목록 */
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 12px" }}>
+              {currentUnitGroups.map((group) => (
+                <div key={group.label} style={{ marginBottom: 6 }}>
+                  <div
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      color: group.color,
+                      letterSpacing: 0.5,
+                      padding: "6px 8px 3px",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {(() => { const Icon = GROUP_ICON_MAP[group.icon]; return Icon ? <Icon size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} /> : null; })()}
+                    {group.label}
+                  </div>
+                  {group.ids.map((id) => {
+                    const badge = currentBadges.find(b => b.conceptId === id);
+                    if (!badge) return null;
+                    const name = badge.nameKo.replace(" 마스터", "");
+                    const selected = id === selectedConceptId;
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => {
+                          setSelectedConceptId(id);
+                          const example = curriculum[id];
+                          if (example?.exampleCode) setCode(example.exampleCode);
+                        }}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          display: "block",
+                          padding: "7px 10px",
+                          borderRadius: 10,
+                          border: "none",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          fontSize: 13,
+                          fontWeight: selected ? 700 : 500,
+                          background: selected ? "linear-gradient(135deg,#9B7FFF,#7B5CF0)" : "transparent",
+                          color: selected ? "#fff" : "#7A6FA0",
+                          marginBottom: 1,
+                          transition: "all .13s",
+                          boxShadow: selected ? "0 3px 8px rgba(123,92,240,.22)" : "none",
+                        }}
+                        onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "#F3EFFE"; }}
+                        onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
                 </div>
-                {group.ids.map((id) => {
-                  const badge = currentBadges.find(b => b.conceptId === id);
-                  if (!badge) return null;
-                  const name = badge.nameKo.replace(" 마스터", "");
-                  const selected = id === selectedConceptId;
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => {
-                        setSelectedConceptId(id);
-                        const example = curriculum[id];
-                        if (example?.exampleCode) setCode(example.exampleCode);
-                      }}
-                      style={{
-                        width: "100%",
-                        textAlign: "left",
-                        display: "block",
-                        padding: "7px 10px",
-                        borderRadius: 10,
-                        border: "none",
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                        fontSize: 13,
-                        fontWeight: selected ? 700 : 500,
-                        background: selected ? "linear-gradient(135deg,#9B7FFF,#7B5CF0)" : "transparent",
-                        color: selected ? "#fff" : "#7A6FA0",
-                        marginBottom: 1,
-                        transition: "all .13s",
-                        boxShadow: selected ? "0 3px 8px rgba(123,92,240,.22)" : "none",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!selected) e.currentTarget.style.background = "#F3EFFE";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!selected) e.currentTarget.style.background = "transparent";
-                      }}
-                    >
-                      {name}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── CENTER: Editor column ── */}
@@ -389,20 +677,20 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                 textAlign: "left",
               }}
             >
-              <span style={{ fontSize: 14, fontWeight: 800, color: "#7B5CF0" }}>
-                📖 {currentConcept.nameKo}
+              <span style={{ fontSize: 14, fontWeight: 800, color: mode === "mecdog" ? "#C97B30" : "#7B5CF0" }}>
+                {mode === "mecdog" ? "🐾" : "📖"} {displayConcept.nameKo}
               </span>
               <span
                 style={{
                   fontSize: 11,
                   fontWeight: 600,
-                  color: "#9B7FFF",
-                  background: "#F2ECFD",
+                  color: mode === "mecdog" ? "#C97B30" : "#9B7FFF",
+                  background: mode === "mecdog" ? "#FFF4E6" : "#F2ECFD",
                   padding: "2px 8px",
                   borderRadius: 99,
                 }}
               >
-                {currentConcept.nameEn}
+                {displayConcept.nameEn}
               </span>
               <span
                 style={{
@@ -432,7 +720,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     lineHeight: 1.65,
                   }}
                 >
-                  {currentConcept.explanation}
+                  {displayConcept.explanation}
                 </p>
               </div>
             )}

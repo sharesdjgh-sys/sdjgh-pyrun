@@ -55,6 +55,8 @@ export default function RobotStage({
   const [emotion, setEmotion] = useState<RobotEmotion>("idle");
   const [robotState, setRobotState] = useState<RobotState>("idle");
   const [speech, setSpeech] = useState<string | null>(null);
+  const [mechdogLabel, setMechdogLabel] = useState<string | null>(null);
+  const [mechdogLedColor, setMechdogLedColor] = useState<string | null>(null);
 
   // 캐릭터 렌더링 헬퍼
   const renderCharacter = (
@@ -151,9 +153,15 @@ export default function RobotStage({
         setEmotion(currentEmotion);
         setRobotState("idle");
         setSpeech(null);
+        setMechdogLabel(null);
+        setMechdogLedColor(null);
         setShapes([]);
         setPaths([{ x: 0, y: 0 }]);
         setClones([]);
+
+        // mecdog 로컬 상태 (리액트 state 를 쓰면 비동기 문제가 있어서 클로저 변수 사용)
+        let mechdogSpeed = 0;
+        let mechdogAngle = 0;
 
         await delay(300);
 
@@ -284,6 +292,158 @@ export default function RobotStage({
               break;
             }
 
+            // ── mecdog 시뮬레이션 커맨드 ──────────────────────────────────────
+            case "mechdog_move": {
+              const { speed, angle } = cmd.params;
+              mechdogSpeed = speed;
+              mechdogAngle = angle;
+              if (speed === 0) {
+                setRobotState("idle");
+                setMechdogLabel("정지");
+                currentDir = "right";
+              } else {
+                setRobotState("walking");
+                currentDir = speed > 0 ? "right" : "left";
+                const angleLabel = angle > 0 ? " (좌회전)" : angle < 0 ? " (우회전)" : "";
+                setMechdogLabel(speed > 0 ? `전진 ${speed}${angleLabel}` : `후진 ${Math.abs(speed)}${angleLabel}`);
+              }
+              setDirection(currentDir);
+              await delay(300);
+              break;
+            }
+
+            case "mechdog_wait": {
+              const waitSec = Math.min(cmd.params.seconds ?? 1, 5);
+              const waitMs = waitSec * 1000;
+              // 이동 중이면 위치 갱신
+              if (mechdogSpeed !== 0) {
+                const pxPerSec = (Math.abs(mechdogSpeed) / 120) * 40;
+                const angleRad = (mechdogAngle / 50) * (Math.PI / 4);
+                const dirSign = mechdogSpeed > 0 ? 1 : -1;
+                const dx = dirSign * pxPerSec * waitSec * Math.cos(angleRad);
+                const dy = dirSign * pxPerSec * waitSec * Math.sin(angleRad);
+                const newX = Math.max(-170, Math.min(170, currentPos.x + dx));
+                const newY = Math.max(-120, Math.min(120, currentPos.y + dy));
+                currentPos = { x: newX, y: newY };
+                setPos(currentPos);
+                setPaths((prev) => [...prev, currentPos]);
+              }
+              await delay(waitMs);
+              break;
+            }
+
+            case "mechdog_action": {
+              const actionName = cmd.params.name;
+              const ACTION_MAP: Record<string, { state: RobotState; label: string; ms: number; emotion?: RobotEmotion }> = {
+                default_pose:    { state: "idle",        label: "기본 자세",       ms: 800 },
+                stand_four_legs: { state: "idle",        label: "네 발로 서기",    ms: 800 },
+                sit_dowm:        { state: "celebrating", label: "앉기 🐾",         ms: 1200, emotion: "happy" },
+                sit_down:        { state: "celebrating", label: "앉기 🐾",         ms: 1200, emotion: "happy" },
+                go_prone:        { state: "shaking",     label: "엎드리기",        ms: 1000 },
+                stand_two_legs:  { state: "jumping",     label: "두 발로 서기 🐾", ms: 1500 },
+                handshake:       { state: "celebrating", label: "악수 🤝",         ms: 1500, emotion: "happy" },
+                scrape_a_bow:    { state: "shaking",     label: "인사 🙇",         ms: 1200 },
+                nodding_motion:  { state: "shaking",     label: "고개 끄덕이기",   ms: 1000 },
+                boxing:          { state: "celebrating", label: "권투 🥊",         ms: 2000 },
+                stretch_oneself: { state: "spinning",    label: "기지개 켜기",     ms: 1200 },
+                pee:             { state: "celebrating", label: "쉬~ 💧",          ms: 1500 },
+                press_up:        { state: "jumping",     label: "팔굽혀펴기 💪",  ms: 2000 },
+                rotation_pitch:  { state: "shaking",     label: "앞뒤 흔들기",    ms: 1200 },
+                rotation_roll:   { state: "spinning",    label: "좌우 흔들기",    ms: 1200 },
+                left_foot_kick:  { state: "jumping",     label: "왼발 차기 🦵",   ms: 1000 },
+                right_foot_kick: { state: "jumping",     label: "오른발 차기 🦵", ms: 1000 },
+              };
+              const info = ACTION_MAP[actionName] ?? { state: "celebrating" as RobotState, label: actionName, ms: 1000 };
+              if (info.emotion) currentEmotion = info.emotion;
+              setEmotion(currentEmotion);
+              setRobotState(info.state);
+              setMechdogLabel(info.label);
+              await delay(info.ms);
+              setRobotState("idle");
+              if (info.emotion) { currentEmotion = "idle"; setEmotion("idle"); }
+              setMechdogLabel(null);
+              break;
+            }
+
+            case "mechdog_transform": {
+              const { tz, pitch, roll } = cmd.params;
+              let tLabel = "자세 조절";
+              if (tz > 0) tLabel = "↑ 몸 높이기";
+              else if (tz < 0) tLabel = "↓ 몸 낮추기";
+              else if (pitch > 0) tLabel = "앞으로 기울기";
+              else if (pitch < 0) tLabel = "뒤로 기울기";
+              else if (roll > 0) tLabel = "오른쪽 기울기";
+              else if (roll < 0) tLabel = "왼쪽 기울기";
+              setMechdogLabel(tLabel);
+              setRobotState("shaking");
+              await delay(Math.min(cmd.params.duration || 1000, 2000));
+              setRobotState("idle");
+              setMechdogLabel(null);
+              break;
+            }
+
+            case "mechdog_homeostasis": {
+              const { enabled } = cmd.params;
+              setMechdogLabel(enabled ? "균형 유지 ON ⚖️" : "균형 유지 OFF");
+              setRobotState(enabled ? "shaking" : "idle");
+              await delay(800);
+              setRobotState("idle");
+              setMechdogLabel(null);
+              break;
+            }
+
+            case "mechdog_gait": {
+              const { liftTime, height } = cmd.params;
+              setMechdogLabel(`걸음걸이 조절 (높이 ${height}mm)`);
+              setRobotState(liftTime < 130 ? "jumping" : "walking");
+              await delay(600);
+              setRobotState("idle");
+              setMechdogLabel(null);
+              break;
+            }
+
+            case "mechdog_led": {
+              const { r, g, b } = cmd.params;
+              let ledLabel = "LED 꺼짐";
+              let ledColor = null as string | null;
+              if (r === 0 && g === 0 && b === 0) {
+                ledLabel = "LED 꺼짐";
+                ledColor = null;
+              } else {
+                ledColor = `rgb(${r},${g},${b})`;
+                if (r > 200 && g < 100) ledLabel = "🔴 LED 빨강";
+                else if (g > 150 && r < 100) ledLabel = "🟢 LED 초록";
+                else if (b > 150 && r < 100) ledLabel = "🔵 LED 파랑";
+                else if (r > 150 && g > 130 && b < 30) ledLabel = "🟡 LED 노랑";
+                else if (r > 150 && g < 60 && b > 150) ledLabel = "🟣 LED 보라";
+                else ledLabel = `💡 LED`;
+              }
+              setMechdogLedColor(ledColor);
+              setMechdogLabel(ledLabel);
+              await delay(300);
+              setMechdogLabel(null);
+              break;
+            }
+
+            case "mechdog_buzz": {
+              setMechdogLabel("🔔 부저음");
+              await delay(300);
+              setMechdogLabel(null);
+              break;
+            }
+
+            case "mechdog_display": {
+              const { text } = cmd.params;
+              if (text) {
+                setSpeech(`📟 ${text}`);
+                setRobotState("talking");
+                await delay(800);
+                setRobotState("idle");
+                setSpeech(null);
+              }
+              break;
+            }
+
             default:
               break;
           }
@@ -299,6 +459,8 @@ export default function RobotStage({
         setEmotion(isError ? "sad" : "idle");
         setRobotState(isError ? "error" : "idle");
         setSpeech(null);
+        setMechdogLabel(null);
+        setMechdogLedColor(null);
         setClones([]);
         setShapes([]);
         setPaths([{ x: 0, y: 0 }]);
@@ -317,6 +479,8 @@ export default function RobotStage({
       setEmotion(isError ? "sad" : "idle");
       setRobotState(isError ? "error" : "idle");
       setSpeech(null);
+      setMechdogLabel(null);
+      setMechdogLedColor(null);
       setShapes([]);
       setPaths([{ x: 0, y: 0 }]);
       setClones([]);
@@ -340,6 +504,21 @@ export default function RobotStage({
     <div className="relative w-full aspect-[4/3] bg-[#FCFAFF] border border-[#ECE7F8] rounded-2xl overflow-hidden shadow-sm">
       {/* Layer 0: 배경 격자 점 */}
       <StageBackground />
+
+      {/* mecdog 액션 라벨 */}
+      {mechdogLabel && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+          <div className="flex items-center gap-1.5 bg-purple-50 border border-purple-200 rounded-full px-3 py-1 text-xs font-semibold text-purple-700 shadow-sm whitespace-nowrap">
+            {mechdogLedColor && (
+              <span
+                className="inline-block w-3 h-3 rounded-full border border-white shadow-sm"
+                style={{ background: mechdogLedColor }}
+              />
+            )}
+            <span>🐾 {mechdogLabel}</span>
+          </div>
+        </div>
+      )}
 
       {/* SVG 레이어: 경로 및 드로잉 도형 렌더링 */}
       <svg
