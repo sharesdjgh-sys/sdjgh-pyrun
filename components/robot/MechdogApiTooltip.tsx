@@ -112,7 +112,7 @@ export default function MechdogApiTooltip() {
           transition: "all 0.15s ease",
         }}
       >
-        <span>🐾 mecdog API</span>
+        <span>🐾 mechdog API</span>
         <span
           style={{
             fontSize: 10,
@@ -153,7 +153,7 @@ export default function MechdogApiTooltip() {
               justifyContent: "space-between",
             }}
           >
-            <span>🐾 mecdog 함수 사전</span>
+            <span>🐾 mechdog 함수 사전</span>
             <span
               style={{
                 fontSize: 11,
@@ -201,7 +201,7 @@ export default function MechdogApiTooltip() {
                 <Section title="기본 설정">
                   <Entry
                     sig="mechdog = MechDog()"
-                    desc="mecdog 객체를 만들어요. 모든 명령은 이 객체를 통해 보냅니다."
+                    desc="mechdog 객체를 만들어요. 모든 명령은 이 객체를 통해 보냅니다."
                     example={`from HW_MechDog import MechDog\nmechdog = MechDog()`}
                   />
                   <Entry

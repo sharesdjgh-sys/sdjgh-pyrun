@@ -159,7 +159,7 @@ export default function RobotStage({
         setPaths([{ x: 0, y: 0 }]);
         setClones([]);
 
-        // mecdog 로컬 상태 (리액트 state 를 쓰면 비동기 문제가 있어서 클로저 변수 사용)
+        // mechdog 로컬 상태 (리액트 state 를 쓰면 비동기 문제가 있어서 클로저 변수 사용)
         let mechdogSpeed = 0;
         let mechdogAngle = 0;
 
@@ -292,7 +292,7 @@ export default function RobotStage({
               break;
             }
 
-            // ── mecdog 시뮬레이션 커맨드 ──────────────────────────────────────
+            // ── mechdog 시뮬레이션 커맨드 ──────────────────────────────────────
             case "mechdog_move": {
               const { speed, angle } = cmd.params;
               mechdogSpeed = speed;
@@ -505,7 +505,7 @@ export default function RobotStage({
       {/* Layer 0: 배경 격자 점 */}
       <StageBackground />
 
-      {/* mecdog 액션 라벨 */}
+      {/* mechdog 액션 라벨 */}
       {mechdogLabel && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
           <div className="flex items-center gap-1.5 bg-purple-50 border border-purple-200 rounded-full px-3 py-1 text-xs font-semibold text-purple-700 shadow-sm whitespace-nowrap">

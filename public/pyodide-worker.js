@@ -2,7 +2,7 @@
 
 const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/";
 
-// ── mecdog mock 모듈 ───────────────────────────────────────────────────────────
+// ── mechdog mock 모듈 ───────────────────────────────────────────────────────────
 const MOCK_HW_MECHDOG = `
 import robot as _r
 
@@ -182,7 +182,7 @@ const robot = {
   spin: () => send("robot-command", { command: "spin", args: [] }),
   shake: () => send("robot-command", { command: "shake", args: [] }),
   clear: () => send("robot-command", { command: "clear", args: [] }),
-  // ── mecdog 시뮬레이션 ──
+  // ── mechdog 시뮬레이션 ──
   mechdog_move: (speed, angle) => send("robot-command", { command: "mechdog_move", args: [speed, angle] }),
   mechdog_action: (name) => send("robot-command", { command: "mechdog_action", args: [String(name)] }),
   mechdog_transform: (tx, ty, tz, pitch, roll, yaw, duration) => send("robot-command", { command: "mechdog_transform", args: [tx, ty, tz, pitch, roll, yaw, duration] }),
@@ -210,7 +210,7 @@ async function getPyodide() {
       const pyodide = await loadPyodide({ indexURL: PYODIDE_URL });
       currentPhase = "robot JS 모듈 등록";
       pyodide.registerJsModule("robot", robot);
-      currentPhase = "mecdog mock 모듈 설치";
+      currentPhase = "mechdog mock 모듈 설치";
       pyodide.FS.writeFile("/home/pyodide/HW_MechDog.py", MOCK_HW_MECHDOG);
       pyodide.FS.writeFile("/home/pyodide/Hiwonder.py", MOCK_HIWONDER);
       pyodide.FS.writeFile("/home/pyodide/Hiwonder_IIC.py", MOCK_HIWONDER_IIC);

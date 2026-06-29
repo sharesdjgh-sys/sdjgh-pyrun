@@ -20,9 +20,9 @@ const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert,
 };
 
-type AppMode = "lv1" | "lv2" | "mecdog";
+type AppMode = "lv1" | "lv2" | "mechdog";
 
-interface MecdogExample {
+interface MechdogExample {
   id: string;
   category: string;
   label: string;
@@ -30,16 +30,16 @@ interface MecdogExample {
   code: string;
 }
 
-const MECDOG_EXAMPLES: MecdogExample[] = [
+const MECDOG_EXAMPLES: MechdogExample[] = [
   {
     id: "intro",
     category: "📖 소개",
-    label: "mecdog 소개",
-    description: "mecdog는 Hiwonder의 AI 교육용 4족 보행 로봇이에요! from HW_MechDog import MechDog 로 불러온 뒤, move()로 걷고 action_run()으로 15가지 동작을 실행할 수 있어요. 실제 mecdog 소스코드를 그대로 입력하고 실행해보세요!",
+    label: "mechdog 소개",
+    description: "mechdog는 Hiwonder의 AI 교육용 4족 보행 로봇이에요! from HW_MechDog import MechDog 로 불러온 뒤, move()로 걷고 action_run()으로 15가지 동작을 실행할 수 있어요. 실제 mechdog 소스코드를 그대로 입력하고 실행해보세요!",
     code: `from HW_MechDog import MechDog
 import time
 
-# 🐾 mecdog를 만들어요!
+# 🐾 mechdog를 만들어요!
 mechdog = MechDog()
 mechdog.set_default_pose()  # 기본 자세로 준비
 time.sleep(1)
@@ -77,7 +77,7 @@ time.sleep(2)
     id: "forward_backward",
     category: "4.2 이동 제어",
     label: "전진 / 후진",
-    description: "move(속도, 각도)로 mecdog를 걷게 해요. 속도는 -120~120 (양수=전진, 음수=후진), 각도는 -50~50 (회전 방향)이에요. time.sleep(초)으로 얼마나 이동할지 시간을 조절합니다.",
+    description: "move(속도, 각도)로 mechdog를 걷게 해요. 속도는 -120~120 (양수=전진, 음수=후진), 각도는 -50~50 (회전 방향)이에요. time.sleep(초)으로 얼마나 이동할지 시간을 조절합니다.",
     code: `from HW_MechDog import MechDog
 import time
 
@@ -146,7 +146,7 @@ mechdog.set_default_pose()
     id: "action_run",
     category: "4.3 동작 실행",
     label: "동작 실행",
-    description: "action_run(\"동작이름\")으로 미리 정의된 동작을 실행해요. mecdog는 악수, 인사, 권투, 기지개 등 총 15가지 동작을 지원합니다. time.sleep(초)으로 동작 완료를 충분히 기다려야 자연스러워요.",
+    description: "action_run(\"동작이름\")으로 미리 정의된 동작을 실행해요. mechdog는 악수, 인사, 권투, 기지개 등 총 15가지 동작을 지원합니다. time.sleep(초)으로 동작 완료를 충분히 기다려야 자연스러워요.",
     code: `from HW_MechDog import MechDog
 import time
 
@@ -190,7 +190,7 @@ time.sleep(3)
     id: "homeostasis",
     category: "4.3 동작 실행",
     label: "균형 유지",
-    description: "homeostasis(True)를 켜면 mecdog가 외부 충격을 받아도 자동으로 균형을 잡아요. 실제 로봇을 손으로 밀어도 스스로 자세를 교정합니다. False로 끄면 일반 자세로 돌아와요.",
+    description: "homeostasis(True)를 켜면 mechdog가 외부 충격을 받아도 자동으로 균형을 잡아요. 실제 로봇을 손으로 밀어도 스스로 자세를 교정합니다. False로 끄면 일반 자세로 돌아와요.",
     code: `from HW_MechDog import MechDog
 import time
 
@@ -241,7 +241,7 @@ for i in range(5):
     id: "color_tracking",
     category: "4.5 AI 비전",
     label: "색상 추적",
-    description: "ESP32S3 카메라로 특정 색상을 추적해요. 물체의 X 위치에 따라 mecdog가 방향을 조정하며 이동합니다. 시뮬레이션에서는 카메라가 색상을 감지하지 않아 항상 정지 상태로 표시돼요.",
+    description: "ESP32S3 카메라로 특정 색상을 추적해요. 물체의 X 위치에 따라 mechdog가 방향을 조정하며 이동합니다. 시뮬레이션에서는 카메라가 색상을 감지하지 않아 항상 정지 상태로 표시돼요.",
     code: `import Hiwonder_IIC
 from HW_MechDog import MechDog
 import time
@@ -306,7 +306,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const fontSizeStr = `${fontSize}pt`;
 
   const [mode, setMode] = useState<AppMode>("lv1");
-  const [selectedMecdogId, setSelectedMecdogId] = useState(MECDOG_EXAMPLES[0].id);
+  const [selectedMechdogId, setSelectedMechdogId] = useState(MECDOG_EXAMPLES[0].id);
 
   const currentBadges = mode === "lv2" ? BADGE_METADATA_LV2 : BADGE_METADATA;
   const currentUnitGroups = mode === "lv2" ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV1;
@@ -348,10 +348,10 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, []);
 
   useEffect(() => {
-    if (mode === "mecdog") {
+    if (mode === "mechdog") {
       setCharacterType("dog");
       const first = MECDOG_EXAMPLES[0];
-      setSelectedMecdogId(first.id);
+      setSelectedMechdogId(first.id);
       setCode(first.code);
       return;
     }
@@ -461,17 +461,17 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, [pendingFeedback, showSpeechBubble]);
 
   const handleLoadExample = useCallback(() => {
-    if (mode === "mecdog") {
-      const ex = MECDOG_EXAMPLES.find(e => e.id === selectedMecdogId);
+    if (mode === "mechdog") {
+      const ex = MECDOG_EXAMPLES.find(e => e.id === selectedMechdogId);
       if (ex) setCode(ex.code);
       return;
     }
     const example = curriculum[selectedConceptId];
     if (example) setCode(example.exampleCode);
-  }, [mode, selectedMecdogId, selectedConceptId, curriculum]);
+  }, [mode, selectedMechdogId, selectedConceptId, curriculum]);
 
   const handleLoadPractice = useCallback(() => {
-    if (mode === "mecdog") return;
+    if (mode === "mechdog") return;
     const example = curriculum[selectedConceptId];
     if (example?.practiceCode) setCode(example.practiceCode);
   }, [mode, selectedConceptId, curriculum]);
@@ -491,13 +491,13 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
 
   const currentConcept = curriculum[selectedConceptId];
 
-  const selectedMecdogExample = MECDOG_EXAMPLES.find(e => e.id === selectedMecdogId);
+  const selectedMechdogExample = MECDOG_EXAMPLES.find(e => e.id === selectedMechdogId);
 
-  const displayConcept = mode === "mecdog"
+  const displayConcept = mode === "mechdog"
     ? {
-        nameKo: selectedMecdogExample?.label ?? "mecdog 시뮬레이션",
-        nameEn: selectedMecdogExample?.category ?? "Robot Dog Simulator",
-        explanation: selectedMecdogExample?.description ?? "실제 mecdog 파이썬 코드를 그대로 입력하고 실행해보세요!",
+        nameKo: selectedMechdogExample?.label ?? "mechdog 시뮬레이션",
+        nameEn: selectedMechdogExample?.category ?? "Robot Dog Simulator",
+        explanation: selectedMechdogExample?.description ?? "실제 mechdog 파이썬 코드를 그대로 입력하고 실행해보세요!",
       }
     : currentConcept;
 
@@ -564,10 +564,10 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                   padding: "6px 28px 6px 10px",
                   border: "1.5px solid #E0D8F8",
                   borderRadius: 10,
-                  background: mode === "mecdog"
+                  background: mode === "mechdog"
                     ? "linear-gradient(135deg,#FFF4E6,#FFE8CC)"
                     : "linear-gradient(135deg,#F8F5FF,#F0EAFF)",
-                  color: mode === "mecdog" ? "#C97B30" : "#7B5CF0",
+                  color: mode === "mechdog" ? "#C97B30" : "#7B5CF0",
                   fontSize: 12.5,
                   fontWeight: 700,
                   fontFamily: "inherit",
@@ -580,7 +580,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
               >
                 <option value="lv1">📚 Lv.1 기초</option>
                 <option value="lv2">🚀 Lv.2 심화</option>
-                <option value="mecdog">🐾 mecdog 시뮬</option>
+                <option value="mechdog">🐾 mechdog 시뮬</option>
               </select>
               <span
                 style={{
@@ -589,7 +589,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                   top: "50%",
                   transform: "translateY(-50%)",
                   pointerEvents: "none",
-                  color: mode === "mecdog" ? "#C97B30" : "#9B7FFF",
+                  color: mode === "mechdog" ? "#C97B30" : "#9B7FFF",
                   fontSize: 10,
                 }}
               >
@@ -597,8 +597,8 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
               </span>
             </div>
           </div>
-          {mode === "mecdog" ? (
-            /* mecdog 예제 목록 */
+          {mode === "mechdog" ? (
+            /* mechdog 예제 목록 */
             <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 12px" }}>
               {(() => {
                 const categories = [...new Set(MECDOG_EXAMPLES.map(e => e.category))];
@@ -608,11 +608,11 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                       🐾 {category}
                     </div>
                     {MECDOG_EXAMPLES.filter(ex => ex.category === category).map(ex => {
-                      const selected = selectedMecdogId === ex.id;
+                      const selected = selectedMechdogId === ex.id;
                       return (
                         <button
                           key={ex.id}
-                          onClick={() => { setSelectedMecdogId(ex.id); setCode(ex.code); }}
+                          onClick={() => { setSelectedMechdogId(ex.id); setCode(ex.code); }}
                           style={{
                             width: "100%",
                             textAlign: "left",
@@ -731,15 +731,15 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                 textAlign: "left",
               }}
             >
-              <span style={{ fontSize: 14, fontWeight: 800, color: mode === "mecdog" ? "#C97B30" : "#7B5CF0" }}>
-                {mode === "mecdog" ? "🐾" : "📖"} {displayConcept.nameKo}
+              <span style={{ fontSize: 14, fontWeight: 800, color: mode === "mechdog" ? "#C97B30" : "#7B5CF0" }}>
+                {mode === "mechdog" ? "🐾" : "📖"} {displayConcept.nameKo}
               </span>
               <span
                 style={{
                   fontSize: 11,
                   fontWeight: 600,
-                  color: mode === "mecdog" ? "#C97B30" : "#9B7FFF",
-                  background: mode === "mecdog" ? "#FFF4E6" : "#F2ECFD",
+                  color: mode === "mechdog" ? "#C97B30" : "#9B7FFF",
+                  background: mode === "mechdog" ? "#FFF4E6" : "#F2ECFD",
                   padding: "2px 8px",
                   borderRadius: 99,
                 }}
@@ -833,7 +833,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     style={{ width: 22, height: 22, border: "none", background: "transparent", cursor: "pointer", color: "#7B5CF0", fontWeight: 700, fontSize: 14, lineHeight: 1, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}
                   >+</button>
                 </div>
-                {mode === "mecdog" ? <MechdogApiTooltip /> : <RobotApiTooltip />}
+                {mode === "mechdog" ? <MechdogApiTooltip /> : <RobotApiTooltip />}
               </div>
             </div>
 

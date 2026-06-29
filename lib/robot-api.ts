@@ -84,7 +84,7 @@ export const robotApi = {
     animationQueue.push({ type: "clear", params: {} });
   },
 
-  // ── mecdog 시뮬레이션 API ──
+  // ── mechdog 시뮬레이션 API ──
   mechdog_move(speed: unknown, angle: unknown) {
     animationQueue.push({ type: "mechdog_move", params: { speed: Number(speed) || 0, angle: Number(angle) || 0 } });
   },
