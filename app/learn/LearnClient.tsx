@@ -518,17 +518,24 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  justifyContent: "center",
                   gap: 7,
-                  padding: "11px 22px",
+                  padding: "11px 0",
+                  width: 110,
                   border: "none",
                   borderRadius: 13,
-                  background: running || pyLoading ? "#5ED4AA" : "linear-gradient(180deg,#34D9A6,#18C99A)",
+                  background: running || pyLoading
+                    ? "linear-gradient(180deg,#5EC4A0,#3DAF88)"
+                    : "linear-gradient(180deg,#34D9A6,#18C99A)",
                   color: "#fff",
                   fontFamily: "var(--font-jua), 'Jua', sans-serif",
                   fontSize: 15,
                   cursor: running || pyLoading ? "not-allowed" : "pointer",
-                  boxShadow: "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)",
-                  transition: "transform .12s,box-shadow .12s",
+                  boxShadow: running || pyLoading
+                    ? "0 3px 0 #2A8A68"
+                    : "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)",
+                  opacity: running || pyLoading ? 0.8 : 1,
+                  transition: "transform .12s,box-shadow .12s,opacity .15s",
                   animation: !hasRun && !running && !pyLoading ? "runPulse 1.8s ease-in-out infinite" : undefined,
                 }}
                 onMouseDown={(e) => {
@@ -539,17 +546,32 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                 }}
                 onMouseUp={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.transform = "";
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)";
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = running || pyLoading
+                    ? "0 3px 0 #2A8A68"
+                    : "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)";
                 }}
               >
                 {running ? (
-                  <span style={{ width: 16, height: 16, border: "2.5px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block" }} />
+                  <>
+                    <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      {[0, 0.18, 0.36].map((delay, i) => (
+                        <span key={i} style={{
+                          width: 5, height: 5, borderRadius: "50%", background: "#fff",
+                          display: "inline-block",
+                          animation: `dotBounce 0.7s ${delay}s ease-in-out infinite`,
+                        }} />
+                      ))}
+                    </span>
+                    실행 중
+                  </>
                 ) : (
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" stroke="none">
-                    <path d="M7 4l13 8-13 8z" />
-                  </svg>
+                  <>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" stroke="none">
+                      <path d="M7 4l13 8-13 8z" />
+                    </svg>
+                    실행
+                  </>
                 )}
-                {running ? "실행 중..." : "실행"}
               </button>
 
               {/* Load example */}
