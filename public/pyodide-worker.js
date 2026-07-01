@@ -377,12 +377,9 @@ self.onmessage = (event) => {
       try {
         const pyodide = await getPyodide();
         try { pyodide.FS.mkdir("/data"); } catch {}
-        for (const url of (message.urls || [])) {
-          const res = await fetch(url);
-          if (!res.ok) continue;
-          const buf = await res.arrayBuffer();
-          const filename = url.split("/").pop();
-          pyodide.FS.writeFile(`/data/${filename}`, new Uint8Array(buf));
+        // files: Array<{filename: string, content: string}> — 내용은 메인 스레드에서 미리 fetch
+        for (const file of (message.files || [])) {
+          pyodide.FS.writeFile(`/data/${file.filename}`, file.content);
         }
         send("csvs-ready");
       } catch (error) {

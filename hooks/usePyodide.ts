@@ -49,7 +49,7 @@ export function usePyodide() {
 
   const createWorker = useCallback(() => {
     lv3ReadyRef.current = false;
-    const worker = new Worker("/pyodide-worker.js?v=8");
+    const worker = new Worker("/pyodide-worker.js?v=10");
     workerRef.current = worker;
     setLoading(true);
     setError(null);
@@ -152,10 +152,10 @@ export function usePyodide() {
     };
   }, [createWorker]);
 
-  const preloadCsvs = useCallback((urls: string[]): Promise<void> => {
+  const preloadCsvs = useCallback((files: Array<{filename: string; content: string}>): Promise<void> => {
     const worker = workerRef.current;
     if (!worker) return Promise.reject(new Error("Worker를 찾을 수 없습니다."));
-    worker.postMessage({ type: "preload-csvs", urls });
+    worker.postMessage({ type: "preload-csvs", files });
     return new Promise<void>((resolve, reject) => {
       csvResolverRef.current = { resolve, reject };
     });

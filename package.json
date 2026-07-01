@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "@codemirror/lang-python": "^6.1.9",
-    "@lezer/python": "^1.1.19",
     "@codemirror/state": "^6.5.2",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.36.6",
     "@google/generative-ai": "^0.24.1",
+    "@lezer/python": "^1.1.19",
     "@neondatabase/serverless": "^0.10.4",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",

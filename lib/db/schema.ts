@@ -74,6 +74,13 @@ export const userConceptPractices = pgTable(
   })
 );
 
+export const dataFiles = pgTable("data_files", {
+  id: serial("id").primaryKey(),
+  filename: varchar("filename", { length: 255 }).notNull().unique(),
+  content: text("content").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+});
+
 export const feedbackHistory = pgTable("feedback_history", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")

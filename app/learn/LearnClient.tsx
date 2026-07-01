@@ -384,9 +384,16 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
       (async () => {
         await initLv3();
         const res = await fetch("/api/data/list");
-        const { files } = await res.json();
+        const { files } = await res.json() as { files: Array<{url: string; filename: string}> };
         if (files.length > 0) {
-          await preloadCsvs(files.map((f: string) => `/data/${f}`));
+          const contents = await Promise.all(
+            files.map(async (f) => {
+              const csvRes = await fetch(f.url);
+              const content = await csvRes.text();
+              return { filename: f.filename, content };
+            })
+          );
+          await preloadCsvs(contents);
         }
       })();
       return;

@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, unlink } from "fs/promises";
-import path from "path";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db/index";
+import { dataFiles } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
-const DATA_DIR = path.join(process.cwd(), "public", "data");
+async function requireAdmin(req: NextRequest) {
+  const session = await auth();
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  if (!session || (role !== "teacher" && role !== "admin")) {
+    return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+  }
+  return null;
+}
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -13,9 +25,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "CSV 파일만 업로드할 수 있습니다." }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const dest = path.join(DATA_DIR, file.name);
-    await writeFile(dest, Buffer.from(bytes));
+    const content = await file.text();
+    await db
+      .insert(dataFiles)
+      .values({ filename: file.name, content })
+      .onConflictDoUpdate({ target: dataFiles.filename, set: { content, uploadedAt: new Date() } });
+
     return NextResponse.json({ ok: true, filename: file.name });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
@@ -23,13 +38,15 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
+
   try {
     const { filename } = await req.json();
     if (!filename || !filename.endsWith(".csv")) {
       return NextResponse.json({ error: "올바르지 않은 파일명입니다." }, { status: 400 });
     }
-    const target = path.join(DATA_DIR, path.basename(filename));
-    await unlink(target);
+    await db.delete(dataFiles).where(eq(dataFiles.filename, filename));
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

@@ -46,7 +46,7 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
   const [levelFilter, setLevelFilter] = useState<1 | 2 | 3>(1);
 
   const [adminTab, setAdminTab] = useState<"curriculum" | "data">("curriculum");
-  const [csvFiles, setCsvFiles] = useState<string[]>([]);
+  const [csvFiles, setCsvFiles] = useState<Array<{filename: string; url: string}>>([]);
   const [csvUploading, setCsvUploading] = useState(false);
   const [csvMessage, setCsvMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,7 +54,7 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
   useEffect(() => {
     fetch("/api/data/list")
       .then((r) => r.json())
-      .then(({ files }) => setCsvFiles(files ?? []))
+      .then(({ files }) => setCsvFiles(files ?? [] as Array<{filename: string; url: string}>))
       .catch(() => {});
   }, []);
 
@@ -70,7 +70,10 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
       const data = await res.json();
       if (res.ok) {
         setCsvMessage(`✓ '${data.filename}' 업로드 완료`);
-        setCsvFiles((prev) => [...prev.filter((f) => f !== data.filename), data.filename]);
+        setCsvFiles((prev) => [
+          ...prev.filter((f) => f.filename !== data.filename),
+          { filename: data.filename, url: data.url },
+        ]);
       } else {
         setCsvMessage(`✗ ${data.error}`);
       }
@@ -82,16 +85,16 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
     }
   }
 
-  async function handleCsvDelete(filename: string) {
-    if (!confirm(`'${filename}'을(를) 삭제할까요?`)) return;
+  async function handleCsvDelete(file: {filename: string; url: string}) {
+    if (!confirm(`'${file.filename}'을(를) 삭제할까요?`)) return;
     const res = await fetch("/api/admin/data", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename }),
+      body: JSON.stringify({ filename: file.filename }),
     });
     if (res.ok) {
-      setCsvFiles((prev) => prev.filter((f) => f !== filename));
-      setCsvMessage(`✓ '${filename}' 삭제 완료`);
+      setCsvFiles((prev) => prev.filter((f) => f.filename !== file.filename));
+      setCsvMessage(`✓ '${file.filename}' 삭제 완료`);
     }
   }
 
@@ -276,20 +279,20 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
               <div style={{ fontSize: 13, color: "#B0A8CC", padding: "16px 0" }}>아직 업로드된 파일이 없습니다.</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {csvFiles.map((filename) => (
+                {csvFiles.map((file) => (
                   <div
-                    key={filename}
+                    key={file.filename}
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "#F8F5FF", borderRadius: 12, border: "1px solid #EFEAF8" }}
                   >
                     <FileSpreadsheet size={18} color="#7B5CF0" />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "#3D2E8A" }}>{filename}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#3D2E8A" }}>{file.filename}</div>
                       <div style={{ fontSize: 11.5, color: "#9A93B5" }}>
-                        사용법: <code style={{ color: "#7B5CF0" }}>load_data(&#39;{filename.replace(".csv", "")}&#39;)</code>
+                        사용법: <code style={{ color: "#7B5CF0" }}>load_data(&#39;{file.filename.replace(".csv", "")}&#39;)</code>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleCsvDelete(filename)}
+                      onClick={() => handleCsvDelete(file)}
                       style={{ background: "transparent", border: "none", cursor: "pointer", color: "#D93668", padding: 6, borderRadius: 8, display: "flex", alignItems: "center" }}
                       title="삭제"
                     >
