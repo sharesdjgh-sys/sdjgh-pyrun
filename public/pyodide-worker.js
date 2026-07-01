@@ -138,6 +138,75 @@ def unique_id():
 let pyodidePromise;
 let currentPhase = "Worker 시작";
 
+// ── lv3 데이터 분석 환경 ────────────────────────────────────────────────────────
+let lv3Ready = false;
+let lv3InitPromise = null;
+
+async function initLv3Inner(pyodide) {
+  currentPhase = "데이터 분석 패키지 로드";
+  await pyodide.loadPackage(["numpy", "pandas", "matplotlib", "scikit-learn", "micropip"]);
+  await pyodide.runPythonAsync("import micropip; await micropip.install('seaborn')");
+
+  currentPhase = "한글 폰트 로드";
+  try {
+    const fontRes = await fetch(
+      "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/nanumgothic/NanumGothic-Regular.ttf"
+    );
+    if (fontRes.ok) {
+      const fontBuf = await fontRes.arrayBuffer();
+      try { pyodide.FS.mkdir("/fonts"); } catch {}
+      pyodide.FS.writeFile("/fonts/NanumGothic.ttf", new Uint8Array(fontBuf));
+    }
+  } catch {}
+
+  currentPhase = "시각화 환경 설정";
+  await pyodide.runPythonAsync(`
+import io as _io, base64 as _b64
+import matplotlib as _mpl
+_mpl.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as _fm
+
+# 한글 폰트 등록
+try:
+    _fm.fontManager.addfont('/fonts/NanumGothic.ttf')
+    _kor_font = _fm.FontProperties(fname='/fonts/NanumGothic.ttf').get_name()
+    _mpl.rcParams['font.family'] = _kor_font
+except Exception:
+    pass
+_mpl.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
+
+_plots = []
+
+def _capture_show(*args, **kwargs):
+    buf = _io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', dpi=100, facecolor='white')
+    buf.seek(0)
+    _plots.append(_b64.b64encode(buf.read()).decode('utf-8'))
+    plt.close('all')
+
+plt.show = _capture_show
+
+def load_data(filename):
+    import pandas as _pd
+    return _pd.read_csv(f'/data/{filename}.csv')
+`);
+
+  lv3Ready = true;
+  currentPhase = "실행 대기";
+}
+
+function getInitLv3(pyodide) {
+  if (lv3Ready) return Promise.resolve();
+  if (!lv3InitPromise) {
+    lv3InitPromise = initLv3Inner(pyodide).catch((e) => {
+      lv3InitPromise = null;
+      throw e;
+    });
+  }
+  return lv3InitPromise;
+}
+
 function send(type, payload = {}) {
   self.postMessage({ type, ...payload });
 }
@@ -224,10 +293,16 @@ async function getPyodide() {
   return pyodidePromise;
 }
 
-async function execute(id, code) {
+async function execute(id, code, mode) {
   try {
     currentPhase = "Python 실행 환경 준비";
     const pyodide = await getPyodide();
+
+    if (mode === "lv3") {
+      await getInitLv3(pyodide);
+      await pyodide.runPythonAsync("_plots.clear()");
+    }
+
     pyodide.globals.set('_user_code', code);
 
     currentPhase = "사용자 Python 코드 실행";
@@ -265,14 +340,21 @@ sys.stdout = sys.__stdout__
 sys.stderr = sys.__stderr__
 _output
 `));
+    let plots = [];
+    if (mode === "lv3") {
+      const plotsProxy = pyodide.globals.get("_plots");
+      if (plotsProxy) plots = Array.from(plotsProxy.toJs());
+    }
+
     currentPhase = "실행 대기";
-    send("result", { id, stdout: stdout.trim(), stderr, success });
+    send("result", { id, stdout: stdout.trim(), stderr, success, plots });
   } catch (error) {
     send("result", {
       id,
       stdout: "",
       stderr: `[${currentPhase}]\n${error instanceof Error ? (error.message || String(error)) : String(error)}`,
       success: false,
+      plots: [],
     });
   }
 }
@@ -284,6 +366,28 @@ self.onmessage = (event) => {
       .then(() => send("ready"))
       .catch((error) => send("init-error", errorDetails(error)));
   } else if (message?.type === "execute") {
-    void execute(message.id, String(message.code ?? ""));
+    void execute(message.id, String(message.code ?? ""), message.mode);
+  } else if (message?.type === "init-lv3") {
+    getPyodide()
+      .then((pyodide) => getInitLv3(pyodide))
+      .then(() => send("lv3-ready"))
+      .catch((error) => send("lv3-error", errorDetails(error)));
+  } else if (message?.type === "preload-csvs") {
+    (async () => {
+      try {
+        const pyodide = await getPyodide();
+        try { pyodide.FS.mkdir("/data"); } catch {}
+        for (const url of (message.urls || [])) {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const buf = await res.arrayBuffer();
+          const filename = url.split("/").pop();
+          pyodide.FS.writeFile(`/data/${filename}`, new Uint8Array(buf));
+        }
+        send("csvs-ready");
+      } catch (error) {
+        send("csvs-error", errorDetails(error));
+      }
+    })();
   }
 };

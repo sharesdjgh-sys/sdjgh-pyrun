@@ -8,19 +8,20 @@ import { animationQueue, type RobotCommand } from "@/lib/animation-queue";
 import RobotStage from "@/components/robot/RobotStage";
 import RobotApiTooltip from "@/components/robot/RobotApiTooltip";
 import MechdogApiTooltip from "@/components/robot/MechdogApiTooltip";
+import DataVizPanel from "@/components/editor/DataVizPanel";
 import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
-import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2 } from "@/lib/curriculum";
+import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, CONCEPT_EXAMPLES_LV3, BADGE_METADATA_LV3, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
 import type { CurriculumItem } from "@/lib/curriculum";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword } from "lucide-react";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu } from "lucide-react";
 import Image from "next/image";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
-  Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert,
+  Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu,
 };
 
-type AppMode = "lv1" | "lv2" | "mechdog";
+type AppMode = "lv1" | "lv2" | "lv3" | "mechdog";
 
 interface MechdogExample {
   id: string;
@@ -285,6 +286,24 @@ robot.draw("star")
 robot.dance()
 `;
 
+const INITIAL_CODE_LV3 = `import matplotlib.pyplot as plt
+import numpy as np
+
+# 샘플 데이터
+x = np.linspace(0, 10, 200)
+
+plt.figure(figsize=(8, 4))
+plt.plot(x, np.sin(x), color='#7B5CF0', linewidth=2, label='sin(x)')
+plt.plot(x, np.cos(x), color='#18C99A', linewidth=2, label='cos(x)')
+plt.title('PyRun Studio - Data Visualization Test')
+plt.xlabel('x')
+plt.ylabel('y')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+`;
+
 interface LearnClientProps {
   userName: string;
   curriculum: Record<number, CurriculumItem>;
@@ -307,6 +326,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
 
   const [mode, setMode] = useState<AppMode>("lv1");
   const [selectedMechdogId, setSelectedMechdogId] = useState(MECDOG_EXAMPLES[0].id);
+  const [selectedLv3ConceptId, setSelectedLv3ConceptId] = useState(31);
 
   const currentBadges = mode === "lv2" ? BADGE_METADATA_LV2 : BADGE_METADATA;
   const currentUnitGroups = mode === "lv2" ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV1;
@@ -327,7 +347,9 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runningRef = useRef(false);
 
-  const { loading: pyLoading, error: pyError, executeCode, restart: restartPyodide } = usePyodide();
+  const [plots, setPlots] = useState<string[]>([]);
+
+  const { loading: pyLoading, error: pyError, lv3Loading, initLv3, preloadCsvs, executeCode, restart: restartPyodide } = usePyodide();
 
   const showSpeechBubble = useCallback((text: string, duration = 8000) => {
     setSpeechText(text);
@@ -355,6 +377,20 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
       setCode(first.code);
       return;
     }
+    if (mode === "lv3") {
+      setSelectedLv3ConceptId(31);
+      setCode(CONCEPT_EXAMPLES_LV3[31].exampleCode);
+      setPlots([]);
+      (async () => {
+        await initLv3();
+        const res = await fetch("/api/data/list");
+        const { files } = await res.json();
+        if (files.length > 0) {
+          await preloadCsvs(files.map((f: string) => `/data/${f}`));
+        }
+      })();
+      return;
+    }
     const firstId = mode === "lv2" ? 17 : 0;
     setSelectedConceptId(firstId);
     const example = curriculum[firstId];
@@ -373,12 +409,13 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     setShowVariable(false);
     setIsError(false);
 
-    let stdout = "", stderr = "", success = false;
+    let stdout = "", stderr = "", success = false, newPlots: string[] = [];
     try {
-      ({ stdout, stderr, success } = await executeCode(code));
+      ({ stdout, stderr, success, plots: newPlots = [] } = await executeCode(code, mode === "lv3" ? "lv3" : undefined));
     } finally {
       runningRef.current = false;
     }
+    if (mode === "lv3") setPlots(newPlots);
     setOutput(stdout);
     setExecError(stderr);
     setIsError(!success);
@@ -466,15 +503,25 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
       if (ex) setCode(ex.code);
       return;
     }
+    if (mode === "lv3") {
+      const ex = CONCEPT_EXAMPLES_LV3[selectedLv3ConceptId];
+      if (ex) setCode(ex.exampleCode);
+      return;
+    }
     const example = curriculum[selectedConceptId];
     if (example) setCode(example.exampleCode);
-  }, [mode, selectedMechdogId, selectedConceptId, curriculum]);
+  }, [mode, selectedMechdogId, selectedConceptId, selectedLv3ConceptId, curriculum]);
 
   const handleLoadPractice = useCallback(() => {
     if (mode === "mechdog") return;
+    if (mode === "lv3") {
+      const ex = CONCEPT_EXAMPLES_LV3[selectedLv3ConceptId];
+      if (ex?.practiceCode) setCode(ex.practiceCode);
+      return;
+    }
     const example = curriculum[selectedConceptId];
     if (example?.practiceCode) setCode(example.practiceCode);
-  }, [mode, selectedConceptId, curriculum]);
+  }, [mode, selectedConceptId, selectedLv3ConceptId, curriculum]);
 
   const handleReset = useCallback(() => {
     setCode(INITIAL_CODE);
@@ -499,6 +546,8 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
         nameEn: selectedMechdogExample?.category ?? "Robot Dog Simulator",
         explanation: selectedMechdogExample?.description ?? "실제 mechdog 파이썬 코드를 그대로 입력하고 실행해보세요!",
       }
+    : mode === "lv3"
+    ? CONCEPT_EXAMPLES_LV3[selectedLv3ConceptId]
     : currentConcept;
 
   return (
@@ -566,8 +615,10 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                   borderRadius: 10,
                   background: mode === "mechdog"
                     ? "linear-gradient(135deg,#FFF4E6,#FFE8CC)"
+                    : mode === "lv3"
+                    ? "linear-gradient(135deg,#E8F5E9,#D0F0DD)"
                     : "linear-gradient(135deg,#F8F5FF,#F0EAFF)",
-                  color: mode === "mechdog" ? "#C97B30" : "#7B5CF0",
+                  color: mode === "mechdog" ? "#C97B30" : mode === "lv3" ? "#18C99A" : "#7B5CF0",
                   fontSize: 12.5,
                   fontWeight: 700,
                   fontFamily: "inherit",
@@ -580,6 +631,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
               >
                 <option value="lv1">📚 Lv.1 기초</option>
                 <option value="lv2">🚀 Lv.2 심화</option>
+                <option value="lv3">📊 Lv.3 데이터 분석</option>
                 <option value="mechdog">🐾 mechdog 시뮬</option>
               </select>
               <span
@@ -597,7 +649,47 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
               </span>
             </div>
           </div>
-          {mode === "mechdog" ? (
+          {mode === "lv3" ? (
+            /* lv3 데이터 분석 단원 목록 */
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 12px" }}>
+              {UNIT_GROUPS_LV3.map((group) => (
+                <div key={group.label} style={{ marginBottom: 6 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: group.color, letterSpacing: 0.5, padding: "6px 8px 3px", textTransform: "uppercase" }}>
+                    {(() => { const Icon = GROUP_ICON_MAP[group.icon]; return Icon ? <Icon size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} /> : null; })()}
+                    {group.label}
+                  </div>
+                  {group.ids.map((id) => {
+                    const badge = BADGE_METADATA_LV3.find(b => b.conceptId === id);
+                    if (!badge) return null;
+                    const selected = id === selectedLv3ConceptId;
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => {
+                          setSelectedLv3ConceptId(id);
+                          setCode(CONCEPT_EXAMPLES_LV3[id].exampleCode);
+                        }}
+                        style={{
+                          width: "100%", textAlign: "left", display: "block",
+                          padding: "7px 10px", borderRadius: 10, border: "none",
+                          cursor: "pointer", fontFamily: "inherit", fontSize: 13,
+                          fontWeight: selected ? 700 : 500,
+                          background: selected ? "linear-gradient(135deg,#34D9A6,#18C99A)" : "transparent",
+                          color: selected ? "#fff" : "#7A6FA0",
+                          marginBottom: 1, transition: "all .13s",
+                          boxShadow: selected ? "0 3px 8px rgba(24,201,154,.22)" : "none",
+                        }}
+                        onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "#E8F5E9"; }}
+                        onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
+                      >
+                        {badge.nameKo}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ) : mode === "mechdog" ? (
             /* mechdog 예제 목록 */
             <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 12px" }}>
               {(() => {
@@ -731,20 +823,18 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                 textAlign: "left",
               }}
             >
-              <span style={{ fontSize: 14, fontWeight: 800, color: mode === "mechdog" ? "#C97B30" : "#7B5CF0" }}>
-                {mode === "mechdog" ? "🐾" : "📖"} {displayConcept.nameKo}
+              <span style={{ fontSize: 14, fontWeight: 800, color: mode === "mechdog" ? "#C97B30" : mode === "lv3" ? "#18C99A" : "#7B5CF0" }}>
+                {mode === "mechdog" ? "🐾" : mode === "lv3" ? "📊" : "📖"} {displayConcept?.nameKo}
               </span>
               <span
                 style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: mode === "mechdog" ? "#C97B30" : "#9B7FFF",
-                  background: mode === "mechdog" ? "#FFF4E6" : "#F2ECFD",
-                  padding: "2px 8px",
-                  borderRadius: 99,
+                  fontSize: 11, fontWeight: 600,
+                  color: mode === "mechdog" ? "#C97B30" : mode === "lv3" ? "#18C99A" : "#9B7FFF",
+                  background: mode === "mechdog" ? "#FFF4E6" : mode === "lv3" ? "#E8F5E9" : "#F2ECFD",
+                  padding: "2px 8px", borderRadius: 99,
                 }}
               >
-                {displayConcept.nameEn}
+                {displayConcept?.nameEn}
               </span>
               <span
                 style={{
@@ -774,7 +864,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     lineHeight: 1.65,
                   }}
                 >
-                  {displayConcept.explanation}
+                  {displayConcept?.explanation}
                 </p>
               </div>
             )}
@@ -1122,7 +1212,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
           </div>
         </div>
 
-        {/* ── RIGHT: Robot column ── */}
+        {/* ── RIGHT: Robot / DataViz column ── */}
         <div style={{ flex: 0.85, minWidth: 280, display: "flex", flexDirection: "column", gap: 10 }}>
           <div
             style={{
@@ -1138,6 +1228,31 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
               position: "relative",
             }}
           >
+            {mode === "lv3" ? (
+              /* ── 데이터 시각화 패널 ── */
+              <>
+                <div
+                  style={{
+                    flex: "none",
+                    padding: "12px 16px 8px",
+                    borderBottom: "1px solid #EFEAF8",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#18C99A" }}>📊 시각화 결과</span>
+                  {lv3Loading && (
+                    <span style={{ fontSize: 11, color: "#B0A8CC", display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ width: 10, height: 10, border: "2px solid #EFEAF8", borderTopColor: "#18C99A", borderRadius: "50%", display: "inline-block", animation: "spin 0.9s linear infinite" }} />
+                      패키지 로딩 중...
+                    </span>
+                  )}
+                </div>
+                <DataVizPanel plots={plots} lv3Loading={lv3Loading} />
+              </>
+            ) : (
+            <>
             {/* AI feedback bubble */}
             <div style={{ flex: "none", minHeight: 66, padding: "12px 14px 4px" }}>
               <div
@@ -1245,6 +1360,8 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                 isError={isError}
               />
             </div>
+            </>
+            )}
           </div>
         </div>
       </div>

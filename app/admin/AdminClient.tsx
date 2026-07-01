@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2 } from "@/lib/curriculum";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert } from "lucide-react";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet } from "lucide-react";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert,
@@ -44,6 +44,56 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [levelFilter, setLevelFilter] = useState<1 | 2>(1);
+
+  const [adminTab, setAdminTab] = useState<"curriculum" | "data">("curriculum");
+  const [csvFiles, setCsvFiles] = useState<string[]>([]);
+  const [csvUploading, setCsvUploading] = useState(false);
+  const [csvMessage, setCsvMessage] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/data/list")
+      .then((r) => r.json())
+      .then(({ files }) => setCsvFiles(files ?? []))
+      .catch(() => {});
+  }, []);
+
+  async function handleCsvUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvUploading(true);
+    setCsvMessage("");
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const res = await fetch("/api/admin/data", { method: "POST", body: form });
+      const data = await res.json();
+      if (res.ok) {
+        setCsvMessage(`✓ '${data.filename}' 업로드 완료`);
+        setCsvFiles((prev) => [...prev.filter((f) => f !== data.filename), data.filename]);
+      } else {
+        setCsvMessage(`✗ ${data.error}`);
+      }
+    } catch {
+      setCsvMessage("✗ 네트워크 오류");
+    } finally {
+      setCsvUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleCsvDelete(filename: string) {
+    if (!confirm(`'${filename}'을(를) 삭제할까요?`)) return;
+    const res = await fetch("/api/admin/data", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename }),
+    });
+    if (res.ok) {
+      setCsvFiles((prev) => prev.filter((f) => f !== filename));
+      setCsvMessage(`✓ '${filename}' 삭제 완료`);
+    }
+  }
 
   function handleSelectConcept(concept: Concept) {
     setSelectedId(concept.id);
@@ -156,19 +206,103 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
         </a>
       </header>
 
+      {/* Tab selector */}
+      <div style={{ display: "flex", gap: 4, padding: "12px 28px 0", maxWidth: 1200, width: "100%", margin: "0 auto", boxSizing: "border-box" }}>
+        {([["curriculum", "📚 커리큘럼 편집"], ["data", "📊 데이터 파일 관리"]] as const).map(([tab, label]) => (
+          <button
+            key={tab}
+            onClick={() => setAdminTab(tab)}
+            style={{
+              padding: "9px 18px",
+              border: "none",
+              borderRadius: "12px 12px 0 0",
+              background: adminTab === tab ? "#fff" : "transparent",
+              color: adminTab === tab ? "#7B5CF0" : "#9A93B5",
+              fontWeight: adminTab === tab ? 700 : 500,
+              fontSize: 13.5,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              borderBottom: adminTab === tab ? "2px solid #7B5CF0" : "2px solid transparent",
+              transition: "all .13s",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Main content */}
       <div
         style={{
           flex: 1,
           display: "flex",
           gap: 20,
-          padding: "20px 28px 28px",
+          padding: "12px 28px 28px",
           maxWidth: 1200,
           width: "100%",
           margin: "0 auto",
           boxSizing: "border-box",
         }}
       >
+        {adminTab === "data" ? (
+          /* ── 데이터 파일 관리 탭 ── */
+          <div style={{ flex: 1, background: "#fff", borderRadius: 20, border: "1px solid #EFEAF8", boxShadow: "0 8px 24px rgba(90,63,214,.06)", padding: "28px 32px" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#3D2E8A", marginBottom: 6 }}>📊 데이터 파일 관리</div>
+            <div style={{ fontSize: 13, color: "#8B83A8", marginBottom: 24 }}>
+              학생들이 <code style={{ background: "#F4EFFC", color: "#7B5CF0", padding: "1px 6px", borderRadius: 5 }}>load_data(&#39;파일명&#39;)</code>으로 불러올 CSV 파일을 업로드하세요.
+            </div>
+
+            {/* 업로드 영역 */}
+            <div
+              style={{ border: "2px dashed #C9BFEE", borderRadius: 16, padding: "28px 24px", textAlign: "center", marginBottom: 24, background: "#FDFAFF", cursor: "pointer" }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload size={32} color="#C9BFEE" style={{ marginBottom: 10 }} />
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#7B5CF0", marginBottom: 4 }}>CSV 파일 클릭하여 업로드</div>
+              <div style={{ fontSize: 12, color: "#B0A8CC" }}>.csv 파일만 가능합니다</div>
+              <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvUpload} />
+            </div>
+
+            {csvUploading && <div style={{ fontSize: 13, color: "#7B5CF0", marginBottom: 12 }}>업로드 중...</div>}
+            {csvMessage && (
+              <div style={{ fontSize: 13, color: csvMessage.startsWith("✓") ? "#18C99A" : "#E23E70", marginBottom: 16, fontWeight: 600 }}>
+                {csvMessage}
+              </div>
+            )}
+
+            {/* 파일 목록 */}
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#544D70", marginBottom: 10 }}>업로드된 파일 ({csvFiles.length}개)</div>
+            {csvFiles.length === 0 ? (
+              <div style={{ fontSize: 13, color: "#B0A8CC", padding: "16px 0" }}>아직 업로드된 파일이 없습니다.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {csvFiles.map((filename) => (
+                  <div
+                    key={filename}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "#F8F5FF", borderRadius: 12, border: "1px solid #EFEAF8" }}
+                  >
+                    <FileSpreadsheet size={18} color="#7B5CF0" />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#3D2E8A" }}>{filename}</div>
+                      <div style={{ fontSize: 11.5, color: "#9A93B5" }}>
+                        사용법: <code style={{ color: "#7B5CF0" }}>load_data(&#39;{filename.replace(".csv", "")}&#39;)</code>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleCsvDelete(filename)}
+                      style={{ background: "transparent", border: "none", cursor: "pointer", color: "#D93668", padding: 6, borderRadius: 8, display: "flex", alignItems: "center" }}
+                      title="삭제"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+        /* ── 커리큘럼 편집 탭 ── */
+        <>
         {/* Sidebar */}
         <div
           style={{
@@ -571,6 +705,8 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
 
       <style>{`

@@ -2005,3 +2005,618 @@ export const UNIT_GROUPS_LV2 = [
   { label: "함수/클래스(심화)", icon: "Braces",     color: "#DB2777", ids: [27, 28] },
   { label: "예외처리/라이브러리", icon: "ShieldAlert", color: "#DC2626", ids: [29, 30] },
 ];
+
+// ── Lv.3 데이터 분석 ──────────────────────────────────────────────────────────
+
+export const CONCEPT_EXAMPLES_LV3: Record<number, CurriculumItem> = {
+  31: {
+    nameKo: "데이터 탐색",
+    nameEn: "Data Exploration",
+    explanation: "load_data()로 CSV 파일을 불러오고 head(), info(), describe()로 데이터의 구조와 통계를 파악해요.",
+    exampleCode: `import pandas as pd
+
+# 데이터 불러오기
+df = load_data('titanic')
+
+# 크기 확인
+print(f"행: {df.shape[0]}개, 열: {df.shape[1]}개")
+
+# 처음 5행 출력
+print("\\n=== 처음 5행 ===")
+print(df.head().to_string())
+
+# 데이터 타입 및 결측치
+print("\\n=== 컬럼 정보 ===")
+df.info()
+
+# 기술 통계량
+print("\\n=== 기술 통계량 ===")
+print(df.describe())
+`,
+    practiceCode: `import pandas as pd
+
+# 🎯 도전! 아래 질문에 답해보세요.
+df = load_data('titanic')
+
+# Q1. 데이터는 총 몇 행 몇 열인가요?
+print("데이터 크기:", ___.___)
+
+# Q2. 각 컬럼의 결측치는 몇 개인가요?
+print("결측치:\\n", ___.___.___)
+
+# Q3. 'Age' 컬럼의 평균과 최댓값은 얼마인가요?
+print("나이 평균:", round(df['Age'].___(), 1))
+print("나이 최대:", df['Age'].___())
+`,
+  },
+  32: {
+    nameKo: "상관관계 분석",
+    nameEn: "Correlation Analysis",
+    explanation: "변수 간의 상관계수를 계산하고 히트맵으로 시각화해요. 1에 가까울수록 양의 상관, -1에 가까울수록 음의 상관입니다.",
+    exampleCode: `import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+df = load_data('titanic')
+
+# 수치형 컬럼만 선택
+numeric_df = df.select_dtypes(include=['number'])
+
+print("=== 상관관계 행렬 ===")
+print(numeric_df.corr().round(2).to_string())
+
+# 히트맵 시각화
+plt.figure(figsize=(8, 6))
+sns.heatmap(
+    numeric_df.corr(),
+    annot=True, cmap='coolwarm',
+    fmt='.2f', center=0, square=True,
+    cbar_kws={'label': '상관계수'}
+)
+plt.title('변수 간 상관관계 히트맵')
+plt.tight_layout()
+plt.show()
+`,
+    practiceCode: `import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+df = load_data('titanic')
+numeric_df = df.select_dtypes(include=['number'])
+
+# Q1. 'Survived'와 가장 상관관계가 높은 변수는?
+corr = numeric_df.corr()
+print("Survived 상관계수:\\n", corr['Survived'].sort_values(ascending=False))
+
+# Q2. 히트맵 색상을 'Blues'로 바꿔서 그려보세요
+plt.figure(figsize=(8, 6))
+sns.heatmap(
+    numeric_df.corr(),
+    annot=True, cmap=___,   # 'Blues'로 수정
+    fmt='.2f', center=0, square=True
+)
+plt.title('상관관계 히트맵')
+plt.tight_layout()
+plt.show()
+`,
+  },
+  33: {
+    nameKo: "히스토그램",
+    nameEn: "Histogram",
+    explanation: "데이터의 분포를 히스토그램으로 시각화해요. bins 값을 조절해 막대 개수를 바꿀 수 있어요.",
+    exampleCode: `import pandas as pd
+import matplotlib.pyplot as plt
+
+df = load_data('titanic')
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+# 나이 분포
+df['Age'].dropna().plot(
+    kind='hist', bins=20, ax=axes[0],
+    color='#7B5CF0', edgecolor='white', alpha=0.8
+)
+axes[0].set_title('나이 분포')
+axes[0].set_xlabel('나이')
+axes[0].set_ylabel('인원')
+
+# 요금 분포
+df['Fare'].plot(
+    kind='hist', bins=30, ax=axes[1],
+    color='#18C99A', edgecolor='white', alpha=0.8
+)
+axes[1].set_title('요금 분포')
+axes[1].set_xlabel('요금')
+axes[1].set_ylabel('인원')
+
+plt.tight_layout()
+plt.show()
+`,
+    practiceCode: `import pandas as pd
+import matplotlib.pyplot as plt
+
+df = load_data('titanic')
+
+# 🎯 객실 등급(Pclass)별 요금(Fare) 분포를 히스토그램으로 그려보세요
+# 힌트: Pclass 1, 2, 3을 각각 필터링 후 overlapping histogram
+
+fig, ax = plt.subplots(figsize=(8, 5))
+
+for pclass, color in zip([1, 2, 3], ['#7B5CF0', '#18C99A', '#FF5C8A']):
+    df[df['Pclass'] == pclass]['Fare'].plot(
+        kind='hist', bins=___, ax=ax,
+        color=color, alpha=0.5, label=f'{pclass}등급'
+    )
+
+ax.set_title('객실 등급별 요금 분포')
+ax.set_xlabel('요금')
+ax.legend()
+plt.tight_layout()
+plt.show()
+`,
+  },
+  34: {
+    nameKo: "산점도",
+    nameEn: "Scatter Plot",
+    explanation: "두 수치형 변수의 관계를 산점도로 시각화해요. 색상을 통해 범주형 변수도 함께 표현할 수 있어요.",
+    exampleCode: `import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
+df = load_data('titanic')
+df = df.dropna(subset=['Age', 'Fare'])
+
+# 생존 여부에 따라 색상 구분
+colors = df['Survived'].map({0: '#FF5C8A', 1: '#7B5CF0'})
+
+plt.figure(figsize=(8, 5))
+plt.scatter(df['Age'], df['Fare'], c=colors, alpha=0.5, s=30)
+plt.title('나이 vs 요금 (색상: 생존여부)')
+plt.xlabel('나이')
+plt.ylabel('요금')
+plt.legend(handles=[
+    mpatches.Patch(color='#FF5C8A', label='사망'),
+    mpatches.Patch(color='#7B5CF0', label='생존'),
+])
+plt.tight_layout()
+plt.show()
+`,
+    practiceCode: `import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
+df = load_data('titanic')
+df = df.dropna(subset=['Age', 'Fare'])
+
+# 🎯 객실 등급(Pclass)에 따라 색상을 다르게 산점도를 그려보세요
+color_map = {1: '#7B5CF0', 2: '#18C99A', 3: '#FF5C8A'}
+colors = df['Pclass'].map(___)
+
+plt.figure(figsize=(8, 5))
+plt.scatter(df['Age'], df['Fare'], c=colors, alpha=0.5, s=30)
+plt.title('나이 vs 요금 (색상: 객실등급)')
+plt.xlabel('나이')
+plt.ylabel('요금')
+plt.legend(handles=[
+    mpatches.Patch(color=c, label=f'{p}등급')
+    for p, c in color_map.items()
+])
+plt.tight_layout()
+plt.show()
+`,
+  },
+  35: {
+    nameKo: "박스플롯과 이상치",
+    nameEn: "Boxplot & Outliers",
+    explanation: "박스플롯으로 데이터 분포와 이상치를 확인해요. IQR 방법으로 이상치를 탐지하고 처리할 수 있어요.",
+    exampleCode: `import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+
+df = load_data('titanic')
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+
+sns.boxplot(
+    data=df, x='Survived', y='Age',
+    palette={'0': '#FF5C8A', '1': '#7B5CF0'}, ax=axes[0]
+)
+axes[0].set_title('생존 여부별 나이')
+axes[0].set_xlabel('0=사망  1=생존')
+
+sns.boxplot(
+    data=df, x='Pclass', y='Fare',
+    palette={'1': '#FFC23C', '2': '#7B5CF0', '3': '#18C99A'}, ax=axes[1]
+)
+axes[1].set_title('객실 등급별 요금')
+plt.tight_layout()
+plt.show()
+
+# IQR 이상치 탐지
+col = df['Fare']
+Q1, Q3 = col.quantile(0.25), col.quantile(0.75)
+IQR = Q3 - Q1
+outliers = df[(col < Q1 - 1.5*IQR) | (col > Q3 + 1.5*IQR)]
+print(f"Fare 이상치: {len(outliers)}개 (전체의 {len(outliers)/len(df)*100:.1f}%)")
+`,
+    practiceCode: `import pandas as pd
+import numpy as np
+
+df = load_data('titanic')
+
+# 🎯 Age 컬럼의 이상치를 IQR 방법으로 탐지하고
+#    Winsorization(경계값으로 대체)을 적용해보세요
+
+col = df['Age'].dropna()
+Q1 = col.quantile(___)   # 1사분위수
+Q3 = col.quantile(___)   # 3사분위수
+IQR = Q3 - Q1
+
+lower = Q1 - 1.5 * IQR
+upper = Q3 + 1.5 * IQR
+
+print(f"하한: {lower:.1f}, 상한: {upper:.1f}")
+print(f"이상치 개수: {((col < lower) | (col > upper)).sum()}개")
+
+# Winsorization 적용
+df['Age_clean'] = df['Age'].clip(lower=lower, upper=upper)
+print(f"\\n원본 최댓값: {df['Age'].max()}")
+print(f"처리 후 최댓값: {df['Age_clean'].max()}")
+`,
+  },
+  36: {
+    nameKo: "결측치 처리",
+    nameEn: "Missing Value Handling",
+    explanation: "isnull()로 결측치를 확인하고 fillna()로 채우거나 dropna()로 제거해요. 평균·중앙값·최빈값 중 상황에 맞는 방법을 선택하세요.",
+    exampleCode: `import pandas as pd
+
+df = load_data('titanic')
+
+# 결측치 현황
+print("=== 결측치 개수 ===")
+print(df.isnull().sum())
+
+print("\\n=== 결측치 비율(%) ===")
+print((df.isnull().sum() / len(df) * 100).round(1))
+
+# 결측치 처리
+df_clean = df.copy()
+
+# 중앙값으로 채우기 (수치형)
+df_clean['Age'] = df_clean['Age'].fillna(df_clean['Age'].median())
+
+# 최빈값으로 채우기 (범주형)
+df_clean['Embarked'] = df_clean['Embarked'].fillna(
+    df_clean['Embarked'].mode()[0]
+)
+
+# 결측치가 너무 많으면 컬럼 삭제
+df_clean = df_clean.drop(columns=['Cabin'])
+
+print("\\n=== 처리 후 결측치 ===")
+print(df_clean.isnull().sum())
+`,
+    practiceCode: `import pandas as pd
+
+df = load_data('titanic')
+df_clean = df.copy()
+
+# 🎯 아래 조건에 맞게 결측치를 처리해보세요
+
+# Q1. Age 결측치를 평균값으로 채우세요 (힌트: .mean())
+df_clean['Age'] = df_clean['Age'].fillna(___)
+
+# Q2. Embarked 결측치를 최빈값으로 채우세요
+df_clean['Embarked'] = df_clean['Embarked'].fillna(___)
+
+# Q3. Cabin 컬럼은 결측치가 너무 많아요. 삭제해보세요
+df_clean = df_clean.drop(columns=___)
+
+print("처리 후 결측치:")
+print(df_clean.isnull().sum())
+`,
+  },
+  37: {
+    nameKo: "인코딩",
+    nameEn: "Encoding",
+    explanation: "문자형 데이터를 숫자로 변환하는 인코딩이에요. 이진 범주형엔 Label Encoding, 다중 범주형엔 One-Hot Encoding을 사용해요.",
+    exampleCode: `import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
+df = load_data('titanic')
+df_enc = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df_enc['Age'] = df_enc['Age'].fillna(df_enc['Age'].median())
+df_enc['Embarked'] = df_enc['Embarked'].fillna('S')
+
+# Label Encoding (이진: male/female)
+le = LabelEncoder()
+df_enc['Sex'] = le.fit_transform(df_enc['Sex'])
+print("Sex 매핑:", dict(zip(le.classes_, le.transform(le.classes_))))
+
+# One-Hot Encoding (다중: 승선항)
+df_enc = pd.get_dummies(df_enc, columns=['Embarked'], drop_first=True, dtype=int)
+
+print("\\n=== 인코딩 완료 ===")
+print(df_enc.head().to_string())
+print("\\n컬럼:", df_enc.columns.tolist())
+`,
+    practiceCode: `import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
+df = load_data('titanic')
+df_enc = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df_enc['Age'] = df_enc['Age'].fillna(df_enc['Age'].median())
+df_enc['Embarked'] = df_enc['Embarked'].fillna('S')
+
+# 🎯 Sex 컬럼을 Label Encoding 하세요
+le = ___()
+df_enc['Sex'] = le.fit_transform(___)
+print("Sex 매핑:", dict(zip(le.classes_, le.transform(le.classes_))))
+
+# 🎯 Embarked 컬럼을 One-Hot Encoding 하세요
+df_enc = pd.get_dummies(df_enc, columns=___, drop_first=True, dtype=int)
+
+print("인코딩 후 컬럼:", df_enc.columns.tolist())
+`,
+  },
+  38: {
+    nameKo: "회귀 분석",
+    nameEn: "Regression",
+    explanation: "연속형 값을 예측하는 회귀 분석이에요. 선형 회귀, 결정 트리, 랜덤 포레스트 회귀 모델을 비교해봐요.",
+    exampleCode: `import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
+from sklearn.preprocessing import LabelEncoder
+
+df = load_data('titanic')
+df = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df['Age'] = df['Age'].fillna(df['Age'].median())
+df['Embarked'] = df['Embarked'].fillna('S')
+df['Sex'] = LabelEncoder().fit_transform(df['Sex'])
+df = pd.get_dummies(df, columns=['Embarked'], drop_first=True, dtype=int)
+df = df.dropna()
+
+# 요금(Fare) 예측
+X = df.drop(columns=['Fare'])
+y = df['Fare']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+models = {
+    '선형 회귀': LinearRegression(),
+    '결정 트리': DecisionTreeRegressor(random_state=42),
+    '랜덤 포레스트': RandomForestRegressor(n_estimators=100, random_state=42),
+}
+
+scores = {}
+for name, m in models.items():
+    m.fit(X_train, y_train)
+    scores[name] = r2_score(y_test, m.predict(X_test))
+    print(f"{name} R²: {scores[name]:.4f}")
+
+plt.figure(figsize=(7, 4))
+plt.bar(scores.keys(), scores.values(), color=['#7B5CF0', '#18C99A', '#FF5C8A'])
+plt.title('회귀 모델 R² 비교')
+plt.ylabel('R² Score')
+plt.ylim(0, 1)
+plt.tight_layout()
+plt.show()
+`,
+    practiceCode: `import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.preprocessing import LabelEncoder
+
+df = load_data('titanic')
+df = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df['Age'] = df['Age'].fillna(df['Age'].median())
+df['Embarked'] = df['Embarked'].fillna('S')
+df['Sex'] = LabelEncoder().fit_transform(df['Sex'])
+df = pd.get_dummies(df, columns=['Embarked'], drop_first=True, dtype=int)
+df = df.dropna()
+
+# 🎯 Survived(생존여부)를 제외한 나머지로 Fare(요금)를 예측해보세요
+X = df.drop(columns=[___, ___])   # 'Fare', 'Survived' 제거
+y = df['Fare']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = LinearRegression()
+model.fit(___, ___)   # 훈련
+
+y_pred = model.predict(___)   # 예측
+
+print(f"MAE: {mean_absolute_error(y_test, y_pred):.2f}")
+print(f"R²: {r2_score(y_test, y_pred):.4f}")
+`,
+  },
+  39: {
+    nameKo: "분류 분석",
+    nameEn: "Classification",
+    explanation: "범주를 예측하는 분류 분석이에요. SVM, KNN, 결정 트리, 랜덤 포레스트로 생존 여부를 예측해봐요.",
+    exampleCode: `import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.preprocessing import LabelEncoder
+
+df = load_data('titanic')
+df = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df['Age'] = df['Age'].fillna(df['Age'].median())
+df['Embarked'] = df['Embarked'].fillna('S')
+df['Sex'] = LabelEncoder().fit_transform(df['Sex'])
+df = pd.get_dummies(df, columns=['Embarked'], drop_first=True, dtype=int)
+df = df.dropna()
+
+X = df.drop(columns=['Survived'])
+y = df['Survived']
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
+y_pred = rf.predict(X_test)
+
+print(f"랜덤 포레스트 정확도: {accuracy_score(y_test, y_pred):.4f}")
+
+plt.figure(figsize=(5, 4))
+sns.heatmap(
+    confusion_matrix(y_test, y_pred),
+    annot=True, fmt='d', cmap='Purples'
+)
+plt.title('Confusion Matrix')
+plt.xlabel('예측값')
+plt.ylabel('실제값')
+plt.tight_layout()
+plt.show()
+`,
+    practiceCode: `import pandas as pd
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import LabelEncoder
+
+df = load_data('titanic')
+df = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df['Age'] = df['Age'].fillna(df['Age'].median())
+df['Embarked'] = df['Embarked'].fillna('S')
+df['Sex'] = LabelEncoder().fit_transform(df['Sex'])
+df = pd.get_dummies(df, columns=['Embarked'], drop_first=True, dtype=int)
+df = df.dropna()
+
+X = df.drop(columns=['Survived'])
+y = df['Survived']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# 🎯 KNN 모델로 생존 여부를 예측해보세요 (n_neighbors=5)
+model = KNeighborsClassifier(n_neighbors=___)
+model.fit(___, ___)
+y_pred = model.predict(___)
+
+print(f"KNN 정확도: {accuracy_score(y_test, y_pred):.4f}")
+print("\\n분류 리포트:")
+print(classification_report(y_test, y_pred))
+`,
+  },
+  40: {
+    nameKo: "모델 성능 비교",
+    nameEn: "Model Comparison",
+    explanation: "여러 분류 모델의 정확도를 한눈에 비교해요. 데이터에 맞는 최적의 모델을 찾는 것이 기계학습의 핵심이에요!",
+    exampleCode: `import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import LabelEncoder
+
+df = load_data('titanic')
+df = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df['Age'] = df['Age'].fillna(df['Age'].median())
+df['Embarked'] = df['Embarked'].fillna('S')
+df['Sex'] = LabelEncoder().fit_transform(df['Sex'])
+df = pd.get_dummies(df, columns=['Embarked'], drop_first=True, dtype=int)
+df = df.dropna()
+
+X = df.drop(columns=['Survived'])
+y = df['Survived']
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+models = {
+    '로지스틱 회귀': LogisticRegression(max_iter=200),
+    '결정 트리':     DecisionTreeClassifier(random_state=42),
+    '랜덤 포레스트': RandomForestClassifier(n_estimators=100, random_state=42),
+    'KNN':           KNeighborsClassifier(n_neighbors=5),
+    'SVM':           SVC(random_state=42),
+}
+
+results = {}
+for name, m in models.items():
+    m.fit(X_train, y_train)
+    results[name] = accuracy_score(y_test, m.predict(X_test))
+    print(f"{name}: {results[name]:.4f}")
+
+colors = ['#7B5CF0', '#18C99A', '#FF5C8A', '#FFC23C', '#4F8EF7']
+plt.figure(figsize=(9, 5))
+plt.bar(results.keys(), results.values(), color=colors)
+plt.ylim(0, 1)
+plt.title('분류 모델 정확도 비교')
+plt.ylabel('정확도 (Accuracy)')
+plt.xticks(rotation=15)
+plt.axhline(y=0.8, color='red', linestyle='--', alpha=0.5, label='0.8 기준선')
+plt.legend()
+plt.tight_layout()
+plt.show()
+`,
+    practiceCode: `import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import LabelEncoder
+
+df = load_data('titanic')
+df = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df['Age'] = df['Age'].fillna(df['Age'].median())
+df['Embarked'] = df['Embarked'].fillna('S')
+df['Sex'] = LabelEncoder().fit_transform(df['Sex'])
+df = pd.get_dummies(df, columns=['Embarked'], drop_first=True, dtype=int)
+df = df.dropna()
+
+X = df.drop(columns=['Survived'])
+y = df['Survived']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# 🎯 n_estimators 값을 바꿔가며 랜덤 포레스트 성능을 비교해보세요
+results = {}
+for n in [10, 50, 100, 200]:
+    m = RandomForestClassifier(n_estimators=___, random_state=42)
+    m.fit(X_train, y_train)
+    results[f'n={n}'] = accuracy_score(y_test, m.predict(X_test))
+    print(f"n_estimators={n}: {results[f'n={n}']:.4f}")
+
+plt.figure(figsize=(7, 4))
+plt.plot(list(results.keys()), list(results.values()), 'o-', color='#7B5CF0', linewidth=2)
+plt.title('n_estimators에 따른 정확도 변화')
+plt.ylabel('정확도')
+plt.tight_layout()
+plt.show()
+`,
+  },
+};
+
+export const BADGE_METADATA_LV3 = [
+  { conceptId: 31, nameKo: "탐색가",     iconName: "Search",    colorClass: "text-teal-600" },
+  { conceptId: 32, nameKo: "상관분석가", iconName: "BarChart2", colorClass: "text-indigo-600" },
+  { conceptId: 33, nameKo: "시각화 I",   iconName: "BarChart2", colorClass: "text-violet-600" },
+  { conceptId: 34, nameKo: "시각화 II",  iconName: "TrendingUp", colorClass: "text-blue-600" },
+  { conceptId: 35, nameKo: "이상치 탐정", iconName: "AlertCircle", colorClass: "text-orange-600" },
+  { conceptId: 36, nameKo: "정제사",     iconName: "Filter",    colorClass: "text-green-600" },
+  { conceptId: 37, nameKo: "인코더",     iconName: "Binary",    colorClass: "text-cyan-600" },
+  { conceptId: 38, nameKo: "회귀 분석가", iconName: "TrendingUp", colorClass: "text-rose-600" },
+  { conceptId: 39, nameKo: "분류 전문가", iconName: "Cpu",       colorClass: "text-purple-600" },
+  { conceptId: 40, nameKo: "ML 마스터",  iconName: "Award",     colorClass: "text-amber-600" },
+];
+
+export const UNIT_GROUPS_LV3 = [
+  { label: "데이터 탐색",  icon: "BarChart2",   color: "#0D9488", ids: [31, 32] },
+  { label: "시각화",       icon: "TrendingUp",  color: "#2563EB", ids: [33, 34, 35] },
+  { label: "전처리",       icon: "Filter",      color: "#D97706", ids: [36, 37] },
+  { label: "기계학습",     icon: "Cpu",         color: "#7B5CF0", ids: [38, 39, 40] },
+];

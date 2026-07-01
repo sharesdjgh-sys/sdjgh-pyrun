@@ -9,6 +9,7 @@ interface ExecuteResult {
   stderr: string;
   success: boolean;
   timedOut?: boolean;
+  plots?: string[];
 }
 
 interface PendingExecution {
@@ -17,6 +18,7 @@ interface PendingExecution {
 }
 
 const EXECUTION_TIMEOUT_MS = 5_000;
+const LV3_EXECUTION_TIMEOUT_MS = 90_000;
 const ROBOT_COMMANDS = new Set(Object.keys(robotApi));
 
 function formatWorkerError(message: Record<string, unknown>) {
@@ -29,15 +31,25 @@ function formatWorkerError(message: Record<string, unknown>) {
   return `발생 단계: ${phase}\n원인: ${detail}${location}${stack}`;
 }
 
+interface SimpleResolver {
+  resolve: () => void;
+  reject: (e: Error) => void;
+}
+
 export function usePyodide() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lv3Loading, setLv3Loading] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const pendingRef = useRef<Map<number, PendingExecution>>(new Map());
   const sequenceRef = useRef(0);
+  const lv3ReadyRef = useRef(false);
+  const lv3ResolverRef = useRef<SimpleResolver | null>(null);
+  const csvResolverRef = useRef<SimpleResolver | null>(null);
 
   const createWorker = useCallback(() => {
-    const worker = new Worker("/pyodide-worker.js?v=4");
+    lv3ReadyRef.current = false;
+    const worker = new Worker("/pyodide-worker.js?v=8");
     workerRef.current = worker;
     setLoading(true);
     setError(null);
@@ -73,6 +85,31 @@ export function usePyodide() {
         }
         return;
       }
+      if (message?.type === "lv3-ready") {
+        setLv3Loading(false);
+        lv3ReadyRef.current = true;
+        lv3ResolverRef.current?.resolve();
+        lv3ResolverRef.current = null;
+        return;
+      }
+      if (message?.type === "lv3-error") {
+        setLv3Loading(false);
+        const errMsg = formatWorkerError(message);
+        setError(errMsg);
+        lv3ResolverRef.current?.reject(new Error(errMsg));
+        lv3ResolverRef.current = null;
+        return;
+      }
+      if (message?.type === "csvs-ready") {
+        csvResolverRef.current?.resolve();
+        csvResolverRef.current = null;
+        return;
+      }
+      if (message?.type === "csvs-error") {
+        csvResolverRef.current?.reject(new Error(formatWorkerError(message)));
+        csvResolverRef.current = null;
+        return;
+      }
       if (message?.type === "result") {
         const pending = pendingRef.current.get(message.id);
         if (!pending) return;
@@ -82,6 +119,7 @@ export function usePyodide() {
           stdout: String(message.stdout ?? ""),
           stderr: String(message.stderr ?? ""),
           success: Boolean(message.success),
+          plots: Array.isArray(message.plots) ? message.plots : [],
         });
       }
     };
@@ -114,7 +152,27 @@ export function usePyodide() {
     };
   }, [createWorker]);
 
-  const executeCode = useCallback(async (code: string): Promise<ExecuteResult> => {
+  const preloadCsvs = useCallback((urls: string[]): Promise<void> => {
+    const worker = workerRef.current;
+    if (!worker) return Promise.reject(new Error("Worker를 찾을 수 없습니다."));
+    worker.postMessage({ type: "preload-csvs", urls });
+    return new Promise<void>((resolve, reject) => {
+      csvResolverRef.current = { resolve, reject };
+    });
+  }, []);
+
+  const initLv3 = useCallback((): Promise<void> => {
+    if (lv3ReadyRef.current) return Promise.resolve();
+    const worker = workerRef.current;
+    if (!worker) return Promise.reject(new Error("Worker를 찾을 수 없습니다."));
+    setLv3Loading(true);
+    worker.postMessage({ type: "init-lv3" });
+    return new Promise<void>((resolve, reject) => {
+      lv3ResolverRef.current = { resolve, reject };
+    });
+  }, []);
+
+  const executeCode = useCallback(async (code: string, mode?: string): Promise<ExecuteResult> => {
     const worker = workerRef.current;
     if (!worker || loading) {
       return { stdout: "", stderr: "Pyodide가 아직 로드 중입니다.", success: false };
@@ -122,21 +180,23 @@ export function usePyodide() {
 
     animationQueue.clear();
     const id = ++sequenceRef.current;
+    const timeoutMs = mode === "lv3" ? LV3_EXECUTION_TIMEOUT_MS : EXECUTION_TIMEOUT_MS;
+
     return new Promise<ExecuteResult>((resolve) => {
       const timer = setTimeout(() => {
         pendingRef.current.delete(id);
         worker.terminate();
         resolve({
           stdout: "",
-          stderr: `실행 제한 시간(${EXECUTION_TIMEOUT_MS / 1000}초)을 초과했습니다. 무한 반복을 확인해주세요.`,
+          stderr: `실행 제한 시간(${timeoutMs / 1000}초)을 초과했습니다. 무한 반복을 확인해주세요.`,
           success: false,
           timedOut: true,
         });
         createWorker();
-      }, EXECUTION_TIMEOUT_MS);
+      }, timeoutMs);
 
       pendingRef.current.set(id, { resolve, timer });
-      worker.postMessage({ type: "execute", id, code });
+      worker.postMessage({ type: "execute", id, code, mode });
     });
   }, [createWorker, loading]);
 
@@ -145,5 +205,5 @@ export function usePyodide() {
     createWorker();
   }, [createWorker]);
 
-  return { loading, error, executeCode, restart };
+  return { loading, error, lv3Loading, initLv3, preloadCsvs, executeCode, restart };
 }
