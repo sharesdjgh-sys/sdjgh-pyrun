@@ -4,6 +4,7 @@ import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/lib/auth";
 import PwaRegister from "@/components/PwaRegister";
+import MobileWarningModal from "@/components/MobileWarningModal";
 
 const jua = Jua({
   weight: "400",
@@ -57,6 +58,7 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           {children}
           <PwaRegister />
+          <MobileWarningModal />
         </SessionProvider>
       </body>
     </html>
