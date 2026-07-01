@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2 } from "@/lib/curriculum";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet } from "lucide-react";
+import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu } from "lucide-react";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
-  Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert,
+  Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu,
 };
 
 interface Concept {
@@ -43,7 +43,7 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [levelFilter, setLevelFilter] = useState<1 | 2>(1);
+  const [levelFilter, setLevelFilter] = useState<1 | 2 | 3>(1);
 
   const [adminTab, setAdminTab] = useState<"curriculum" | "data">("curriculum");
   const [csvFiles, setCsvFiles] = useState<string[]>([]);
@@ -146,7 +146,7 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
   }
 
   const selectedConcept = concepts.find((c) => c.id === selectedId);
-  const filteredGroups = levelFilter === 1 ? UNIT_GROUPS_LV1 : UNIT_GROUPS_LV2;
+  const filteredGroups = levelFilter === 1 ? UNIT_GROUPS_LV1 : levelFilter === 2 ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV3;
 
   return (
     <div
@@ -331,7 +331,7 @@ export default function AdminClient({ concepts: initialConcepts }: AdminClientPr
           </div>
           {/* Level toggle */}
           <div style={{ display: "flex", gap: 4, padding: "8px 8px 4px" }}>
-            {([1, 2] as const).map((lv) => (
+            {([1, 2, 3] as const).map((lv) => (
               <button
                 key={lv}
                 onClick={() => setLevelFilter(lv)}

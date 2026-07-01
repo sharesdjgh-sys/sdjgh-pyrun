@@ -1,6 +1,6 @@
 import { db } from "./index";
 import { concepts, badges } from "./schema";
-import { BADGE_METADATA, CONCEPT_EXAMPLES, BADGE_METADATA_LV2, CONCEPT_EXAMPLES_LV2 } from "../curriculum";
+import { BADGE_METADATA, CONCEPT_EXAMPLES, BADGE_METADATA_LV2, CONCEPT_EXAMPLES_LV2, BADGE_METADATA_LV3, CONCEPT_EXAMPLES_LV3 } from "../curriculum";
 
 async function seed() {
   // Robot API 소개 (id=0) 시딩
@@ -99,6 +99,42 @@ async function seed() {
   // lv2 badges 시딩
   console.log("Seeding lv2 badges...");
   for (const badge of BADGE_METADATA_LV2) {
+    await db.insert(badges).values(badge).onConflictDoUpdate({
+      target: badges.conceptId,
+      set: { nameKo: badge.nameKo, iconName: badge.iconName, colorClass: badge.colorClass },
+    });
+  }
+
+  // lv3 concepts 시딩 (level: 3)
+  console.log("Seeding lv3 concepts...");
+  for (const badge of BADGE_METADATA_LV3) {
+    const example = CONCEPT_EXAMPLES_LV3[badge.conceptId];
+    await db.insert(concepts).values({
+      id: badge.conceptId,
+      nameKo: example.nameKo,
+      nameEn: example.nameEn,
+      orderIndex: badge.conceptId,
+      description: example.explanation,
+      exampleCode: example.exampleCode,
+      practiceCode: example.practiceCode,
+      level: 3,
+    }).onConflictDoUpdate({
+      target: concepts.id,
+      set: {
+        nameKo: example.nameKo,
+        nameEn: example.nameEn,
+        orderIndex: badge.conceptId,
+        description: example.explanation,
+        exampleCode: example.exampleCode,
+        practiceCode: example.practiceCode,
+        level: 3,
+      },
+    });
+  }
+
+  // lv3 badges 시딩
+  console.log("Seeding lv3 badges...");
+  for (const badge of BADGE_METADATA_LV3) {
     await db.insert(badges).values(badge).onConflictDoUpdate({
       target: badges.conceptId,
       set: { nameKo: badge.nameKo, iconName: badge.iconName, colorClass: badge.colorClass },

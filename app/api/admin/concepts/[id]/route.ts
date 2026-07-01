@@ -13,7 +13,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const conceptId = Number(id);
-  if (!Number.isInteger(conceptId) || conceptId < 0 || conceptId > 30) {
+  if (!Number.isInteger(conceptId) || conceptId < 0 || conceptId > 40) {
     return NextResponse.json({ error: "잘못된 개념 ID입니다." }, { status: 400 });
   }
 

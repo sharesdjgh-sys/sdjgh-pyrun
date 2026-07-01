@@ -12,7 +12,7 @@ import DataVizPanel from "@/components/editor/DataVizPanel";
 import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
-import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, CONCEPT_EXAMPLES_LV3, BADGE_METADATA_LV3, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
+import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, BADGE_METADATA_LV3, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
 import type { CurriculumItem } from "@/lib/curriculum";
 import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu } from "lucide-react";
 import Image from "next/image";
@@ -379,7 +379,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     }
     if (mode === "lv3") {
       setSelectedLv3ConceptId(31);
-      setCode(CONCEPT_EXAMPLES_LV3[31].exampleCode);
+      setCode(curriculum[31]?.exampleCode ?? "");
       setPlots([]);
       (async () => {
         await initLv3();
@@ -504,7 +504,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
       return;
     }
     if (mode === "lv3") {
-      const ex = CONCEPT_EXAMPLES_LV3[selectedLv3ConceptId];
+      const ex = curriculum[selectedLv3ConceptId];
       if (ex) setCode(ex.exampleCode);
       return;
     }
@@ -515,7 +515,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const handleLoadPractice = useCallback(() => {
     if (mode === "mechdog") return;
     if (mode === "lv3") {
-      const ex = CONCEPT_EXAMPLES_LV3[selectedLv3ConceptId];
+      const ex = curriculum[selectedLv3ConceptId];
       if (ex?.practiceCode) setCode(ex.practiceCode);
       return;
     }
@@ -547,7 +547,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
         explanation: selectedMechdogExample?.description ?? "실제 mechdog 파이썬 코드를 그대로 입력하고 실행해보세요!",
       }
     : mode === "lv3"
-    ? CONCEPT_EXAMPLES_LV3[selectedLv3ConceptId]
+    ? curriculum[selectedLv3ConceptId]
     : currentConcept;
 
   return (
@@ -667,7 +667,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                         key={id}
                         onClick={() => {
                           setSelectedLv3ConceptId(id);
-                          setCode(CONCEPT_EXAMPLES_LV3[id].exampleCode);
+                          setCode(curriculum[id]?.exampleCode ?? "");
                         }}
                         style={{
                           width: "100%", textAlign: "left", display: "block",
@@ -923,7 +923,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     style={{ width: 22, height: 22, border: "none", background: "transparent", cursor: "pointer", color: "#7B5CF0", fontWeight: 700, fontSize: 14, lineHeight: 1, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}
                   >+</button>
                 </div>
-                {mode === "mechdog" ? <MechdogApiTooltip /> : <RobotApiTooltip />}
+                {mode === "mechdog" ? <MechdogApiTooltip /> : mode !== "lv3" && <RobotApiTooltip />}
               </div>
             </div>
 
