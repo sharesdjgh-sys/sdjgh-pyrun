@@ -76,7 +76,7 @@ export default function RobotStage({
             emotion={charEmotion}
             scale={charScale}
             direction={charDir}
-            size={Math.max(charSize, 86)}
+            size={Math.max(charSize, 76)}
             action={mechdogAction}
             ledColor={mechdogLedColor}
           />
@@ -315,10 +315,15 @@ export default function RobotStage({
               if (speed === 0) {
                 setRobotState("idle");
                 setMechdogLabel("정지");
-                currentDir = "right";
               } else {
                 setRobotState("walking");
-                currentDir = speed > 0 ? "right" : "left";
+                if (angle > 0) {
+                  currentDir = "left";
+                } else if (angle < 0) {
+                  currentDir = "right";
+                } else {
+                  currentDir = speed > 0 ? "right" : "left";
+                }
                 const angleLabel = angle > 0 ? " (좌회전)" : angle < 0 ? " (우회전)" : "";
                 setMechdogLabel(speed > 0 ? `전진 ${speed}${angleLabel}` : `후진 ${Math.abs(speed)}${angleLabel}`);
               }

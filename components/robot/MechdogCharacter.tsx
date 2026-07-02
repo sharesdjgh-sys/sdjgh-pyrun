@@ -96,66 +96,66 @@ const ACTIONS: Record<string, Rig> = {
 
   // 앉기: 몸통 뒤로 기울이고 뒷다리 접기
   sit_down: {
-    body: { rotate: -16, y: 6, transition: hold(0.6) },
-    head: { rotate: -6, transition: hold(0.6) },
-    tRN: { rotate: -58, transition: hold(0.6) },
-    sRN: { rotate: 70, transition: hold(0.6) },
-    tRF: { rotate: -58, transition: hold(0.6) },
-    sRF: { rotate: 70, transition: hold(0.6) },
-    tFN: { rotate: 12, transition: hold(0.6) },
-    sFN: { rotate: -12, transition: hold(0.6) },
-    tFF: { rotate: 12, transition: hold(0.6) },
-    sFF: { rotate: -12, transition: hold(0.6) },
+    body: { rotate: -8, y: 8, transition: hold(0.6) },
+    head: { rotate: -5, transition: hold(0.6) },
+    tRN: { rotate: -18, transition: hold(0.6) },
+    sRN: { rotate: 26, transition: hold(0.6) },
+    tRF: { rotate: -18, transition: hold(0.6) },
+    sRF: { rotate: 26, transition: hold(0.6) },
+    tFN: { rotate: 8, transition: hold(0.6) },
+    sFN: { rotate: -8, transition: hold(0.6) },
+    tFF: { rotate: 8, transition: hold(0.6) },
+    sFF: { rotate: -8, transition: hold(0.6) },
   },
 
   // 엎드리기: 네 다리 모두 접고 몸통 낮추기
   go_prone: {
-    body: { y: 17, transition: hold(0.6) },
+    body: { y: 14, transition: hold(0.6) },
     head: { rotate: 4, transition: hold(0.6) },
-    tFN: { rotate: -45, transition: hold(0.6) },
-    sFN: { rotate: 78, transition: hold(0.6) },
-    tFF: { rotate: -45, transition: hold(0.6) },
-    sFF: { rotate: 78, transition: hold(0.6) },
-    tRN: { rotate: -45, transition: hold(0.6) },
-    sRN: { rotate: 78, transition: hold(0.6) },
-    tRF: { rotate: -45, transition: hold(0.6) },
-    sRF: { rotate: 78, transition: hold(0.6) },
+    tFN: { rotate: -16, transition: hold(0.6) },
+    sFN: { rotate: 28, transition: hold(0.6) },
+    tFF: { rotate: -16, transition: hold(0.6) },
+    sFF: { rotate: 28, transition: hold(0.6) },
+    tRN: { rotate: -16, transition: hold(0.6) },
+    sRN: { rotate: 28, transition: hold(0.6) },
+    tRF: { rotate: -16, transition: hold(0.6) },
+    sRF: { rotate: 28, transition: hold(0.6) },
   },
 
   // 두 발로 서기: 몸통 세우고 앞다리 들기
   stand_two_legs: {
-    body: { rotate: -55, x: -10, y: -10, transition: hold(0.8) },
-    head: { rotate: 12, transition: hold(0.8) },
-    tRN: { rotate: 46, transition: hold(0.8) },
-    sRN: { rotate: -22, transition: hold(0.8) },
-    tRF: { rotate: 46, transition: hold(0.8) },
-    sRF: { rotate: -22, transition: hold(0.8) },
-    tFN: { rotate: -28, transition: hold(0.8) },
-    sFN: { rotate: 46, transition: hold(0.8) },
-    tFF: { rotate: -28, transition: hold(0.8) },
-    sFF: { rotate: 46, transition: hold(0.8) },
+    body: { rotate: -22, x: -5, y: -8, transition: hold(0.8) },
+    head: { rotate: 9, transition: hold(0.8) },
+    tRN: { rotate: 20, transition: hold(0.8) },
+    sRN: { rotate: -12, transition: hold(0.8) },
+    tRF: { rotate: 20, transition: hold(0.8) },
+    sRF: { rotate: -12, transition: hold(0.8) },
+    tFN: { rotate: -18, transition: hold(0.8) },
+    sFN: { rotate: 24, transition: hold(0.8) },
+    tFF: { rotate: -18, transition: hold(0.8) },
+    sFF: { rotate: 24, transition: hold(0.8) },
   },
 
   // 악수: 뒤로 살짝 앉고 앞쪽 다리를 들어 위아래로 흔들기
   handshake: {
-    body: { rotate: -8, y: 3, transition: hold(0.4) },
-    tRN: { rotate: -25, transition: hold(0.4) },
-    sRN: { rotate: 35, transition: hold(0.4) },
-    tRF: { rotate: -25, transition: hold(0.4) },
-    sRF: { rotate: 35, transition: hold(0.4) },
-    tFF: { rotate: 10, transition: hold(0.4) },
-    tFN: { rotate: [0, 42, 42, 42, 42, 36], transition: { duration: 1.4, ease: "easeInOut" } },
-    sFN: { rotate: [0, -18, 14, -18, 14, -4], transition: { duration: 1.4, ease: "easeInOut" } },
+    body: { rotate: -5, y: 4, transition: hold(0.4) },
+    tRN: { rotate: -10, transition: hold(0.4) },
+    sRN: { rotate: 14, transition: hold(0.4) },
+    tRF: { rotate: -10, transition: hold(0.4) },
+    sRF: { rotate: 14, transition: hold(0.4) },
+    tFF: { rotate: 5, transition: hold(0.4) },
+    tFN: { rotate: [0, 22, 18, 22, 18, 12], transition: { duration: 1.4, ease: "easeInOut" } },
+    sFN: { rotate: [0, -10, 10, -10, 10, 0], transition: { duration: 1.4, ease: "easeInOut" } },
   },
 
   // 인사(절): 앞다리 굽히고 앞으로 숙이기
   scrape_a_bow: {
-    body: { rotate: 13, y: 4, transition: hold(0.55) },
-    head: { rotate: [0, 14, 14, 0], transition: { duration: 1.1 } },
-    tFN: { rotate: 22, transition: hold(0.55) },
-    sFN: { rotate: 55, transition: hold(0.55) },
-    tFF: { rotate: 22, transition: hold(0.55) },
-    sFF: { rotate: 55, transition: hold(0.55) },
+    body: { rotate: 8, y: 6, transition: hold(0.55) },
+    head: { rotate: [0, 12, 12, 0], transition: { duration: 1.1 } },
+    tFN: { rotate: 12, transition: hold(0.55) },
+    sFN: { rotate: 22, transition: hold(0.55) },
+    tFF: { rotate: 12, transition: hold(0.55) },
+    sFF: { rotate: 22, transition: hold(0.55) },
     tRN: { rotate: -6, transition: hold(0.55) },
     sRN: { rotate: 4, transition: hold(0.55) },
     tRF: { rotate: -6, transition: hold(0.55) },
@@ -168,50 +168,50 @@ const ACTIONS: Record<string, Rig> = {
 
   // 권투: 뒤로 앉아 앞다리 두 개로 번갈아 펀치
   boxing: {
-    body: { rotate: -13, y: 5, transition: hold(0.4) },
-    tRN: { rotate: -32, transition: hold(0.4) },
-    sRN: { rotate: 42, transition: hold(0.4) },
-    tRF: { rotate: -32, transition: hold(0.4) },
-    sRF: { rotate: 42, transition: hold(0.4) },
-    tFN: { rotate: [0, -45, -78, -45, -78, -45], transition: BOX_T },
-    sFN: { rotate: [0, 22, -12, 22, -12, 22], transition: BOX_T },
-    tFF: { rotate: [0, -78, -45, -78, -45, -78], transition: BOX_T },
-    sFF: { rotate: [0, -12, 22, -12, 22, -12], transition: BOX_T },
+    body: { rotate: -8, y: 5, transition: hold(0.4) },
+    tRN: { rotate: -12, transition: hold(0.4) },
+    sRN: { rotate: 16, transition: hold(0.4) },
+    tRF: { rotate: -12, transition: hold(0.4) },
+    sRF: { rotate: 16, transition: hold(0.4) },
+    tFN: { rotate: [0, -18, -30, -18, -30, -18], transition: BOX_T },
+    sFN: { rotate: [0, 12, -8, 12, -8, 12], transition: BOX_T },
+    tFF: { rotate: [0, -30, -18, -30, -18, -30], transition: BOX_T },
+    sFF: { rotate: [0, -8, 12, -8, 12, -8], transition: BOX_T },
   },
 
   // 기지개: 앞다리 앞으로 뻗어 가슴 낮추고 엉덩이 들기
   stretch_oneself: {
-    body: { rotate: 13, y: 2, transition: hold(0.6) },
-    head: { rotate: -10, transition: hold(0.6) },
-    tFN: { rotate: -45, transition: hold(0.6) },
-    sFN: { rotate: -18, transition: hold(0.6) },
-    tFF: { rotate: -45, transition: hold(0.6) },
-    sFF: { rotate: -18, transition: hold(0.6) },
-    tRN: { rotate: 6, transition: hold(0.6) },
-    sRN: { rotate: -6, transition: hold(0.6) },
-    tRF: { rotate: 6, transition: hold(0.6) },
-    sRF: { rotate: -6, transition: hold(0.6) },
+    body: { rotate: 8, y: 3, transition: hold(0.6) },
+    head: { rotate: -8, transition: hold(0.6) },
+    tFN: { rotate: -18, transition: hold(0.6) },
+    sFN: { rotate: -10, transition: hold(0.6) },
+    tFF: { rotate: -18, transition: hold(0.6) },
+    sFF: { rotate: -10, transition: hold(0.6) },
+    tRN: { rotate: 5, transition: hold(0.6) },
+    sRN: { rotate: -4, transition: hold(0.6) },
+    tRF: { rotate: 5, transition: hold(0.6) },
+    sRF: { rotate: -4, transition: hold(0.6) },
   },
 
   // 쉬: 뒷다리 한쪽 들기
   pee: {
     body: { rotate: 2, transition: hold(0.5) },
     head: { rotate: -4, transition: hold(0.5) },
-    tRN: { rotate: -55, transition: hold(0.5) },
-    sRN: { rotate: 48, transition: hold(0.5) },
+    tRN: { rotate: -24, transition: hold(0.5) },
+    sRN: { rotate: 22, transition: hold(0.5) },
   },
 
   // 팔굽혀펴기: 몸통이 두 번 내려갔다 올라오고 다리가 함께 굽혀짐
   press_up: {
-    body: { y: [0, 15, 2, 15, 0], transition: PRESS_UP_T },
-    tFN: { rotate: [0, -20, -2, -20, 0], transition: PRESS_UP_T },
-    sFN: { rotate: [0, 44, 4, 44, 0], transition: PRESS_UP_T },
-    tFF: { rotate: [0, -20, -2, -20, 0], transition: PRESS_UP_T },
-    sFF: { rotate: [0, 44, 4, 44, 0], transition: PRESS_UP_T },
-    tRN: { rotate: [0, -20, -2, -20, 0], transition: PRESS_UP_T },
-    sRN: { rotate: [0, 44, 4, 44, 0], transition: PRESS_UP_T },
-    tRF: { rotate: [0, -20, -2, -20, 0], transition: PRESS_UP_T },
-    sRF: { rotate: [0, 44, 4, 44, 0], transition: PRESS_UP_T },
+    body: { y: [0, 11, 2, 11, 0], transition: PRESS_UP_T },
+    tFN: { rotate: [0, -10, -2, -10, 0], transition: PRESS_UP_T },
+    sFN: { rotate: [0, 20, 4, 20, 0], transition: PRESS_UP_T },
+    tFF: { rotate: [0, -10, -2, -10, 0], transition: PRESS_UP_T },
+    sFF: { rotate: [0, 20, 4, 20, 0], transition: PRESS_UP_T },
+    tRN: { rotate: [0, -10, -2, -10, 0], transition: PRESS_UP_T },
+    sRN: { rotate: [0, 20, 4, 20, 0], transition: PRESS_UP_T },
+    tRF: { rotate: [0, -10, -2, -10, 0], transition: PRESS_UP_T },
+    sRF: { rotate: [0, 20, 4, 20, 0], transition: PRESS_UP_T },
   },
 
   rotation_pitch: {
@@ -223,13 +223,13 @@ const ACTIONS: Record<string, Rig> = {
 
   left_foot_kick: {
     body: { rotate: -4, transition: hold(0.3) },
-    tFF: { rotate: [0, -72, -72, 0], transition: { duration: 0.95, ease: "easeInOut" } },
-    sFF: { rotate: [0, 28, -14, 0], transition: { duration: 0.95, ease: "easeInOut" } },
+    tFF: { rotate: [0, -28, -28, 0], transition: { duration: 0.95, ease: "easeInOut" } },
+    sFF: { rotate: [0, 14, -10, 0], transition: { duration: 0.95, ease: "easeInOut" } },
   },
   right_foot_kick: {
     body: { rotate: -4, transition: hold(0.3) },
-    tFN: { rotate: [0, -72, -72, 0], transition: { duration: 0.95, ease: "easeInOut" } },
-    sFN: { rotate: [0, 28, -14, 0], transition: { duration: 0.95, ease: "easeInOut" } },
+    tFN: { rotate: [0, -28, -28, 0], transition: { duration: 0.95, ease: "easeInOut" } },
+    sFN: { rotate: [0, 14, -10, 0], transition: { duration: 0.95, ease: "easeInOut" } },
   },
 
   // ── transform() 자세 조절 (RobotStage 가 tz/pitch/roll 값에 따라 pseudo 액션명으로 전달)
@@ -312,8 +312,8 @@ export default function MechdogCharacter({
   const rig = {} as Record<PartKey, TargetAndTransition>;
   for (const k of PART_KEYS) rig[k] = override[k] ?? NEUTRAL[k];
 
-  const sensorColor = isError ? "#EF4444" : ledColor ?? "#68717D";
-  const eyeFill = ledColor ? ledColor : isError ? "#EF4444" : "#323A45";
+  const sensorColor = isError ? "#EF4444" : ledColor ?? "#4A525C";
+  const eyeFill = isError ? "#EF4444" : "#323A45";
 
   const renderLeg = (hip: Pt, knee: Pt, foot: Pt, thighKey: PartKey, shinKey: PartKey, far = false) => {
     const sideYellow = far ? "#C97912" : YELLOW;

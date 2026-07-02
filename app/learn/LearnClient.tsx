@@ -36,42 +36,133 @@ const MECDOG_EXAMPLES: MechdogExample[] = [
     id: "intro",
     category: "📖 소개",
     label: "mechdog 소개",
-    description: "mechdog는 Hiwonder의 AI 교육용 4족 보행 로봇이에요! from HW_MechDog import MechDog 로 불러온 뒤, move()로 걷고 action_run()으로 15가지 동작을 실행할 수 있어요. 실제 mechdog 소스코드를 그대로 입력하고 실행해보세요!",
+    description: "mechdog는 Hiwonder의 AI 교육용 4족 보행 로봇이에요! 이동, 자세 변환, gait 설정, 기본 동작, 균형 유지, LED, 부저, 숫자 표시, 초음파/빛/버튼/IMU/카메라 센서 API를 시뮬레이션에서 한 번씩 실습할 수 있어요.",
     code: `from HW_MechDog import MechDog
+import Hiwonder
+import Hiwonder_IIC
 import time
 
-# 🐾 mechdog를 만들어요!
+# 0. mechdog와 부품 준비
 mechdog = MechDog()
-mechdog.set_default_pose()  # 기본 자세로 준비
-time.sleep(1)
+led = Hiwonder.LED()
+buzzer = Hiwonder.Buzzer()
+button = Hiwonder.Button()
+light = Hiwonder.LightSensor()
+tm = Hiwonder.Digitaltube()
+i2c1 = Hiwonder_IIC.IIC(1)
+i2c2 = Hiwonder_IIC.IIC(2)
+sonar = Hiwonder_IIC.I2CSonar(i2c1)
+imu = Hiwonder_IIC.MPU(i2c1)
+cam = Hiwonder_IIC.ESP32S3Cam(i2c2)
 
-# ① 전진 / 후진
-mechdog.move(80, 0)   # 앞으로 (양수 → 전진)
-time.sleep(2)
-mechdog.move(0, 0)    # 멈추기
-time.sleep(0.5)
-
-# ② 회전하며 걷기
-mechdog.move(60, 25)  # 왼쪽 방향으로 전진
-time.sleep(2)
-mechdog.move(0, 0)
-time.sleep(0.5)
-
-# ③ 인사 동작
-mechdog.action_run("nodding_motion")  # 고개 끄덕이기
-time.sleep(2)
-mechdog.action_run("handshake")       # 악수
-time.sleep(2)
-
-# ④ 자세 변환 (높이 올리기)
-mechdog.transform([0, 0, 20], [0, 0, 0], 1000)
-time.sleep(1.5)
+# 1. 기본 자세
 mechdog.set_default_pose()
 time.sleep(1)
 
-# ⑤ 마무리
-mechdog.action_run("stretch_oneself")  # 기지개 켜기
-time.sleep(2)
+# 2. 이동: 전진, 후진, 회전
+mechdog.move(80, 0)
+time.sleep(1.2)
+mechdog.move(-50, 0)
+time.sleep(1)
+mechdog.move(60, 25)
+time.sleep(1)
+mechdog.move(60, -25)
+time.sleep(1)
+mechdog.move(0, 0)
+time.sleep(0.5)
+
+# 3. 걸음걸이 설정
+mechdog.set_gait_params(200, 600, 50)  # 느리고 높게 걷기
+mechdog.move(60, 0)
+time.sleep(1.2)
+mechdog.set_gait_params(100, 280, 20)  # 빠르고 낮게 걷기
+mechdog.move(100, 0)
+time.sleep(1.2)
+mechdog.move(0, 0)
+
+# 4. 자세 변환: 높이, 앞뒤/좌우 기울기
+mechdog.transform([0, 0, 20], [0, 0, 0], 1000)
+time.sleep(0.8)
+mechdog.transform([0, 0, -15], [0, 0, 0], 1000)
+time.sleep(0.8)
+mechdog.transform([0, 0, 0], [12, 0, 0], 500)
+time.sleep(0.7)
+mechdog.transform([0, 0, 0], [0, 10, 0], 500)
+time.sleep(0.7)
+mechdog.set_default_pose()
+time.sleep(0.7)
+
+# 5. 미리 정의된 동작
+actions = [
+    "nodding_motion", "handshake", "scrape_a_bow",
+    "boxing", "stretch_oneself", "sit_dowm",
+    "stand_four_legs", "stand_two_legs", "go_prone",
+    "press_up", "left_foot_kick", "right_foot_kick",
+    "rotation_pitch", "rotation_roll", "pee",
+]
+
+for name in actions:
+    mechdog.action_run(name)
+    time.sleep(1.1)
+
+# 6. 균형 유지
+mechdog.homeostasis(True)
+time.sleep(1)
+mechdog.homeostasis(False)
+mechdog.set_default_pose()
+time.sleep(1)
+
+# 7. 출력 장치: LED, 부저, 숫자 표시
+led.on()
+time.sleep(0.4)
+led.set_color(0, 180, 255)
+time.sleep(0.4)
+led.off()
+
+buzzer.freq(440, 300)
+time.sleep(0.4)
+buzzer.freq(523, 300)
+time.sleep(0.4)
+
+tm.setBrightness(4)
+tm.showNum(9)
+time.sleep(0.6)
+tm.showStr("GO")
+time.sleep(0.6)
+tm.clear()
+
+# 8. 센서 읽기 (시뮬레이션에서는 고정값을 반환해요)
+distance = sonar.getDistance()
+brightness = light.read()
+pressed = button.Clicked()
+angles = imu.read_angle()
+colors = cam.color_recognition()
+green = cam.color_follow(cam.GREEN)
+face = cam.face_recognition()
+line = cam.line_follow(cam.YELLOW)
+
+print("거리:", distance, "cm")
+print("밝기:", brightness)
+print("버튼:", pressed)
+print("기울기:", angles)
+print("색상:", colors, "초록 추적:", green)
+print("얼굴:", face, "선:", line)
+
+# 9. 센서값으로 LED와 디스플레이 제어
+tm.showNum(distance)
+if distance < 15:
+    sonar.setRGB(0, 255, 0, 0)
+    mechdog.move(0, 0)
+elif distance > 40:
+    sonar.setRGB(0, 0, 80, 255)
+    mechdog.move(60, 0)
+else:
+    sonar.setRGB(0, 255, 210, 0)
+    mechdog.action_run("handshake")
+
+time.sleep(1)
+mechdog.move(0, 0)
+mechdog.set_default_pose()
 `,
   },
   {
@@ -493,7 +584,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     }
 
     setRunning(false);
-  }, [pyLoading, code, executeCode, showSpeechBubble]);
+  }, [pyLoading, code, mode, executeCode, showSpeechBubble]);
 
   const handleAnimationComplete = useCallback(() => {
     if (pendingFeedback) {
