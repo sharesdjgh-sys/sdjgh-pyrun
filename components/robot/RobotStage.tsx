@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import RobotCharacter from "./RobotCharacter";
 import DogCharacter from "./DogCharacter";
 import GameCharacter from "./GameCharacter";
+import MechdogCharacter from "./MechdogCharacter";
 import RobotSpeechBubble from "./RobotSpeechBubble";
 import StageBackground from "./StageBackground";
 import VariableFloat from "./VariableFloat";
@@ -17,7 +18,7 @@ interface RobotStageProps {
   varName?: string;
   varValue?: string;
   showVariable?: boolean;
-  characterType?: "robot" | "dog" | "game";
+  characterType?: "robot" | "dog" | "game" | "mechdog";
   isError?: boolean;
 }
 
@@ -57,6 +58,7 @@ export default function RobotStage({
   const [speech, setSpeech] = useState<string | null>(null);
   const [mechdogLabel, setMechdogLabel] = useState<string | null>(null);
   const [mechdogLedColor, setMechdogLedColor] = useState<string | null>(null);
+  const [mechdogAction, setMechdogAction] = useState<string | null>(null);
 
   // 캐릭터 렌더링 헬퍼
   const renderCharacter = (
@@ -67,6 +69,18 @@ export default function RobotStage({
     charSize = 70
   ) => {
     switch (characterType) {
+      case "mechdog":
+        return (
+          <MechdogCharacter
+            state={charState}
+            emotion={charEmotion}
+            scale={charScale}
+            direction={charDir}
+            size={charSize}
+            action={mechdogAction}
+            ledColor={mechdogLedColor}
+          />
+        );
       case "dog":
         return (
           <DogCharacter
@@ -155,6 +169,7 @@ export default function RobotStage({
         setSpeech(null);
         setMechdogLabel(null);
         setMechdogLedColor(null);
+        setMechdogAction(null);
         setShapes([]);
         setPaths([{ x: 0, y: 0 }]);
         setClones([]);
@@ -356,10 +371,16 @@ export default function RobotStage({
               const info = ACTION_MAP[actionName] ?? { state: "celebrating" as RobotState, label: actionName, ms: 1000 };
               if (info.emotion) currentEmotion = info.emotion;
               setEmotion(currentEmotion);
-              setRobotState(info.state);
+              if (characterType === "mechdog") {
+                // mechdog 캐릭터는 액션 이름으로 고유 관절 애니메이션을 직접 수행
+                setMechdogAction(actionName);
+              } else {
+                setRobotState(info.state);
+              }
               setMechdogLabel(info.label);
               await delay(info.ms);
               setRobotState("idle");
+              setMechdogAction(null);
               if (info.emotion) { currentEmotion = "idle"; setEmotion("idle"); }
               setMechdogLabel(null);
               break;
@@ -375,9 +396,21 @@ export default function RobotStage({
               else if (roll > 0) tLabel = "오른쪽 기울기";
               else if (roll < 0) tLabel = "왼쪽 기울기";
               setMechdogLabel(tLabel);
-              setRobotState("shaking");
+              if (characterType === "mechdog") {
+                let tAction = "transform_up";
+                if (tz > 0) tAction = "transform_up";
+                else if (tz < 0) tAction = "transform_down";
+                else if (pitch > 0) tAction = "transform_pitch_fwd";
+                else if (pitch < 0) tAction = "transform_pitch_back";
+                else if (roll > 0) tAction = "transform_roll_right";
+                else if (roll < 0) tAction = "transform_roll_left";
+                setMechdogAction(tAction);
+              } else {
+                setRobotState("shaking");
+              }
               await delay(Math.min(cmd.params.duration || 1000, 2000));
               setRobotState("idle");
+              setMechdogAction(null);
               setMechdogLabel(null);
               break;
             }
@@ -385,9 +418,14 @@ export default function RobotStage({
             case "mechdog_homeostasis": {
               const { enabled } = cmd.params;
               setMechdogLabel(enabled ? "균형 유지 ON ⚖️" : "균형 유지 OFF");
-              setRobotState(enabled ? "shaking" : "idle");
+              if (characterType === "mechdog") {
+                setMechdogAction(enabled ? "homeostasis_on" : null);
+              } else {
+                setRobotState(enabled ? "shaking" : "idle");
+              }
               await delay(800);
               setRobotState("idle");
+              setMechdogAction(null);
               setMechdogLabel(null);
               break;
             }
@@ -461,6 +499,7 @@ export default function RobotStage({
         setSpeech(null);
         setMechdogLabel(null);
         setMechdogLedColor(null);
+        setMechdogAction(null);
         setClones([]);
         setShapes([]);
         setPaths([{ x: 0, y: 0 }]);
@@ -481,6 +520,7 @@ export default function RobotStage({
       setSpeech(null);
       setMechdogLabel(null);
       setMechdogLedColor(null);
+      setMechdogAction(null);
       setShapes([]);
       setPaths([{ x: 0, y: 0 }]);
       setClones([]);

@@ -14,7 +14,7 @@ import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
 import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, BADGE_METADATA_LV3, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
 import type { CurriculumItem } from "@/lib/curriculum";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu } from "lucide-react";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Dog } from "lucide-react";
 import Image from "next/image";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
@@ -331,7 +331,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const currentBadges = mode === "lv2" ? BADGE_METADATA_LV2 : BADGE_METADATA;
   const currentUnitGroups = mode === "lv2" ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV1;
 
-  const [characterType, setCharacterType] = useState<"robot" | "dog" | "game">("robot");
+  const [characterType, setCharacterType] = useState<"robot" | "dog" | "game" | "mechdog">("robot");
   const [isError, setIsError] = useState(false);
 
   const [commands, setCommands] = useState<RobotCommand[]>([]);
@@ -371,12 +371,14 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
 
   useEffect(() => {
     if (mode === "mechdog") {
-      setCharacterType("dog");
+      setCharacterType("mechdog");
       const first = MECDOG_EXAMPLES[0];
       setSelectedMechdogId(first.id);
       setCode(first.code);
       return;
     }
+    // mechdog 전용 캐릭터는 다른 모드에서 선택 불가하므로 로봇으로 복귀
+    setCharacterType((prev) => (prev === "mechdog" ? "robot" : prev));
     if (mode === "lv3") {
       setSelectedLv3ConceptId(31);
       setCode(curriculum[31]?.exampleCode ?? "");
@@ -1292,10 +1294,13 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
 
             {/* Character selector */}
             <div style={{ flex: "none", display: "flex", justifyContent: "center", gap: 5, padding: "2px 14px 8px" }}>
-              {(["robot", "dog", "game"] as const).map((type) => {
+              {(mode === "mechdog"
+                ? (["mechdog", "robot", "dog", "game"] as const)
+                : (["robot", "dog", "game"] as const)
+              ).map((type) => {
                 const isSelected = characterType === type;
-                const labels = { robot: "로봇", dog: "강아지", game: "전사" };
-                const icons = { robot: Bot, dog: PawPrint, game: Sword };
+                const labels = { robot: "로봇", dog: "강아지", game: "전사", mechdog: "MechDog" };
+                const icons = { robot: Bot, dog: PawPrint, game: Sword, mechdog: Dog };
                 const Icon = icons[type];
                 return (
                   <button
