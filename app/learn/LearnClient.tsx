@@ -14,7 +14,7 @@ import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
 import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, BADGE_METADATA_LV3, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
 import type { CurriculumItem } from "@/lib/curriculum";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Dog } from "lucide-react";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu } from "lucide-react";
 import Image from "next/image";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
@@ -433,7 +433,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     const parseResult = parsePython(code);
     const primary = parseResult.primaryConcept;
 
-    if (success && primary && primary.conceptKey === "variable") {
+    if (mode !== "mechdog" && success && primary && primary.conceptKey === "variable") {
       setVarName((primary.details.lastVarName as string) || "");
       setVarValue((primary.details.lastVarValue as string) || "");
       setShowVariable(true);
@@ -1293,14 +1293,12 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
             </div>
 
             {/* Character selector */}
+            {mode !== "mechdog" && (
             <div style={{ flex: "none", display: "flex", justifyContent: "center", gap: 5, padding: "2px 14px 8px" }}>
-              {(mode === "mechdog"
-                ? (["mechdog", "robot", "dog", "game"] as const)
-                : (["robot", "dog", "game"] as const)
-              ).map((type) => {
+              {(["robot", "dog", "game"] as const).map((type) => {
                 const isSelected = characterType === type;
-                const labels = { robot: "로봇", dog: "강아지", game: "전사", mechdog: "MechDog" };
-                const icons = { robot: Bot, dog: PawPrint, game: Sword, mechdog: Dog };
+                const labels = { robot: "로봇", dog: "강아지", game: "전사" };
+                const icons = { robot: Bot, dog: PawPrint, game: Sword };
                 const Icon = icons[type];
                 return (
                   <button
@@ -1328,6 +1326,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                 );
               })}
             </div>
+            )}
 
             {/* Robot stage */}
             <div
@@ -1341,7 +1340,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                 position: "relative",
               }}
             >
-              {pyLoading && (
+              {pyLoading && mode !== "mechdog" && (
                 <div
                   style={{
                     position: "absolute",
@@ -1361,6 +1360,30 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                   <p style={{ fontSize: 11.5, color: "#BDB6D4", margin: 0 }}>처음 준비할 때 약 10~30초 소요됩니다.</p>
                 </div>
               )}
+              {pyLoading && mode === "mechdog" && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 12,
+                    zIndex: 40,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "7px 10px",
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,.92)",
+                    border: "1px solid #F4D3A2",
+                    boxShadow: "0 6px 14px rgba(201,123,48,.12)",
+                    color: "#C97B30",
+                    fontSize: 11.5,
+                    fontWeight: 800,
+                  }}
+                >
+                  <span style={{ width: 10, height: 10, border: "2px solid #F6D5AA", borderTopColor: "#C97B30", borderRadius: "50%", display: "inline-block", animation: "spin 0.8s linear infinite" }} />
+                  엔진 준비 중
+                </div>
+              )}
 
               <RobotStage
                 commands={commands}
@@ -1368,7 +1391,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                 varName={varName}
                 varValue={varValue}
                 showVariable={showVariable}
-                characterType={characterType}
+                characterType={mode === "mechdog" ? "mechdog" : characterType}
                 isError={isError}
               />
             </div>

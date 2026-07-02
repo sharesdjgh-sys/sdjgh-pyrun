@@ -76,7 +76,7 @@ export default function RobotStage({
             emotion={charEmotion}
             scale={charScale}
             direction={charDir}
-            size={charSize}
+            size={Math.max(charSize, 86)}
             action={mechdogAction}
             ledColor={mechdogLedColor}
           />

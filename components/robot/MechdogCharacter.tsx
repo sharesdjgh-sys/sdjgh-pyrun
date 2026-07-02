@@ -144,8 +144,8 @@ const ACTIONS: Record<string, Rig> = {
     tRF: { rotate: -25, transition: hold(0.4) },
     sRF: { rotate: 35, transition: hold(0.4) },
     tFF: { rotate: 10, transition: hold(0.4) },
-    tFN: { rotate: [0, -60, -60, -60, -60, -55], transition: { duration: 1.4, ease: "easeInOut" } },
-    sFN: { rotate: [0, -15, 15, -15, 15, 0], transition: { duration: 1.4, ease: "easeInOut" } },
+    tFN: { rotate: [0, 42, 42, 42, 42, 36], transition: { duration: 1.4, ease: "easeInOut" } },
+    sFN: { rotate: [0, -18, 14, -18, 14, -4], transition: { duration: 1.4, ease: "easeInOut" } },
   },
 
   // 인사(절): 앞다리 굽히고 앞으로 숙이기
@@ -275,15 +275,15 @@ const FALLBACK_ACTION: Rig = {
   body: { y: [0, -12, 0], transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-// 실물 색상 팔레트 (노란 알루미늄 섀시 + 검은 다리)
-const AMBER = "#EFA22B";
-const AMBER_DARK = "#C97F16";
-const AMBER_TOP = "#F3AD3E";
-const AMBER_FAR = "#C9821A";
-const LEG_DARK = "#23272E";
-const LEG_DARK_FAR = "#15181D";
-const STEEL = "#2E333B";
-const PIN = "#9AA3AE";
+const YELLOW = "#F4AC22";
+const YELLOW_LIGHT = "#FFD66A";
+const YELLOW_DARK = "#B97008";
+const YELLOW_SIDE = "#D98913";
+const BLACK = "#15181D";
+const BLACK_SOFT = "#2B3037";
+const STEEL = "#D7DEE6";
+const STEEL_DARK = "#69727D";
+const BOLT = "#1D2229";
 
 type Pt = { x: number; y: number };
 
@@ -296,35 +296,48 @@ export default function MechdogCharacter({
   ledColor = null,
 }: MechdogCharacterProps) {
   const isError = state === "error";
-  const w = Math.round(size * 1.6);
-  const h = Math.round(w * (170 / 240));
-  const directionScaleX = direction === "left" ? -1 : 1;
+  const w = Math.round(size * 1.95);
+  const h = Math.round(w * (170 / 250));
+  const directionScaleX = direction === "right" ? -1 : 1;
 
   // 액션이 최우선, 없으면 상태(걷기/점프 등) 리그 사용
   const override: Rig = (action ? ACTIONS[action] ?? FALLBACK_ACTION : undefined) ?? STATE_RIGS[state] ?? {};
   const rig = {} as Record<PartKey, TargetAndTransition>;
   for (const k of PART_KEYS) rig[k] = override[k] ?? NEUTRAL[k];
 
-  const lensRing = isError ? "#EF4444" : ledColor ?? "#4A525C";
-  const lensGlow = isError ? "#EF4444" : ledColor;
+  const sensorColor = isError ? "#EF4444" : ledColor ?? "#68717D";
+  const eyeFill = ledColor ? ledColor : isError ? "#EF4444" : "#323A45";
 
-  // 다리: hip(엉덩이 관절) → knee(무릎 관절) → foot, 2단 중첩 회전 그룹
-  const renderLeg = (hip: Pt, knee: Pt, foot: Pt, thighKey: PartKey, shinKey: PartKey, far: boolean) => {
-    const thighColor = far ? AMBER_FAR : AMBER;
-    const shinColor = far ? LEG_DARK_FAR : LEG_DARK;
+  const renderLeg = (hip: Pt, knee: Pt, foot: Pt, thighKey: PartKey, shinKey: PartKey, far = false) => {
+    const sideYellow = far ? "#C97912" : YELLOW;
+    const sideBlack = far ? "#0F1216" : BLACK;
+    const alpha = far ? 0.76 : 1;
+
     return (
-      <motion.g animate={rig[thighKey]} style={{ transformOrigin: `${hip.x}px ${hip.y}px` }}>
-        {/* 허벅지 (알루미늄) + 평행 링크 막대 */}
-        <line x1={hip.x} y1={hip.y} x2={knee.x} y2={knee.y} stroke={thighColor} strokeWidth={13} strokeLinecap="round" />
-        <line x1={hip.x + 6} y1={hip.y + 3} x2={knee.x + 6} y2={knee.y - 2} stroke={STEEL} strokeWidth={2.5} strokeLinecap="round" />
-        <circle cx={hip.x} cy={hip.y} r={4.2} fill={STEEL} />
-        <circle cx={hip.x} cy={hip.y} r={1.6} fill={PIN} />
+      <motion.g animate={rig[thighKey]} style={{ transformOrigin: `${hip.x}px ${hip.y}px` }} opacity={alpha}>
+        <path
+          d={`M ${hip.x - 8} ${hip.y - 5} L ${hip.x + 10} ${hip.y - 2} L ${knee.x + 8} ${knee.y + 3} L ${knee.x - 7} ${knee.y + 8} Z`}
+          fill={sideYellow}
+          stroke={YELLOW_DARK}
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <line x1={hip.x + 11} y1={hip.y + 2} x2={knee.x + 13} y2={knee.y + 3} stroke={STEEL} strokeWidth="3.2" strokeLinecap="round" />
+        <circle cx={hip.x} cy={hip.y} r="6.3" fill={BLACK_SOFT} />
+        <circle cx={hip.x} cy={hip.y} r="2.4" fill={STEEL} />
+
         <motion.g animate={rig[shinKey]} style={{ transformOrigin: `${knee.x}px ${knee.y}px` }}>
-          {/* 정강이 (검은색) + 고무 발 */}
-          <line x1={knee.x} y1={knee.y} x2={foot.x} y2={foot.y} stroke={shinColor} strokeWidth={7} strokeLinecap="round" />
-          <ellipse cx={foot.x + 2} cy={foot.y} rx={6} ry={3.5} fill={shinColor} />
-          <circle cx={knee.x} cy={knee.y} r={3.6} fill={STEEL} />
-          <circle cx={knee.x} cy={knee.y} r={1.4} fill={PIN} />
+          <path
+            d={`M ${knee.x - 3} ${knee.y + 3} C ${knee.x - 6} ${knee.y + 20}, ${foot.x - 19} ${foot.y - 18}, ${foot.x - 3} ${foot.y}`}
+            fill="none"
+            stroke={sideBlack}
+            strokeWidth="10"
+            strokeLinecap="round"
+          />
+          <line x1={knee.x + 7} y1={knee.y + 2} x2={foot.x + 7} y2={foot.y - 10} stroke={STEEL_DARK} strokeWidth="2.8" strokeLinecap="round" />
+          <ellipse cx={foot.x + 2} cy={foot.y + 2} rx="12" ry="5.2" fill={sideBlack} transform={`rotate(-18 ${foot.x + 2} ${foot.y + 2})`} />
+          <circle cx={knee.x} cy={knee.y} r="5.3" fill={BLACK_SOFT} />
+          <circle cx={knee.x} cy={knee.y} r="2" fill={STEEL} />
         </motion.g>
       </motion.g>
     );
@@ -344,68 +357,84 @@ export default function MechdogCharacter({
       }}
     >
       <svg
-        viewBox="0 0 240 170"
+        viewBox="0 0 250 170"
         width={w}
         height={h}
         preserveAspectRatio="xMidYMax meet"
-        style={{ overflow: "visible" }}
+        style={{
+          overflow: "visible",
+          filter: isError ? "drop-shadow(0 8px 8px rgba(239,68,68,.20))" : "drop-shadow(0 10px 9px rgba(72,55,36,.16))",
+        }}
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* 그림자 */}
-        <ellipse cx="122" cy="153" rx="74" ry="7" fill="#58483B" opacity="0.14" />
+        <ellipse cx="128" cy="154" rx="82" ry="8" fill="#4A3824" opacity="0.13" />
 
-        <motion.g animate={rig.body} style={{ transformOrigin: "120px 92px" }}>
-          {/* 먼 쪽 다리 (몸통 뒤) */}
-          {renderLeg({ x: 167, y: 88 }, { x: 154, y: 112 }, { x: 164, y: 143 }, "tFF", "sFF", true)}
-          {renderLeg({ x: 89, y: 88 }, { x: 76, y: 112 }, { x: 86, y: 143 }, "tRF", "sRF", true)}
+        <motion.g animate={rig.body} style={{ transformOrigin: "126px 86px" }}>
+          {renderLeg({ x: 86, y: 91 }, { x: 76, y: 116 }, { x: 95, y: 146 }, "tFF", "sFF", true)}
+          {renderLeg({ x: 160, y: 90 }, { x: 151, y: 115 }, { x: 172, y: 145 }, "tRF", "sRF", true)}
 
-          {/* 몸통 섀시 */}
-          <rect x="52" y="58" width="10" height="30" rx="3" fill={AMBER_DARK} />
-          <rect x="58" y="54" width="128" height="42" rx="9" fill={AMBER} stroke={AMBER_DARK} strokeWidth="2" />
-          {/* 상판 (타공 플레이트) */}
-          <rect x="50" y="45" width="144" height="13" rx="4" fill={AMBER_TOP} stroke={AMBER_DARK} strokeWidth="1.5" />
-          {[60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180].map((x) => (
-            <circle key={x} cx={x} cy={51.5} r={1.8} fill="#B06F12" />
+          {/* rear shoulder motor */}
+          <path d="M174 60 L205 69 L198 101 L169 94 Z" fill={YELLOW_SIDE} stroke={YELLOW_DARK} strokeWidth="2" strokeLinejoin="round" />
+          <circle cx="190" cy="84" r="9" fill={YELLOW} stroke={YELLOW_DARK} strokeWidth="2" />
+          <circle cx="190" cy="84" r="3.4" fill={BLACK_SOFT} />
+
+          {/* main low side chassis */}
+          <path
+            d="M53 57 L76 44 H164 L191 58 L181 100 H67 L45 82 Z"
+            fill={YELLOW}
+            stroke={YELLOW_DARK}
+            strokeWidth="2.4"
+            strokeLinejoin="round"
+          />
+          <path d="M76 44 H164 L191 58 H61 Z" fill={YELLOW_LIGHT} opacity="0.7" />
+          <path d="M64 63 H183 L178 76 H56 Z" fill="#FFC64A" opacity="0.55" />
+
+          {/* top perforated armor plate */}
+          <path d="M66 35 H147 L179 48 L164 59 H49 Z" fill="#F6B932" stroke={YELLOW_DARK} strokeWidth="1.8" strokeLinejoin="round" />
+          {[76, 89, 102, 115, 128, 142, 155].map((x, i) => (
+            <rect key={`slot-${x}`} x={x} y={i > 4 ? 48 : 42} width="8" height="3.2" rx="1.6" fill="#8F5709" opacity="0.82" />
           ))}
-          {/* 측면 삼각 트러스 디테일 */}
-          <path d="M 78 64 L 92 88 L 64 88 Z" fill="none" stroke={AMBER_DARK} strokeWidth="2.5" strokeLinejoin="round" />
-          {/* ESP32 보드 */}
-          <rect x="100" y="62" width="44" height="24" rx="3" fill="#2F3540" />
-          <rect x="112" y="67" width="14" height="12" rx="2" fill="#454D5A" />
-          <rect x="130" y="67" width="8" height="6" rx="1" fill="#454D5A" />
-          {[104, 108.5, 113, 117.5, 122, 126.5, 131, 135.5, 140].map((x) => (
-            <circle key={x} cx={x} cy={82.5} r={1} fill={PIN} />
+          {[72, 95, 118, 141].map((x) => (
+            <circle key={`hole-${x}`} cx={x} cy="51.5" r="2.3" fill="#8F5709" opacity="0.82" />
           ))}
-          {/* 볼트 디테일 */}
-          <circle cx="63" cy="60" r="1.6" fill="#B06F12" />
-          <circle cx="180" cy="60" r="1.6" fill="#B06F12" />
-          <circle cx="63" cy="90" r="1.6" fill="#B06F12" />
-          <circle cx="152" cy="90" r="1.6" fill="#B06F12" />
-          {/* 하부 프레임 */}
-          <rect x="62" y="92" width="120" height="6" rx="3" fill={AMBER_DARK} />
+          <path d="M124 36 H157 L170 45 H133 Z" fill="#FFE08A" opacity="0.55" />
+          <path d="M132 33 L167 42 L159 47 L123 38 Z" fill="#D88C16" opacity="0.86" />
 
-          {/* 앞쪽(near) 다리 (몸통 앞) */}
-          {renderLeg({ x: 160, y: 90 }, { x: 147, y: 116 }, { x: 157, y: 148 }, "tFN", "sFN", false)}
-          {renderLeg({ x: 82, y: 90 }, { x: 69, y: 116 }, { x: 79, y: 148 }, "tRN", "sRN", false)}
+          {/* side triangular truss and name plate */}
+          <path d="M78 67 L96 92 H61 Z M105 67 L121 92 H88 Z M138 67 L155 92 H121 Z" fill="none" stroke="#603A08" strokeWidth="3.4" strokeLinejoin="round" opacity="0.78" />
+          <rect x="111" y="61" width="49" height="13" rx="2" fill="#2E333B" />
+          <rect x="116" y="64" width="37" height="3" rx="1.5" fill="#95A0AB" opacity="0.78" />
+          <text x="134" y="72" textAnchor="middle" fontSize="5.5" fontWeight="800" fill="#D7DEE6">K-09</text>
+          <path d="M64 98 H181" stroke={YELLOW_DARK} strokeWidth="7" strokeLinecap="round" />
 
-          {/* 헤드: 초음파 센서 (RGB LED 내장 렌즈 2개) */}
-          <motion.g animate={rig.head} style={{ transformOrigin: "188px 74px" }}>
-            <rect x="178" y="64" width="12" height="24" rx="3" fill={AMBER_DARK} />
-            <rect x="184" y="55" width="34" height="34" rx="8" fill="#E8A128" stroke="#B06F12" strokeWidth="2" />
-            {/* 상태 LED */}
-            <circle cx="190" cy="60" r="2" fill={lensGlow ?? "#6B7280"} />
-            {/* 렌즈 (LED 색으로 발광) */}
-            <g style={lensGlow ? { filter: `drop-shadow(0 0 6px ${lensGlow})` } : undefined}>
-              <circle cx="195" cy="72" r="8" fill="#14171B" stroke={lensRing} strokeWidth="2.5" />
-              <circle cx="195" cy="72" r="4.2" fill="#2F3843" />
-              <circle cx="193" cy="70" r="1.5" fill="#C9D2DB" />
-              <circle cx="208" cy="72" r="9" fill="#14171B" stroke={lensRing} strokeWidth="2.5" />
-              <circle cx="208" cy="72" r="4.8" fill="#2F3843" />
-              <circle cx="205.5" cy="69.5" r="1.7" fill="#C9D2DB" />
+          {[65, 83, 171, 181, 70, 101, 163].map((x, i) => (
+            <circle key={`bolt-${i}`} cx={x} cy={i < 4 ? 62 : 92} r="2.2" fill={BOLT} />
+          ))}
+
+          {/* front shoulder block */}
+          <path d="M54 61 L82 70 L76 101 L45 90 Z" fill={YELLOW_SIDE} stroke={YELLOW_DARK} strokeWidth="2" strokeLinejoin="round" />
+          <circle cx="67" cy="84" r="9" fill={YELLOW} stroke={YELLOW_DARK} strokeWidth="2" />
+          <circle cx="67" cy="84" r="3.3" fill={BLACK_SOFT} />
+
+          {renderLeg({ x: 78, y: 93 }, { x: 68, y: 119 }, { x: 89, y: 151 }, "tFN", "sFN", false)}
+          {renderLeg({ x: 164, y: 92 }, { x: 153, y: 119 }, { x: 174, y: 151 }, "tRN", "sRN", false)}
+
+          {/* front sensor head */}
+          <motion.g animate={rig.head} style={{ transformOrigin: "55px 73px" }}>
+            <path d="M22 55 L50 44 H79 L91 55 L85 91 H35 L20 78 Z" fill={YELLOW} stroke={YELLOW_DARK} strokeWidth="2.4" strokeLinejoin="round" />
+            <path d="M50 44 H79 L91 55 H28 Z" fill={YELLOW_LIGHT} opacity="0.72" />
+            <path d="M27 62 H85 L82 88 H32 Z" fill="#111418" opacity="0.88" />
+            <g style={ledColor || isError ? { filter: `drop-shadow(0 0 7px ${sensorColor})` } : undefined}>
+              <circle cx="47" cy="74" r="12" fill="#0D1014" stroke={sensorColor} strokeWidth="3" />
+              <circle cx="47" cy="74" r="7.2" fill={eyeFill} />
+              <circle cx="43.5" cy="70.5" r="2.4" fill="#F0F5FA" opacity="0.95" />
+              <circle cx="70" cy="74" r="12" fill="#0D1014" stroke={sensorColor} strokeWidth="3" />
+              <circle cx="70" cy="74" r="7.2" fill={eyeFill} />
+              <circle cx="66.5" cy="70.5" r="2.4" fill="#F0F5FA" opacity="0.95" />
             </g>
-            {/* 통풍구 */}
-            <line x1="188" y1="84" x2="196" y2="84" stroke="#B06F12" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="200" y1="84" x2="208" y2="84" stroke="#B06F12" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M52 90 Q59 94 67 90" fill="none" stroke="#744607" strokeWidth="2.2" strokeLinecap="round" opacity="0.9" />
+            <rect x="30" y="50" width="28" height="4" rx="2" fill="#8F5709" opacity="0.72" />
+            <circle cx="84" cy="62" r="2.2" fill={BOLT} />
           </motion.g>
         </motion.g>
       </svg>
