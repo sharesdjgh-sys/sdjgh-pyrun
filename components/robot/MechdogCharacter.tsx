@@ -40,14 +40,14 @@ const NEUTRAL: Record<PartKey, TargetAndTransition> = {
 const GAIT = { duration: 0.5, repeat: Infinity, ease: "easeInOut" as const };
 const WALKING: Rig = {
   body: { y: [0, -2.5, 0], transition: { duration: 0.25, repeat: Infinity, ease: "easeInOut" } },
-  tFN: { rotate: [-16, 15, -16], transition: GAIT },
-  sFN: { rotate: [12, -22, 12], transition: GAIT },
-  tRF: { rotate: [-16, 15, -16], transition: GAIT },
-  sRF: { rotate: [12, -22, 12], transition: GAIT },
-  tFF: { rotate: [15, -16, 15], transition: GAIT },
-  sFF: { rotate: [-22, 12, -22], transition: GAIT },
-  tRN: { rotate: [15, -16, 15], transition: GAIT },
-  sRN: { rotate: [-22, 12, -22], transition: GAIT },
+  tFN: { rotate: [-10, 10, -10], transition: GAIT },
+  sFN: { rotate: [8, -12, 8], transition: GAIT },
+  tRF: { rotate: [-10, 10, -10], transition: GAIT },
+  sRF: { rotate: [8, -12, 8], transition: GAIT },
+  tFF: { rotate: [10, -10, 10], transition: GAIT },
+  sFF: { rotate: [-12, 8, -12], transition: GAIT },
+  tRN: { rotate: [10, -10, 10], transition: GAIT },
+  sRN: { rotate: [-12, 8, -12], transition: GAIT },
 };
 
 const STATE_RIGS: Partial<Record<RobotState, Rig>> = {
@@ -275,6 +275,16 @@ const FALLBACK_ACTION: Rig = {
   body: { y: [0, -12, 0], transition: { duration: 0.5, ease: "easeOut" } },
 };
 
+type Pt = { x: number; y: number };
+
+const linkEnd = (hip: Pt, angleDeg: number, length: number): Pt => {
+  const rad = (angleDeg * Math.PI) / 180;
+  return {
+    x: Math.round((hip.x + Math.cos(rad) * length) * 10) / 10,
+    y: Math.round((hip.y + Math.sin(rad) * length) * 10) / 10,
+  };
+};
+
 const YELLOW = "#F4AC22";
 const YELLOW_LIGHT = "#FFE07B";
 const YELLOW_DARK = "#B97008";
@@ -282,10 +292,7 @@ const YELLOW_SIDE = "#D98913";
 const BLACK = "#15181D";
 const BLACK_SOFT = "#2B3037";
 const STEEL = "#D7DEE6";
-const STEEL_DARK = "#69727D";
 const BOLT = "#1D2229";
-
-type Pt = { x: number; y: number };
 
 export default function MechdogCharacter({
   state,
@@ -312,33 +319,56 @@ export default function MechdogCharacter({
     const sideYellow = far ? "#C97912" : YELLOW;
     const sideBlack = far ? "#0F1216" : BLACK;
     const alpha = far ? 0.76 : 1;
+    const lowerDir = foot.x < knee.x ? -1 : 1;
 
     return (
       <motion.g animate={rig[thighKey]} style={{ transformOrigin: `${hip.x}px ${hip.y}px` }} opacity={alpha}>
-        <path
-          d={`M ${hip.x - 8} ${hip.y - 5} L ${hip.x + 10} ${hip.y - 2} L ${knee.x + 8} ${knee.y + 3} L ${knee.x - 7} ${knee.y + 8} Z`}
-          fill={sideYellow}
+        <line
+          x1={hip.x}
+          y1={hip.y}
+          x2={knee.x}
+          y2={knee.y}
           stroke={YELLOW_DARK}
-          strokeWidth="1.8"
-          strokeLinejoin="round"
+          strokeWidth="18"
+          strokeLinecap="round"
         />
-        <line x1={hip.x + 11} y1={hip.y + 2} x2={knee.x + 13} y2={knee.y + 3} stroke={STEEL} strokeWidth="3.2" strokeLinecap="round" />
-        <circle cx={hip.x} cy={hip.y} r="6.3" fill={BLACK_SOFT} />
-        <circle cx={hip.x} cy={hip.y} r="2.4" fill={STEEL} />
+        <line
+          x1={hip.x}
+          y1={hip.y}
+          x2={knee.x}
+          y2={knee.y}
+          stroke={sideYellow}
+          strokeWidth="14"
+          strokeLinecap="round"
+        />
+        <circle cx={hip.x} cy={hip.y} r="7.2" fill={sideYellow} stroke={YELLOW_DARK} strokeWidth="1.8" />
+        <circle cx={hip.x} cy={hip.y} r="3" fill={BLACK_SOFT} />
+        <circle cx={knee.x} cy={knee.y} r="7.4" fill={sideYellow} stroke={YELLOW_DARK} strokeWidth="1.8" />
 
         <motion.g animate={rig[shinKey]} style={{ transformOrigin: `${knee.x}px ${knee.y}px` }}>
-          <path
-            d={`M ${knee.x - 3} ${knee.y + 3} C ${knee.x - 6} ${knee.y + 20}, ${foot.x - 19} ${foot.y - 18}, ${foot.x - 3} ${foot.y}`}
-            fill="none"
+          <line
+            x1={knee.x}
+            y1={knee.y + 2}
+            x2={foot.x}
+            y2={foot.y}
             stroke={sideBlack}
-            strokeWidth="10"
+            strokeWidth="11"
             strokeLinecap="round"
           />
-          <line x1={knee.x + 7} y1={knee.y + 2} x2={foot.x + 7} y2={foot.y - 10} stroke={STEEL_DARK} strokeWidth="2.8" strokeLinecap="round" />
-          <ellipse cx={foot.x + 2} cy={foot.y + 2} rx="13" ry="6" fill={sideBlack} transform={`rotate(-18 ${foot.x + 2} ${foot.y + 2})`} />
-          <ellipse cx={foot.x + 5} cy={foot.y - 1} rx="5" ry="2" fill="#3B414A" opacity="0.75" transform={`rotate(-18 ${foot.x + 5} ${foot.y - 1})`} />
-          <circle cx={knee.x} cy={knee.y} r="5.3" fill={BLACK_SOFT} />
-          <circle cx={knee.x} cy={knee.y} r="2" fill={STEEL} />
+          <line
+            x1={knee.x + lowerDir * 8}
+            y1={knee.y}
+            x2={foot.x + lowerDir * 7}
+            y2={foot.y - 11}
+            stroke={STEEL}
+            strokeWidth="3"
+            strokeLinecap="round"
+            opacity="0.8"
+          />
+          <ellipse cx={foot.x + lowerDir * 2} cy={foot.y + 2} rx="14" ry="6.5" fill={sideBlack} transform={`rotate(${lowerDir > 0 ? -14 : 14} ${foot.x + lowerDir * 2} ${foot.y + 2})`} />
+          <ellipse cx={foot.x + lowerDir * 5} cy={foot.y - 1} rx="5" ry="2.3" fill="#4B525C" opacity="0.8" transform={`rotate(${lowerDir > 0 ? -14 : 14} ${foot.x + lowerDir * 5} ${foot.y - 1})`} />
+          <circle cx={knee.x} cy={knee.y} r="5.8" fill={BLACK_SOFT} />
+          <circle cx={knee.x} cy={knee.y} r="2.2" fill={STEEL} />
         </motion.g>
       </motion.g>
     );
@@ -371,76 +401,101 @@ export default function MechdogCharacter({
         <ellipse cx="128" cy="154" rx="82" ry="8" fill="#4A3824" opacity="0.13" />
 
         <motion.g animate={rig.body} style={{ transformOrigin: "126px 86px" }}>
-          {renderLeg({ x: 86, y: 91 }, { x: 76, y: 116 }, { x: 95, y: 146 }, "tFF", "sFF", true)}
-          {renderLeg({ x: 160, y: 90 }, { x: 151, y: 115 }, { x: 172, y: 145 }, "tRF", "sRF", true)}
+          {renderLeg(
+            { x: 88, y: 96 },
+            linkEnd({ x: 88, y: 96 }, 60, 31),
+            linkEnd(linkEnd({ x: 88, y: 96 }, 60, 31), 122, 31),
+            "tFF",
+            "sFF",
+            true
+          )}
+          {renderLeg(
+            { x: 154, y: 96 },
+            linkEnd({ x: 154, y: 96 }, 60, 31),
+            linkEnd(linkEnd({ x: 154, y: 96 }, 60, 31), 122, 31),
+            "tRF",
+            "sRF",
+            true
+          )}
 
-          {/* rear shoulder motor */}
-          <path d="M174 60 L205 69 L198 101 L169 94 Z" fill={YELLOW_SIDE} stroke={YELLOW_DARK} strokeWidth="2" strokeLinejoin="round" />
-          <circle cx="190" cy="84" r="9" fill={YELLOW} stroke={YELLOW_DARK} strokeWidth="2" />
-          <circle cx="190" cy="84" r="3.4" fill={BLACK_SOFT} />
+          {/* soft tail */}
+          <motion.g animate={{ rotate: [0, 9, -6, 0], transition: { duration: 1.8, repeat: Infinity, ease: "easeInOut" } }} style={{ transformOrigin: "190px 76px" }}>
+            <path d="M186 78 C205 66, 216 72, 214 86" fill="none" stroke={YELLOW_DARK} strokeWidth="8" strokeLinecap="round" />
+            <circle cx="215" cy="87" r="5" fill={YELLOW_LIGHT} stroke={YELLOW_DARK} strokeWidth="1.5" />
+          </motion.g>
 
-          {/* main low side chassis */}
+          {/* main rounded puppy body */}
           <path
-            d="M55 58 Q63 49 77 44 H163 Q180 47 190 59 L181 99 H68 Q55 96 46 83 Z"
+            d="M66 61 Q77 47 99 46 H160 Q180 47 190 63 L185 98 Q177 110 154 108 H82 Q64 107 56 91 Z"
             fill={YELLOW}
             stroke={YELLOW_DARK}
             strokeWidth="2.4"
             strokeLinejoin="round"
           />
-          <path d="M76 44 H164 L191 58 H61 Z" fill={YELLOW_LIGHT} opacity="0.7" />
-          <path d="M64 63 H183 L178 76 H56 Z" fill="#FFC64A" opacity="0.55" />
+          <path d="M81 52 H160 Q174 53 183 64 H67 Q73 56 81 52 Z" fill={YELLOW_LIGHT} opacity="0.62" />
+          <path d="M68 66 H184 L181 80 H61 Z" fill="#FFC64A" opacity="0.44" />
 
-          {/* top perforated armor plate */}
-          <path d="M66 35 H147 L179 48 L164 59 H49 Z" fill="#F6B932" stroke={YELLOW_DARK} strokeWidth="1.8" strokeLinejoin="round" />
-          {[76, 89, 102, 115, 128, 142, 155].map((x, i) => (
-            <rect key={`slot-${x}`} x={x} y={i > 4 ? 48 : 42} width="8" height="3.2" rx="1.6" fill="#8F5709" opacity="0.82" />
+          {/* cute top panel */}
+          <path d="M83 38 H149 Q164 39 174 50 L160 58 H68 Q72 44 83 38 Z" fill="#F6B932" stroke={YELLOW_DARK} strokeWidth="1.8" strokeLinejoin="round" />
+          {[88, 102, 116, 130, 144, 158].map((x, i) => (
+            <rect key={`slot-${x}`} x={x} y={i > 3 ? 49 : 43} width="7" height="3" rx="1.5" fill="#8F5709" opacity="0.7" />
           ))}
-          {[72, 95, 118, 141].map((x) => (
-            <circle key={`hole-${x}`} cx={x} cy="51.5" r="2.3" fill="#8F5709" opacity="0.82" />
+          {[82, 108, 136].map((x) => (
+            <circle key={`hole-${x}`} cx={x} cy="52" r="2.2" fill="#8F5709" opacity="0.7" />
           ))}
-          <path d="M124 36 H157 L170 45 H133 Z" fill="#FFE08A" opacity="0.55" />
-          <path d="M132 33 L167 42 L159 47 L123 38 Z" fill="#D88C16" opacity="0.86" />
 
           {/* side triangular truss and name plate */}
-          <path d="M78 67 L96 92 H61 Z M105 67 L121 92 H88 Z M138 67 L155 92 H121 Z" fill="none" stroke="#603A08" strokeWidth="3.4" strokeLinejoin="round" opacity="0.78" />
-          <rect x="111" y="61" width="49" height="13" rx="2" fill="#2E333B" />
-          <rect x="116" y="64" width="37" height="3" rx="1.5" fill="#95A0AB" opacity="0.78" />
-          <text x="134" y="72" textAnchor="middle" fontSize="5.5" fontWeight="800" fill="#D7DEE6">K-09</text>
-          <path d="M64 98 H181" stroke={YELLOW_DARK} strokeWidth="7" strokeLinecap="round" />
+          <path d="M95 71 L109 95 H80 Z M129 71 L144 95 H115 Z" fill="none" stroke="#603A08" strokeWidth="3" strokeLinejoin="round" opacity="0.58" />
+          <rect x="111" y="63" width="47" height="13" rx="5" fill="#2E333B" />
+          <text x="134" y="72.5" textAnchor="middle" fontSize="6" fontWeight="800" fill="#D7DEE6">K-09</text>
+          <path d="M72 101 H176" stroke={YELLOW_DARK} strokeWidth="7" strokeLinecap="round" opacity="0.72" />
 
-          {[65, 83, 171, 181, 70, 101, 163].map((x, i) => (
+          {[77, 94, 166, 177, 83, 154].map((x, i) => (
             <circle key={`bolt-${i}`} cx={x} cy={i < 4 ? 62 : 92} r="2.2" fill={BOLT} />
           ))}
 
-          {/* front shoulder block */}
-          <path d="M54 61 L82 70 L76 101 Q61 101 45 90 Z" fill={YELLOW_SIDE} stroke={YELLOW_DARK} strokeWidth="2" strokeLinejoin="round" />
-          <circle cx="67" cy="84" r="9" fill={YELLOW} stroke={YELLOW_DARK} strokeWidth="2" />
-          <circle cx="67" cy="84" r="3.3" fill={BLACK_SOFT} />
+          {/* rounded shoulders */}
+          <circle cx="78" cy="89" r="13" fill={YELLOW_SIDE} stroke={YELLOW_DARK} strokeWidth="2" />
+          <circle cx="164" cy="89" r="13" fill={YELLOW_SIDE} stroke={YELLOW_DARK} strokeWidth="2" />
+          <circle cx="78" cy="89" r="4" fill={BLACK_SOFT} />
+          <circle cx="164" cy="89" r="4" fill={BLACK_SOFT} />
 
-          {renderLeg({ x: 78, y: 93 }, { x: 68, y: 119 }, { x: 89, y: 151 }, "tFN", "sFN", false)}
-          {renderLeg({ x: 164, y: 92 }, { x: 153, y: 119 }, { x: 174, y: 151 }, "tRN", "sRN", false)}
+          {renderLeg(
+            { x: 78, y: 97 },
+            linkEnd({ x: 78, y: 97 }, 60, 33),
+            linkEnd(linkEnd({ x: 78, y: 97 }, 60, 33), 122, 33),
+            "tFN",
+            "sFN",
+            false
+          )}
+          {renderLeg(
+            { x: 164, y: 97 },
+            linkEnd({ x: 164, y: 97 }, 60, 33),
+            linkEnd(linkEnd({ x: 164, y: 97 }, 60, 33), 122, 33),
+            "tRN",
+            "sRN",
+            false
+          )}
 
-          {/* front sensor head */}
+          {/* puppy-like sensor head */}
           <motion.g animate={rig.head} style={{ transformOrigin: "55px 73px" }}>
-            <path d="M23 56 Q34 44 51 42 H77 Q89 45 94 57 L88 90 Q80 97 37 94 Q25 90 19 78 Z" fill={YELLOW} stroke={YELLOW_DARK} strokeWidth="2.4" strokeLinejoin="round" />
-            <path d="M51 42 H77 Q88 46 94 57 H28 Q36 48 51 42 Z" fill={YELLOW_LIGHT} opacity="0.76" />
-            <path d="M27 61 Q55 57 86 61 L83 88 Q57 92 32 88 Z" fill="#111418" opacity="0.88" />
-            <circle cx="34" cy="86" r="3.2" fill="#F8C24C" opacity="0.95" />
-            <circle cx="80" cy="86" r="3.2" fill="#F8C24C" opacity="0.95" />
+            <path d="M23 58 Q32 42 51 39 H76 Q91 41 98 58 L92 91 Q83 102 38 98 Q25 93 18 79 Z" fill={YELLOW} stroke={YELLOW_DARK} strokeWidth="2.4" strokeLinejoin="round" />
+            <path d="M25 57 Q20 45 27 38 Q38 43 43 52 Z" fill={YELLOW_SIDE} stroke={YELLOW_DARK} strokeWidth="1.8" />
+            <path d="M82 52 Q88 41 99 37 Q104 48 96 60 Z" fill={YELLOW_SIDE} stroke={YELLOW_DARK} strokeWidth="1.8" />
+            <path d="M51 39 H76 Q90 43 98 58 H28 Q36 45 51 39 Z" fill={YELLOW_LIGHT} opacity="0.76" />
+            <path d="M28 62 Q58 56 88 62 L84 89 Q58 94 32 89 Z" fill="#111418" opacity="0.86" />
+            <circle cx="34" cy="86" r="4" fill="#FFB4C7" opacity="0.95" />
+            <circle cx="80" cy="86" r="4" fill="#FFB4C7" opacity="0.95" />
             <g style={ledColor || isError ? { filter: `drop-shadow(0 0 7px ${sensorColor})` } : undefined}>
-              <circle cx="47" cy="73" r="13.5" fill="#0D1014" stroke={sensorColor} strokeWidth="3" />
-              <circle cx="47" cy="73" r="8.5" fill={eyeFill} />
-              <circle cx="43" cy="68.5" r="3" fill="#F8FBFF" opacity="0.98" />
-              <circle cx="50.5" cy="77.5" r="1.7" fill="#8D99A6" opacity="0.8" />
-              <circle cx="72" cy="73" r="13.5" fill="#0D1014" stroke={sensorColor} strokeWidth="3" />
-              <circle cx="72" cy="73" r="8.5" fill={eyeFill} />
-              <circle cx="68" cy="68.5" r="3" fill="#F8FBFF" opacity="0.98" />
-              <circle cx="75.5" cy="77.5" r="1.7" fill="#8D99A6" opacity="0.8" />
+              <ellipse cx="47" cy="73" rx="13" ry="14.2" fill="#0D1014" stroke={sensorColor} strokeWidth="3" />
+              <ellipse cx="47" cy="73" rx="8" ry="9" fill={eyeFill} />
+              <circle cx="43" cy="68" r="3.2" fill="#F8FBFF" opacity="0.98" />
+              <ellipse cx="72" cy="73" rx="13" ry="14.2" fill="#0D1014" stroke={sensorColor} strokeWidth="3" />
+              <ellipse cx="72" cy="73" rx="8" ry="9" fill={eyeFill} />
+              <circle cx="68" cy="68" r="3.2" fill="#F8FBFF" opacity="0.98" />
             </g>
             <path d="M51 90 Q60 96 70 90" fill="none" stroke="#744607" strokeWidth="2.5" strokeLinecap="round" opacity="0.95" />
-            <path d="M36 60 Q47 55 58 59" fill="none" stroke="#FFE9A8" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
-            <rect x="30" y="50" width="28" height="4" rx="2" fill="#8F5709" opacity="0.72" />
-            <circle cx="84" cy="62" r="2.2" fill={BOLT} />
+            <path d="M36 58 Q47 53 58 58" fill="none" stroke="#FFE9A8" strokeWidth="2" strokeLinecap="round" opacity="0.82" />
           </motion.g>
         </motion.g>
       </svg>
