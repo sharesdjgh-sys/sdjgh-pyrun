@@ -13,7 +13,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 50 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: varchar("role", { length: 10 }).notNull().default("student"),
+  role: varchar("role", { length: 20 }).notNull().default("student"),
   displayName: varchar("display_name", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow(),
 });

@@ -1,0 +1,117 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db/index";
+import { feedbackHistory, userConceptClears, userConceptPractices, users } from "@/lib/db/schema";
+import { isAdministratorRole, isUserRole, type UserRole } from "@/lib/roles";
+import { asc, eq } from "drizzle-orm";
+
+async function requireAdministrator() {
+  const session = await auth();
+  const userId = Number(session?.user?.id);
+  if (!session || !Number.isInteger(userId)) {
+    return { denied: NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }) };
+  }
+
+  const [currentUser] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!currentUser || !isAdministratorRole(currentUser.role)) {
+    return { denied: NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 }) };
+  }
+
+  return { userId };
+}
+
+export async function GET() {
+  const authResult = await requireAdministrator();
+  if ("denied" in authResult) return authResult.denied;
+
+  const rows = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      role: users.role,
+      displayName: users.displayName,
+    })
+    .from(users)
+    .orderBy(asc(users.id));
+
+  return NextResponse.json({ users: rows });
+}
+
+export async function PATCH(req: NextRequest) {
+  const authResult = await requireAdministrator();
+  if ("denied" in authResult) return authResult.denied;
+
+  const body = await req.json().catch(() => null);
+  const targetUserId = Number(body?.userId);
+  const role = body?.role;
+
+  if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+    return NextResponse.json({ error: "유효하지 않은 사용자입니다." }, { status: 400 });
+  }
+
+  if (!isUserRole(role)) {
+    return NextResponse.json({ error: "유효하지 않은 등급입니다." }, { status: 400 });
+  }
+
+  if (targetUserId === authResult.userId && role !== "admin") {
+    return NextResponse.json(
+      { error: "현재 로그인한 관리자 계정은 관리자 등급을 해제할 수 없습니다." },
+      { status: 400 }
+    );
+  }
+
+  const [updatedUser] = await db
+    .update(users)
+    .set({ role: role as UserRole })
+    .where(eq(users.id, targetUserId))
+    .returning({
+      id: users.id,
+      username: users.username,
+      role: users.role,
+      displayName: users.displayName,
+    });
+
+  if (!updatedUser) {
+    return NextResponse.json({ error: "사용자를 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  return NextResponse.json({ user: updatedUser });
+}
+
+export async function DELETE(req: NextRequest) {
+  const authResult = await requireAdministrator();
+  if ("denied" in authResult) return authResult.denied;
+
+  const body = await req.json().catch(() => null);
+  const targetUserId = Number(body?.userId);
+
+  if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+    return NextResponse.json({ error: "유효하지 않은 사용자입니다." }, { status: 400 });
+  }
+
+  if (targetUserId === authResult.userId) {
+    return NextResponse.json({ error: "현재 로그인한 관리자 계정은 삭제할 수 없습니다." }, { status: 400 });
+  }
+
+  const [targetUser] = await db
+    .select({ id: users.id, username: users.username })
+    .from(users)
+    .where(eq(users.id, targetUserId))
+    .limit(1);
+
+  if (!targetUser) {
+    return NextResponse.json({ error: "사용자를 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  await db.delete(feedbackHistory).where(eq(feedbackHistory.userId, targetUserId));
+  await db.delete(userConceptClears).where(eq(userConceptClears.userId, targetUserId));
+  await db.delete(userConceptPractices).where(eq(userConceptPractices.userId, targetUserId));
+  await db.delete(users).where(eq(users.id, targetUserId));
+
+  return NextResponse.json({ ok: true, userId: targetUser.id, username: targetUser.username });
+}

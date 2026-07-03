@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { concepts } from "@/lib/db/schema";
+import { canOpenAdminPage } from "@/lib/roles";
 import { eq } from "drizzle-orm";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const role = (session?.user as { role?: string } | undefined)?.role;
-  if (!session || (role !== "teacher" && role !== "admin")) {
+  if (!session || !canOpenAdminPage(role)) {
     return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
   }
 

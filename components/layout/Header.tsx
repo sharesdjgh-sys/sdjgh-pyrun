@@ -3,13 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
+import { canOpenAdminPage, isAdministratorRole } from "@/lib/roles";
 
 export default function Header() {
   const { data: session } = useSession();
   const name = session?.user?.name || "학생";
   const initial = name.slice(0, 1);
   const role = (session?.user as { role?: string } | undefined)?.role;
-  const isTeacher = role === "teacher" || role === "admin";
+  const canManage = canOpenAdminPage(role);
+  const isAdmin = isAdministratorRole(role);
 
   return (
     <header
@@ -43,9 +45,10 @@ export default function Header() {
         </div>
 
         {/* Admin link — teacher/admin only */}
-        {isTeacher && (
+        {canManage && (
           <Link
             href="/admin"
+            title={isAdmin ? "관리자 설정" : "관리"}
             style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #C9BFEE", borderRadius: 99, padding: "8px 14px", fontSize: 13.5, fontWeight: 700, color: "#7B5CF0", textDecoration: "none", whiteSpace: "nowrap" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#F6F2FE")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
@@ -53,7 +56,7 @@ export default function Header() {
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
-            관리자
+            {isAdmin ? "관리자 설정" : "관리"}
           </Link>
         )}
 

@@ -2,19 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { dataFiles } from "@/lib/db/schema";
+import { canOpenAdminPage } from "@/lib/roles";
 import { eq } from "drizzle-orm";
 
-async function requireAdmin(req: NextRequest) {
+async function requireAdmin() {
   const session = await auth();
   const role = (session?.user as { role?: string } | undefined)?.role;
-  if (!session || (role !== "teacher" && role !== "admin")) {
+  if (!session || !canOpenAdminPage(role)) {
     return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
   }
   return null;
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin(req);
+  const denied = await requireAdmin();
   if (denied) return denied;
 
   try {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const denied = await requireAdmin(req);
+  const denied = await requireAdmin();
   if (denied) return denied;
 
   try {
