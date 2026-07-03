@@ -341,7 +341,7 @@ export default function RobotCharacter({
         <ellipse cx="100" cy="245" rx="54" ry="7" fill={colors.accentDark} opacity="0.16" />
 
         {/* Left Leg */}
-        <motion.g animate={state} variants={leftLegVariants} style={{ transformOrigin: "89px 196px" }}>
+        <motion.g animate={state} variants={leftLegVariants} style={{ originX: "89px", originY: "196px", transformBox: "view-box" }}>
           <rect x="78" y="196" width="22" height="34" rx="11" fill={colors.bodyBg} />
           <rect
             x="62"
@@ -357,7 +357,7 @@ export default function RobotCharacter({
         </motion.g>
 
         {/* Right Leg */}
-        <motion.g animate={state} variants={rightLegVariants} style={{ transformOrigin: "111px 196px" }}>
+        <motion.g animate={state} variants={rightLegVariants} style={{ originX: "111px", originY: "196px", transformBox: "view-box" }}>
           <rect x="100" y="196" width="22" height="34" rx="11" fill={colors.bodyBg} />
           <rect
             x="102"
@@ -373,7 +373,7 @@ export default function RobotCharacter({
         </motion.g>
 
         {/* Left Arm */}
-        <motion.g animate={state} variants={leftArmVariants} style={{ transformOrigin: "56px 162px" }}>
+        <motion.g animate={state} variants={leftArmVariants} style={{ originX: "56px", originY: "162px", transformBox: "view-box" }}>
           <rect x="42" y="160" width="20" height="32" rx="10" fill={colors.bodyBg} />
           <ellipse cx="55" cy="161" rx="15" ry="13" fill={colors.accent} />
           <circle cx="49" cy="196" r="13" fill={colors.accent} />
@@ -382,7 +382,7 @@ export default function RobotCharacter({
         </motion.g>
 
         {/* Right Arm */}
-        <motion.g animate={state} variants={rightArmVariants} style={{ transformOrigin: "144px 162px" }}>
+        <motion.g animate={state} variants={rightArmVariants} style={{ originX: "144px", originY: "162px", transformBox: "view-box" }}>
           <rect x="138" y="160" width="20" height="32" rx="10" fill={colors.bodyBg} />
           <ellipse cx="145" cy="161" rx="15" ry="13" fill={colors.accent} />
           <circle cx="151" cy="196" r="13" fill={colors.accent} />
@@ -421,7 +421,7 @@ export default function RobotCharacter({
         </g>
 
         {/* Head + Headphones + Antenna + Bow (grouped so they all move together) */}
-        <motion.g animate={state} variants={headVariants} style={{ transformOrigin: "100px 95px" }}>
+        <motion.g animate={state} variants={headVariants} style={{ originX: "100px", originY: "95px", transformBox: "view-box" }}>
           {/* Headphones */}
           <circle cx="35" cy="96" r="20" fill={colors.earBg} />
           <ellipse cx="35" cy="96" rx="8.5" ry="13" fill="#EFE4FB" />
@@ -493,7 +493,7 @@ export default function RobotCharacter({
           {/* Anger Spark (Angry state) */}
           {!isError && emotion === "angry" && (
             <motion.g
-              style={{ transformOrigin: "155px 35px" }}
+              style={{ originX: "155px", originY: "35px", transformBox: "view-box" }}
               animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
               transition={{ duration: 0.8, repeat: Infinity }}
             >
@@ -511,7 +511,7 @@ export default function RobotCharacter({
           {/* Surprise exclamation mark (Surprised state) */}
           {!isError && emotion === "surprised" && (
             <motion.g
-              style={{ transformOrigin: "100px 10px" }}
+              style={{ originX: "100px", originY: "10px", transformBox: "view-box" }}
               animate={{ y: [0, -8, 0], scale: [1, 1.15, 1] }}
               transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut" }}
             >

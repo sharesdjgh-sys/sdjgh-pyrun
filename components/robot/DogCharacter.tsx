@@ -295,17 +295,17 @@ export default function DogCharacter({
           fill={colors.furMain}
           animate={state}
           variants={tailVariants}
-          style={{ transformOrigin: "52px 178px" }}
+          style={{ originX: "52px", originY: "178px", transformBox: "view-box" }}
         />
 
         {/* Back Left Leg */}
-        <motion.g animate={state} variants={legLVariants} style={{ transformOrigin: "75px 190px" }}>
+        <motion.g animate={state} variants={legLVariants} style={{ originX: "75px", originY: "190px", transformBox: "view-box" }}>
           <rect x="65" y="180" width="18" height="48" rx="9" fill={colors.furMain} />
           <circle cx="74" cy="222" r="10" fill={colors.furWhite} />
         </motion.g>
 
         {/* Back Right Leg */}
-        <motion.g animate={state} variants={legRVariants} style={{ transformOrigin: "125px 190px" }}>
+        <motion.g animate={state} variants={legRVariants} style={{ originX: "125px", originY: "190px", transformBox: "view-box" }}>
           <rect x="117" y="180" width="18" height="48" rx="9" fill={colors.furMain} />
           <circle cx="126" cy="222" r="10" fill={colors.furWhite} />
         </motion.g>
@@ -317,13 +317,13 @@ export default function DogCharacter({
         </g>
 
         {/* Front Left Leg */}
-        <motion.g animate={state} variants={legLVariants} style={{ transformOrigin: "90px 190px" }}>
+        <motion.g animate={state} variants={legLVariants} style={{ originX: "90px", originY: "190px", transformBox: "view-box" }}>
           <rect x="80" y="185" width="18" height="45" rx="9" fill={colors.furMain} />
           <circle cx="89" cy="224" r="10" fill={colors.furWhite} />
         </motion.g>
 
         {/* Front Right Leg */}
-        <motion.g animate={state} variants={legRVariants} style={{ transformOrigin: "110px 190px" }}>
+        <motion.g animate={state} variants={legRVariants} style={{ originX: "110px", originY: "190px", transformBox: "view-box" }}>
           <rect x="102" y="185" width="18" height="45" rx="9" fill={colors.furMain} />
           <circle cx="111" cy="224" r="10" fill={colors.furWhite} />
         </motion.g>
@@ -337,12 +337,12 @@ export default function DogCharacter({
         </g>
 
         {/* Head + Ears + Face (grouped to sway together) */}
-        <motion.g animate={state} variants={headVariants} style={{ transformOrigin: "100px 115px" }}>
+        <motion.g animate={state} variants={headVariants} style={{ originX: "100px", originY: "115px", transformBox: "view-box" }}>
           {/* Left Ear */}
           <motion.g
             animate={state}
             variants={earLVariants}
-            style={{ transformOrigin: "52px 64px" }}
+            style={{ originX: "52px", originY: "64px", transformBox: "view-box" }}
           >
             {/* Outer Ear */}
             <path d="M 32 30 Q 55 12 62 65 Z" fill={colors.furMain} />
@@ -354,7 +354,7 @@ export default function DogCharacter({
           <motion.g
             animate={state}
             variants={earRVariants}
-            style={{ transformOrigin: "148px 64px" }}
+            style={{ originX: "148px", originY: "64px", transformBox: "view-box" }}
           >
             {/* Outer Ear */}
             <path d="M 168 30 Q 145 12 138 65 Z" fill={colors.furMain} />

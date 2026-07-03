@@ -282,13 +282,13 @@ export default function GameCharacter({
         />
 
         {/* Left Foot */}
-        <motion.g animate={state} variants={legLVariants} style={{ transformOrigin: "86px 190px" }}>
+        <motion.g animate={state} variants={legLVariants} style={{ originX: "86px", originY: "190px", transformBox: "view-box" }}>
           <rect x="74" y="186" width="22" height="48" rx="8" fill={colors.armorTrim} />
           <rect x="64" y="222" width="36" height="18" rx="9" fill={colors.armor} />
         </motion.g>
 
         {/* Right Foot */}
-        <motion.g animate={state} variants={legRVariants} style={{ transformOrigin: "114px 190px" }}>
+        <motion.g animate={state} variants={legRVariants} style={{ originX: "114px", originY: "190px", transformBox: "view-box" }}>
           <rect x="104" y="186" width="22" height="48" rx="8" fill={colors.armorTrim} />
           <rect x="100" y="222" width="36" height="18" rx="9" fill={colors.armor} />
         </motion.g>
@@ -297,7 +297,7 @@ export default function GameCharacter({
         <motion.g
           animate={state}
           variants={swordVariants}
-          style={{ transformOrigin: "154px 148px" }}
+          style={{ originX: "154px", originY: "148px", transformBox: "view-box" }}
         >
           {/* Blade */}
           <path d="M 148 140 L 158 140 L 158 50 L 153 38 L 148 50 Z" fill={colors.blade} />
@@ -317,7 +317,7 @@ export default function GameCharacter({
         </g>
 
         {/* Head + Helmet Group */}
-        <motion.g animate={state} variants={headVariants} style={{ transformOrigin: "100px 96px" }}>
+        <motion.g animate={state} variants={headVariants} style={{ originX: "100px", originY: "96px", transformBox: "view-box" }}>
           {/* Hair block behind face */}
           <path d="M 52 82 C 52 82 48 128 100 128 C 152 128 148 82 148 82 Z" fill={colors.hair} />
 
@@ -356,7 +356,7 @@ export default function GameCharacter({
         <motion.g
           animate={state}
           variants={shieldVariants}
-          style={{ transformOrigin: "46px 158px" }}
+          style={{ originX: "46px", originY: "158px", transformBox: "view-box" }}
         >
           {/* Knight Shield shape */}
           <path
