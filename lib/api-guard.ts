@@ -45,10 +45,18 @@ export function validateFeedback(input: unknown) {
   if (!input || typeof input !== "object") throw new RequestValidationError("요청 형식이 올바르지 않습니다.");
   const data = input as Record<string, unknown>;
   if (typeof data.isSuccess !== "boolean") throw new RequestValidationError("실행 결과 형식이 올바르지 않습니다.");
+  let practiceConceptId: number | null = null;
+  if (data.practiceConceptId !== undefined && data.practiceConceptId !== null) {
+    if (typeof data.practiceConceptId !== "number" || !Number.isInteger(data.practiceConceptId) || data.practiceConceptId < 0) {
+      throw new RequestValidationError("연습문제 정보가 올바르지 않습니다.");
+    }
+    practiceConceptId = data.practiceConceptId;
+  }
   return {
     code: requiredString(data.code, "코드", 1, 20_000),
     stdout: typeof data.stdout === "string" ? data.stdout.slice(0, 8_000) : "",
     stderr: typeof data.stderr === "string" ? data.stderr.slice(0, 8_000) : "",
     isSuccess: data.isSuccess,
+    practiceConceptId,
   };
 }

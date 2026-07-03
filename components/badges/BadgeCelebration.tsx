@@ -3,26 +3,24 @@
 import { useEffect, useRef } from "react";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
-  List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package,
+  List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Bot,
+  Binary, FileText, ListChecks, Parentheses, BookOpen, Layers, Copy, Repeat, RefreshCcw,
+  Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
 } from "lucide-react";
-import { BADGE_METADATA } from "@/lib/curriculum";
+import { BADGE_METADATA, BADGE_METADATA_LV2, BADGE_METADATA_LV3 } from "@/lib/curriculum";
+import { COLOR_HEX } from "./colorMap";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
-  List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package,
+  List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Bot,
+  Binary, FileText, ListChecks, Parentheses, BookOpen, Layers, Copy, Repeat, RefreshCcw,
+  Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
 };
 
-const COLOR_HEX: Record<string, string> = {
-  "text-green-500": "#18C99A", "text-blue-500": "#4F8EF7", "text-yellow-500": "#FFB02E",
-  "text-orange-500": "#FF7A59", "text-amber-500": "#FF9F40", "text-red-500": "#F5577A",
-  "text-teal-500": "#14B8A6", "text-cyan-500": "#22B8CF", "text-sky-500": "#5B7CFA",
-  "text-violet-500": "#8B5CF6", "text-pink-500": "#FF5C8A", "text-emerald-500": "#2BC48A",
-  "text-lime-500": "#84CC16", "text-indigo-500": "#6366F1", "text-purple-500": "#A855F7",
-  "text-orange-600": "#FB923C",
-};
+const ALL_BADGES = [...BADGE_METADATA, ...BADGE_METADATA_LV2, ...BADGE_METADATA_LV3];
 
 interface BadgeCelebrationProps {
-  badgeIds: number[];
+  badgeIds: number[]; // 새로 획득한 뱃지의 conceptId 목록
   onClose: () => void;
 }
 
@@ -57,8 +55,8 @@ export default function BadgeCelebration({ badgeIds, onClose }: BadgeCelebration
   if (badgeIds.length === 0) return null;
 
   const badgeMeta = badgeIds
-    .map((id) => BADGE_METADATA[id - 1])
-    .filter(Boolean);
+    .map((cid) => ALL_BADGES.find((b) => b.conceptId === cid))
+    .filter((b): b is (typeof ALL_BADGES)[number] => Boolean(b));
 
   const firstBadge = badgeMeta[0];
   const Icon = firstBadge ? (ICON_MAP[firstBadge.iconName] || Terminal) : Terminal;

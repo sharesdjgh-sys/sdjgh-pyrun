@@ -410,6 +410,8 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const [showSpeech, setShowSpeech] = useState(false);
   const [newBadgeIds, setNewBadgeIds] = useState<number[]>([]);
   const [selectedConceptId, setSelectedConceptId] = useState(0);
+  // 지금 에디터에 로드된 연습문제의 개념 ID. 문제 풀이 중일 때만 서버 채점을 요청한다.
+  const [practiceConceptId, setPracticeConceptId] = useState<number | null>(null);
   const [conceptExpanded, setConceptExpanded] = useState(true);
   const [showOutput, setShowOutput] = useState(false);
   const [fontSize, setFontSize] = useState(9);
@@ -461,6 +463,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, []);
 
   useEffect(() => {
+    setPracticeConceptId(null);
     if (mode === "mechdog") {
       setCharacterType("mechdog");
       const first = MECDOG_EXAMPLES[0];
@@ -537,7 +540,10 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, stdout, stderr, isSuccess: success }),
+        body: JSON.stringify({
+          code, stdout, stderr, isSuccess: success,
+          practiceConceptId: mode === "mechdog" ? null : practiceConceptId,
+        }),
       });
 
       if (res.ok) {
@@ -584,7 +590,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     }
 
     setRunning(false);
-  }, [pyLoading, code, mode, executeCode, showSpeechBubble]);
+  }, [pyLoading, code, mode, practiceConceptId, executeCode, showSpeechBubble]);
 
   const handleAnimationComplete = useCallback(() => {
     if (pendingFeedback) {
@@ -598,6 +604,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, [pendingFeedback, showSpeechBubble]);
 
   const handleLoadExample = useCallback(() => {
+    setPracticeConceptId(null);
     if (mode === "mechdog") {
       const ex = MECDOG_EXAMPLES.find(e => e.id === selectedMechdogId);
       if (ex) setCode(ex.code);
@@ -616,14 +623,21 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     if (mode === "mechdog") return;
     if (mode === "lv3") {
       const ex = curriculum[selectedLv3ConceptId];
-      if (ex?.practiceCode) setCode(ex.practiceCode);
+      if (ex?.practiceCode) {
+        setCode(ex.practiceCode);
+        setPracticeConceptId(selectedLv3ConceptId);
+      }
       return;
     }
     const example = curriculum[selectedConceptId];
-    if (example?.practiceCode) setCode(example.practiceCode);
+    if (example?.practiceCode) {
+      setCode(example.practiceCode);
+      setPracticeConceptId(selectedConceptId);
+    }
   }, [mode, selectedConceptId, selectedLv3ConceptId, curriculum]);
 
   const handleReset = useCallback(() => {
+    setPracticeConceptId(null);
     setCode(INITIAL_CODE);
     setOutput("");
     setExecError("");
@@ -767,6 +781,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                         key={id}
                         onClick={() => {
                           setSelectedLv3ConceptId(id);
+                          setPracticeConceptId(null);
                           setCode(curriculum[id]?.exampleCode ?? "");
                         }}
                         style={{
@@ -861,6 +876,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                         key={id}
                         onClick={() => {
                           setSelectedConceptId(id);
+                          setPracticeConceptId(null);
                           const example = curriculum[id];
                           if (example?.exampleCode) setCode(example.exampleCode);
                         }}

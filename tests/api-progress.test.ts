@@ -20,3 +20,14 @@ test("API validation enforces account and payload limits", () => {
   assert.equal(validateRegistration({ username: "student_1", password: "12345678" }).username, "student_1");
   assert.equal(validateFeedback({ code: "print(1)", stdout: "x".repeat(9000), stderr: "", isSuccess: true }).stdout.length, 8000);
 });
+
+test("feedback validation accepts optional practiceConceptId", () => {
+  const base = { code: "print(1)", stdout: "", stderr: "", isSuccess: true };
+  assert.equal(validateFeedback(base).practiceConceptId, null);
+  assert.equal(validateFeedback({ ...base, practiceConceptId: null }).practiceConceptId, null);
+  assert.equal(validateFeedback({ ...base, practiceConceptId: 12 }).practiceConceptId, 12);
+  assert.equal(validateFeedback({ ...base, practiceConceptId: 0 }).practiceConceptId, 0);
+  assert.throws(() => validateFeedback({ ...base, practiceConceptId: -1 }), RequestValidationError);
+  assert.throws(() => validateFeedback({ ...base, practiceConceptId: 1.5 }), RequestValidationError);
+  assert.throws(() => validateFeedback({ ...base, practiceConceptId: "3" }), RequestValidationError);
+});

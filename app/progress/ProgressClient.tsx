@@ -2,28 +2,38 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BADGE_METADATA } from "@/lib/curriculum";
+import { BADGE_METADATA, BADGE_METADATA_LV2, BADGE_METADATA_LV3 } from "@/lib/curriculum";
 import { COLOR_HEX } from "@/components/badges/colorMap";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
-  List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Lock,
+  List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Lock, Bot,
+  Binary, FileText, ListChecks, Parentheses, BookOpen, Layers, Copy, Repeat, RefreshCcw,
+  Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
-  List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package,
+  List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Bot,
+  Binary, FileText, ListChecks, Parentheses, BookOpen, Layers, Copy, Repeat, RefreshCcw,
+  Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
 };
+
+const BADGE_LEVELS = [
+  { label: "Level 1 · 파이썬 기초", badges: BADGE_METADATA },
+  { label: "Level 2 · 파이썬 심화", badges: BADGE_METADATA_LV2 },
+  { label: "Level 3 · 데이터 분석", badges: BADGE_METADATA_LV3 },
+];
 
 interface BadgeInfo { badgeId: number; conceptId: number; nameKo: string; iconName: string; colorClass: string; earned: boolean; }
 interface FeedbackItem { id: number; aiFeedback: string; isSuccess: boolean; createdAt: string; codeSnippet: string; }
 
 export default function ProgressClient() {
-  const [badges, setBadges] = useState<BadgeInfo[]>([]);
+  const [earnedConceptIds, setEarnedConceptIds] = useState<Set<number>>(new Set());
   const [feedbackHistory, setFeedbackHistory] = useState<FeedbackItem[]>([]);
   const [progressPercent, setProgressPercent] = useState(0);
   const [clearedCount, setClearedCount] = useState(0);
   const [practicedCount, setPracticedCount] = useState(0);
-  const [totalConcepts, setTotalConcepts] = useState(BADGE_METADATA.length);
+  const [totalConcepts, setTotalConcepts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -34,12 +44,13 @@ export default function ProgressClient() {
       return response.json();
     };
     Promise.all([getJson("/api/badges"), getJson("/api/progress")]).then(([badgeData, progressData]) => {
-      setBadges(badgeData.earned || []);
+      const earned = (badgeData.earned || []) as BadgeInfo[];
+      setEarnedConceptIds(new Set(earned.filter((b) => b.earned).map((b) => b.conceptId)));
       setFeedbackHistory(progressData.feedbackHistory || []);
       setProgressPercent(progressData.progressPercent || 0);
       setClearedCount((progressData.clearedConceptIds || []).length);
       setPracticedCount((progressData.practicedConceptIds || []).length);
-      setTotalConcepts(progressData.totalConcepts || BADGE_METADATA.length);
+      setTotalConcepts(progressData.totalConcepts || BADGE_LEVELS.reduce((n, lv) => n + lv.badges.length, 0));
       setLoading(false);
     }).catch((loadError) => {
       setError(loadError instanceof Error ? loadError.message : "학습 기록을 불러오지 못했습니다.");
@@ -50,7 +61,7 @@ export default function ProgressClient() {
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 40, height: 40, border: "3.5px solid #C6A2EC", borderTopColor: "#7B5CF0", borderRadius: "50%" }} />
+        <div style={{ width: 40, height: 40, border: "3.5px solid #C6A2EC", borderTopColor: "#7B5CF0", borderRadius: "50%", animation: "spin 0.9s linear infinite" }} />
       </div>
     );
   }
@@ -94,7 +105,7 @@ export default function ProgressClient() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747" }}>학습 진행률</div>
-              <div style={{ fontSize: 13.5, color: "#8B83A8" }}>연습 {practicedCount}개 · 검증 완료 {clearedCount}개 / {totalConcepts}개</div>
+              <div style={{ fontSize: 13.5, color: "#8B83A8" }}>문제 해결 {clearedCount}개 / {totalConcepts}개 · 연습 {practicedCount}개</div>
             </div>
             <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 34, color: "#7B5CF0" }}>{progressPercent}%</div>
           </div>
@@ -112,24 +123,34 @@ export default function ProgressClient() {
             <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747", whiteSpace: "nowrap" }}>획득한 뱃지</div>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: "#7B5CF0", background: "#F2ECFD", padding: "4px 10px", borderRadius: 99, whiteSpace: "nowrap" }}>{clearedCount} / {totalConcepts}</span>
           </div>
-          <div className="progress-badge-grid">
-            {BADGE_METADATA.map((badge, idx) => {
-              const cid = idx + 1;
-              const earned = badges.some((b) => b.conceptId === cid && b.earned);
-              const Icon = ICON_MAP[badge.iconName] || Terminal;
-              const hex = COLOR_HEX[badge.colorClass] || "#7B5CF0";
-              return (
-                <div key={cid} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
-                  <div style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 18, ...(earned ? { background: "#fff", border: `2.5px solid ${hex}40`, boxShadow: `0 6px 16px ${hex}2e` } : { background: "#F4F1FA", border: "2.5px dashed #E2DCF2" }) }}>
-                    {earned ? <Icon size={26} color={hex} /> : <Lock size={20} color="#C9C1DE" />}
-                  </div>
-                  <span style={{ fontSize: 10.5, fontWeight: 600, color: earned ? "#544D70" : "#BDB6D4", textAlign: "center", lineHeight: 1.2 }}>
-                    {badge.nameKo}
-                  </span>
+          {BADGE_LEVELS.map((level) => {
+            const levelEarned = level.badges.filter((b) => earnedConceptIds.has(b.conceptId)).length;
+            return (
+              <div key={level.label} style={{ marginBottom: 22 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#544D70" }}>{level.label}</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "#9C92BE", background: "#F6F3FC", padding: "3px 9px", borderRadius: 99 }}>{levelEarned} / {level.badges.length}</span>
                 </div>
-              );
-            })}
-          </div>
+                <div className="progress-badge-grid">
+                  {level.badges.map((badge) => {
+                    const earned = earnedConceptIds.has(badge.conceptId);
+                    const Icon = ICON_MAP[badge.iconName] || Terminal;
+                    const hex = COLOR_HEX[badge.colorClass] || "#7B5CF0";
+                    return (
+                      <div key={badge.conceptId} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
+                        <div style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 18, ...(earned ? { background: "#fff", border: `2.5px solid ${hex}40`, boxShadow: `0 6px 16px ${hex}2e` } : { background: "#F4F1FA", border: "2.5px dashed #E2DCF2" }) }}>
+                          {earned ? <Icon size={26} color={hex} /> : <Lock size={20} color="#C9C1DE" />}
+                        </div>
+                        <span style={{ fontSize: 10.5, fontWeight: 600, color: earned ? "#544D70" : "#BDB6D4", textAlign: "center", lineHeight: 1.2 }}>
+                          {badge.nameKo}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Feedback history card */}
