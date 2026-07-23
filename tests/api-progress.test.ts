@@ -4,6 +4,7 @@ import { RequestValidationError, validateFeedback, validateRegistration } from "
 import { authenticatedUserId, calculateProgress, effectiveConceptAccessIds, isConceptUnlocked, nextConceptId } from "../lib/progress";
 import { canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
+import { createStudentPracticeTemplate } from "../lib/practice-template";
 
 test("authentication helper rejects missing and malformed sessions", () => {
   assert.equal(authenticatedUserId(null), null);
@@ -34,6 +35,34 @@ test("five-digit school student numbers contain grade, class and seat", () => {
   assert.equal(parseSchoolStudentNumber("10001"), null);
   assert.equal(parseSchoolStudentNumber("10500"), null);
   assert.equal(parseSchoolStudentNumber("A0501"), null);
+});
+
+test("student practice templates keep guidance but remove completed answers", () => {
+  const completedPractice = `# 문제: 넓이를 계산하세요.
+# 힌트: width * height
+
+import robot
+width = 5
+height = 3
+area = width * height
+print(area)
+robot.say(str(area))`;
+  const starter = createStudentPracticeTemplate(completedPractice);
+
+  assert.match(starter, /# 문제: 넓이를 계산하세요/);
+  assert.match(starter, /# 힌트: width \* height/);
+  assert.match(starter, /import robot/);
+  assert.doesNotMatch(starter, /width = 5/);
+  assert.doesNotMatch(starter, /area = width \* height/);
+  assert.doesNotMatch(starter, /print\(area\)/);
+});
+
+test("explicit blank exercises keep their starter scaffold", () => {
+  const blankPractice = `import pandas as pd
+df = load_data('titanic')
+# 평균을 구하세요.
+print(df['Age'].___())`;
+  assert.equal(createStudentPracticeTemplate(blankPractice), blankPractice);
 });
 
 test("progress calculation is bounded and uses dynamic totals", () => {

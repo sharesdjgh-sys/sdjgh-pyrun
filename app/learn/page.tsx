@@ -6,6 +6,7 @@ import { concepts } from "@/lib/db/schema";
 import { asc } from "drizzle-orm";
 import type { CurriculumItem } from "@/lib/curriculum";
 import { isStudentRole } from "@/lib/roles";
+import { createStudentPracticeTemplate } from "@/lib/practice-template";
 
 export default async function LearnPage() {
   const session = await auth();
@@ -19,7 +20,8 @@ export default async function LearnPage() {
       nameEn: row.nameEn,
       explanation: row.description ?? "",
       exampleCode: row.exampleCode ?? "",
-      practiceCode: row.practiceCode ?? "",
+      // 완성된 풀이 코드는 브라우저에 전달하지 않고 주석 중심의 시작 템플릿만 제공한다.
+      practiceCode: createStudentPracticeTemplate(row.practiceCode ?? ""),
     };
   }
 

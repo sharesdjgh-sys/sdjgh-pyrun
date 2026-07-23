@@ -8,6 +8,7 @@ import { effectiveConceptAccessIds, isConceptUnlocked } from "@/lib/progress";
 import { parsePython } from "@/lib/python-parser";
 import { rateLimit, RequestValidationError, validateFeedback } from "@/lib/api-guard";
 import { isStudentRole } from "@/lib/roles";
+import { createStudentPracticeTemplate } from "@/lib/practice-template";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
         if (concept?.practiceCode) {
           const verdict = await judgePractice({
             conceptName: concept.nameKo,
-            problem: concept.practiceCode,
+            problem: createStudentPracticeTemplate(concept.practiceCode),
             code,
             stdout: stdout || "",
           });
