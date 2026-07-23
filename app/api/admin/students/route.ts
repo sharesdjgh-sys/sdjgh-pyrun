@@ -4,13 +4,15 @@ import { db } from "@/lib/db/index";
 import {
   concepts,
   feedbackHistory,
+  teacherClassAssignments,
   userConceptClears,
   userConceptPractices,
   userConceptUnlocks,
   users,
 } from "@/lib/db/schema";
 import { LEVEL_CONCEPT_ORDERS } from "@/lib/progress";
-import { canOpenAdminPage } from "@/lib/roles";
+import { canManageStudentClass, canOpenAdminPage, isAdministratorRole } from "@/lib/roles";
+import { parseSchoolStudentNumber } from "@/lib/student-number";
 import { asc, eq, inArray, sql } from "drizzle-orm";
 
 async function requireTeacher() {
@@ -30,7 +32,7 @@ async function requireTeacher() {
     return { denied: NextResponse.json({ error: "교사 권한이 필요합니다." }, { status: 403 }) };
   }
 
-  return { userId };
+  return { userId, role: currentUser.role };
 }
 
 export async function GET() {
@@ -38,18 +40,51 @@ export async function GET() {
   if ("denied" in authResult) return authResult.denied;
 
   try {
-    const studentRows = await db
+    const rawStudentRows = await db
       .select({
         id: users.id,
         username: users.username,
         displayName: users.displayName,
+        studentNumber: users.studentNumber,
+        grade: users.grade,
+        classNumber: users.classNumber,
+        seatNumber: users.seatNumber,
         createdAt: users.createdAt,
       })
       .from(users)
       .where(eq(users.role, "student"))
-      .orderBy(asc(users.id));
+      .orderBy(asc(users.grade), asc(users.classNumber), asc(users.seatNumber), asc(users.id));
 
-    if (studentRows.length === 0) return NextResponse.json({ students: [] });
+    const allStudentRows = rawStudentRows.map((student) => {
+      const parsed = parseSchoolStudentNumber(student.studentNumber ?? student.username);
+      return {
+        ...student,
+        grade: parsed?.grade ?? student.grade,
+        classNumber: parsed?.classNumber ?? student.classNumber,
+        seatNumber: parsed?.seatNumber ?? student.seatNumber,
+      };
+    });
+
+    const assignedClasses = isAdministratorRole(authResult.role)
+      ? []
+      : await db
+          .select({ grade: teacherClassAssignments.grade, classNumber: teacherClassAssignments.classNumber })
+          .from(teacherClassAssignments)
+          .where(eq(teacherClassAssignments.teacherUserId, authResult.userId))
+          .orderBy(asc(teacherClassAssignments.grade), asc(teacherClassAssignments.classNumber));
+
+    const studentRows = isAdministratorRole(authResult.role)
+      ? allStudentRows
+      : allStudentRows.filter((student) => canManageStudentClass(
+          authResult.role,
+          assignedClasses,
+          student.grade,
+          student.classNumber
+        ));
+
+    if (studentRows.length === 0) {
+      return NextResponse.json({ students: [], assignedClasses, unrestricted: isAdministratorRole(authResult.role) });
+    }
 
     const studentIds = studentRows.map((student) => student.id);
     const [clears, practices, manualUnlocks, activity] = await Promise.all([
@@ -90,6 +125,8 @@ export async function GET() {
           lastActivityAt: studentActivity?.lastActivityAt ?? null,
         };
       }),
+      assignedClasses,
+      unrestricted: isAdministratorRole(authResult.role),
     });
   } catch (error) {
     console.error("Student management API error", error);
@@ -111,7 +148,18 @@ export async function POST(req: NextRequest) {
   }
 
   const [[student], [concept]] = await Promise.all([
-    db.select({ id: users.id, role: users.role }).from(users).where(eq(users.id, studentId)).limit(1),
+    db
+      .select({
+        id: users.id,
+        role: users.role,
+        username: users.username,
+        studentNumber: users.studentNumber,
+        grade: users.grade,
+        classNumber: users.classNumber,
+      })
+      .from(users)
+      .where(eq(users.id, studentId))
+      .limit(1),
     db.select({ id: concepts.id }).from(concepts).where(eq(concepts.id, conceptId)).limit(1),
   ]);
 
@@ -120,6 +168,21 @@ export async function POST(req: NextRequest) {
   }
   if (!concept) {
     return NextResponse.json({ error: "단원을 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  const parsedClass = parseSchoolStudentNumber(student.studentNumber ?? student.username);
+  const studentGrade = parsedClass?.grade ?? student.grade;
+  const studentClassNumber = parsedClass?.classNumber ?? student.classNumber;
+
+  if (!isAdministratorRole(authResult.role)) {
+    const assignments = await db
+      .select({ grade: teacherClassAssignments.grade, classNumber: teacherClassAssignments.classNumber })
+      .from(teacherClassAssignments)
+      .where(eq(teacherClassAssignments.teacherUserId, authResult.userId));
+
+    if (!canManageStudentClass(authResult.role, assignments, studentGrade, studentClassNumber)) {
+      return NextResponse.json({ error: "담당 학급의 학생만 관리할 수 있습니다." }, { status: 403 });
+    }
   }
 
   await db

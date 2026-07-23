@@ -9,14 +9,44 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: varchar("username", { length: 50 }).notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  role: varchar("role", { length: 20 }).notNull().default("student"),
-  displayName: varchar("display_name", { length: 100 }),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: serial("id").primaryKey(),
+    username: varchar("username", { length: 50 }).notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    role: varchar("role", { length: 20 }).notNull().default("student"),
+    displayName: varchar("display_name", { length: 100 }),
+    studentNumber: varchar("student_number", { length: 50 }),
+    grade: integer("grade"),
+    classNumber: integer("class_number"),
+    seatNumber: integer("seat_number"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    studentNumberUnique: uniqueIndex("users_student_number_unique").on(table.studentNumber),
+  })
+);
+
+export const teacherClassAssignments = pgTable(
+  "teacher_class_assignments",
+  {
+    id: serial("id").primaryKey(),
+    teacherUserId: integer("teacher_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    grade: integer("grade").notNull(),
+    classNumber: integer("class_number").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    teacherClassUnique: uniqueIndex("teacher_class_unique").on(
+      table.teacherUserId,
+      table.grade,
+      table.classNumber
+    ),
+  })
+);
 
 export const concepts = pgTable("concepts", {
   id: serial("id").primaryKey(),

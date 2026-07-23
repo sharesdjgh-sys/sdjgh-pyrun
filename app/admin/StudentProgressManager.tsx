@@ -14,6 +14,10 @@ interface StudentStatus {
   id: number;
   username: string;
   displayName: string | null;
+  studentNumber: string | null;
+  grade: number | null;
+  classNumber: number | null;
+  seatNumber: number | null;
   createdAt: string | null;
   clearedConceptIds: number[];
   practicedConceptIds: number[];
@@ -43,6 +47,9 @@ function formatDate(value: string | null) {
 
 export default function StudentProgressManager({ concepts }: StudentProgressManagerProps) {
   const [students, setStudents] = useState<StudentStatus[]>([]);
+  const [assignedClasses, setAssignedClasses] = useState<Array<{ grade: number; classNumber: number }>>([]);
+  const [unrestricted, setUnrestricted] = useState(false);
+  const [selectedClassKey, setSelectedClassKey] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [level, setLevel] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(true);
@@ -58,8 +65,21 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "학생 정보를 불러오지 못했습니다.");
       const nextStudents: StudentStatus[] = data.students ?? [];
+      const nextAssignedClasses: Array<{ grade: number; classNumber: number }> = data.assignedClasses ?? [];
       setStudents(nextStudents);
-      setSelectedStudentId((current) => current ?? nextStudents[0]?.id ?? null);
+      setAssignedClasses(nextAssignedClasses);
+      setUnrestricted(Boolean(data.unrestricted));
+      const firstClass = nextAssignedClasses[0]
+        ?? nextStudents.find((student) => student.grade !== null && student.classNumber !== null);
+      const firstClassKey = firstClass && firstClass.grade !== null && firstClass.classNumber !== null
+        ? `${firstClass.grade}:${firstClass.classNumber}`
+        : "unassigned";
+      setSelectedClassKey((current) => current || firstClassKey);
+      setSelectedStudentId((current) => current ?? nextStudents.find((student) => (
+        firstClassKey === "unassigned"
+          ? student.grade === null || student.classNumber === null
+          : `${student.grade}:${student.classNumber}` === firstClassKey
+      ))?.id ?? null);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "학생 정보를 불러오지 못했습니다.");
     } finally {
@@ -70,6 +90,37 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
   useEffect(() => {
     void loadStudents();
   }, []);
+
+  const studentClassKeys = students
+    .filter((student) => student.grade !== null && student.classNumber !== null)
+    .map((student) => `${student.grade}:${student.classNumber}`);
+  const classOptions = [...new Set([
+    ...assignedClasses.map((item) => `${item.grade}:${item.classNumber}`),
+    ...studentClassKeys,
+  ])].sort((a, b) => {
+    const [aGrade, aClass] = a.split(":").map(Number);
+    const [bGrade, bClass] = b.split(":").map(Number);
+    return aGrade - bGrade || aClass - bClass;
+  });
+  if (unrestricted && students.some((student) => student.grade === null || student.classNumber === null)) {
+    classOptions.push("unassigned");
+  }
+  const filteredStudents = students.filter((student) => (
+    selectedClassKey === "unassigned"
+      ? student.grade === null || student.classNumber === null
+      : `${student.grade}:${student.classNumber}` === selectedClassKey
+  ));
+
+  function selectClass(classKey: string) {
+    setSelectedClassKey(classKey);
+    const firstStudent = students.find((student) => (
+      classKey === "unassigned"
+        ? student.grade === null || student.classNumber === null
+        : `${student.grade}:${student.classNumber}` === classKey
+    ));
+    setSelectedStudentId(firstStudent?.id ?? null);
+    setMessage("");
+  }
 
   const selectedStudent = students.find((student) => student.id === selectedStudentId) ?? null;
   const clearedIds = new Set(selectedStudent?.clearedConceptIds ?? []);
@@ -129,23 +180,34 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
           </div>
           <div style={{ marginTop: 5, fontSize: 13, color: "#8B83A8" }}>학생별 학습 현황을 확인하고 필요한 단원을 직접 열어줄 수 있습니다.</div>
         </div>
-        <button onClick={() => void loadStudents()} title="새로고침" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#7B5CF0", cursor: "pointer", fontWeight: 700 }}>
-          <RotateCcw size={14} /> 새로고침
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          {classOptions.length > 0 && (
+            <select value={selectedClassKey} onChange={(event) => selectClass(event.target.value)} style={{ padding: "8px 10px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#5C5180", fontFamily: "inherit", fontWeight: 700 }}>
+              {classOptions.map((classKey) => {
+                const count = students.filter((student) => classKey === "unassigned" ? student.grade === null || student.classNumber === null : `${student.grade}:${student.classNumber}` === classKey).length;
+                const label = classKey === "unassigned" ? "학급 미배정" : `${classKey.split(":")[0]}학년 ${classKey.split(":")[1]}반`;
+                return <option key={classKey} value={classKey}>{label} ({count}명)</option>;
+              })}
+            </select>
+          )}
+          <button onClick={() => void loadStudents()} title="새로고침" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#7B5CF0", cursor: "pointer", fontWeight: 700 }}>
+            <RotateCcw size={14} /> 새로고침
+          </button>
+        </div>
       </div>
 
       {students.length === 0 ? (
-        <div style={{ padding: 50, textAlign: "center", background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, color: "#9A93B5" }}>등록된 학생 계정이 없습니다.</div>
+        <div style={{ padding: 50, textAlign: "center", background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, color: "#9A93B5" }}>담당 학급에 등록된 학생 계정이 없습니다.</div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", gap: 16, alignItems: "start" }}>
           <aside style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 18, padding: 10, boxShadow: "0 8px 24px rgba(90,63,214,.05)" }}>
-            {students.map((student) => {
+            {filteredStudents.map((student) => {
               const active = student.id === selectedStudentId;
               const studentCompleted = student.clearedConceptIds.filter((id) => LEVEL_CONCEPT_ORDERS.flat().includes(id)).length;
               return (
                 <button key={student.id} onClick={() => { setSelectedStudentId(student.id); setMessage(""); }} style={{ width: "100%", textAlign: "left", padding: "12px 13px", marginBottom: 5, border: active ? "1px solid #CFC2F5" : "1px solid transparent", borderRadius: 12, background: active ? "#F3EFFE" : "transparent", cursor: "pointer", fontFamily: "inherit" }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: active ? "#6C4BEF" : "#443B63" }}>{student.displayName || student.username}</div>
-                  <div style={{ marginTop: 2, fontSize: 11.5, color: "#9A93B5" }}>@{student.username}</div>
+                  <div style={{ marginTop: 2, fontSize: 11.5, color: "#9A93B5" }}>{student.seatNumber ? `${student.seatNumber}번 · ` : ""}학번 {student.studentNumber || student.username}</div>
                   <div style={{ marginTop: 8, height: 5, borderRadius: 99, background: "#EDE8F8", overflow: "hidden" }}>
                     <div style={{ width: `${Math.round((studentCompleted / TOTAL_LEARNING_CONCEPTS) * 100)}%`, height: "100%", background: "linear-gradient(90deg,#9B7FFF,#18C99A)" }} />
                   </div>
@@ -160,7 +222,10 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
               <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", gap: 16 }}>
                 <div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: "#3D2E8A" }}>{selectedStudent.displayName || selectedStudent.username}</div>
-                  <div style={{ marginTop: 3, fontSize: 12, color: "#9A93B5" }}>@{selectedStudent.username}</div>
+                  <div style={{ marginTop: 3, fontSize: 12, color: "#9A93B5" }}>
+                    {selectedStudent.grade && selectedStudent.classNumber ? `${selectedStudent.grade}학년 ${selectedStudent.classNumber}반 · ` : ""}
+                    {selectedStudent.seatNumber ? `${selectedStudent.seatNumber}번 · ` : ""}학번 {selectedStudent.studentNumber || selectedStudent.username}
+                  </div>
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 900, color: "#7B5CF0" }}>{progressPercent}%</div>
               </div>

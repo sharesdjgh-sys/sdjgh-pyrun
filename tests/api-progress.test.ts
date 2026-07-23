@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { RequestValidationError, validateFeedback, validateRegistration } from "../lib/api-guard";
 import { authenticatedUserId, calculateProgress, effectiveConceptAccessIds, isConceptUnlocked, nextConceptId } from "../lib/progress";
-import { isStudentRole } from "../lib/roles";
+import { canManageStudentClass, isStudentRole } from "../lib/roles";
+import { parseSchoolStudentNumber } from "../lib/student-number";
 
 test("authentication helper rejects missing and malformed sessions", () => {
   assert.equal(authenticatedUserId(null), null);
@@ -15,6 +16,24 @@ test("student-only learning features recognize only the student role", () => {
   assert.equal(isStudentRole("teacher"), false);
   assert.equal(isStudentRole("admin"), false);
   assert.equal(isStudentRole(undefined), false);
+});
+
+test("teachers can manage only students in their assigned classes", () => {
+  const assignments = [{ grade: 2, classNumber: 3 }, { grade: 3, classNumber: 1 }];
+  assert.equal(canManageStudentClass("teacher", assignments, 2, 3), true);
+  assert.equal(canManageStudentClass("teacher", assignments, 2, 4), false);
+  assert.equal(canManageStudentClass("teacher", assignments, null, null), false);
+  assert.equal(canManageStudentClass("admin", [], 6, 9), true);
+  assert.equal(canManageStudentClass("student", assignments, 2, 3), false);
+});
+
+test("five-digit school student numbers contain grade, class and seat", () => {
+  assert.deepEqual(parseSchoolStudentNumber("10501"), { grade: 1, classNumber: 5, seatNumber: 1 });
+  assert.deepEqual(parseSchoolStudentNumber("31227"), { grade: 3, classNumber: 12, seatNumber: 27 });
+  assert.equal(parseSchoolStudentNumber("1051"), null);
+  assert.equal(parseSchoolStudentNumber("10001"), null);
+  assert.equal(parseSchoolStudentNumber("10500"), null);
+  assert.equal(parseSchoolStudentNumber("A0501"), null);
 });
 
 test("progress calculation is bounded and uses dynamic totals", () => {

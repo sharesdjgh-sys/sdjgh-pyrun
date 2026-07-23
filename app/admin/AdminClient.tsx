@@ -5,6 +5,7 @@ import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3 } from "@/lib/curricu
 import { USER_ROLES, isAdministratorRole, type UserRole } from "@/lib/roles";
 import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, Users } from "lucide-react";
 import StudentProgressManager from "./StudentProgressManager";
+import ClassRosterManager from "./ClassRosterManager";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu,
@@ -69,7 +70,7 @@ export default function AdminClient({
   const [levelFilter, setLevelFilter] = useState<1 | 2 | 3>(1);
 
   const isAdministrator = isAdministratorRole(currentRole);
-  const [adminTab, setAdminTab] = useState<"curriculum" | "data" | "students" | "users">("curriculum");
+  const [adminTab, setAdminTab] = useState<"curriculum" | "data" | "students" | "classes" | "users">("curriculum");
   const [csvFiles, setCsvFiles] = useState<Array<{filename: string; url: string}>>([]);
   const [csvUploading, setCsvUploading] = useState(false);
   const [csvMessage, setCsvMessage] = useState("");
@@ -237,10 +238,11 @@ export default function AdminClient({
 
   const selectedConcept = concepts.find((c) => c.id === selectedId);
   const filteredGroups = levelFilter === 1 ? UNIT_GROUPS_LV1 : levelFilter === 2 ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV3;
-  const adminTabs: Array<["curriculum" | "data" | "students" | "users", string]> = [
+  const adminTabs: Array<["curriculum" | "data" | "students" | "classes" | "users", string]> = [
     ["curriculum", "커리큘럼 편집"],
     ["data", "데이터 파일 관리"],
     ["students", "학생 수업 관리"],
+    ...(isAdministrator ? ([["classes", "학급·계정 관리"]] as Array<["classes", string]>) : []),
     ...(isAdministrator ? ([["users", "회원 관리"]] as Array<["users", string]>) : []),
   ];
 
@@ -398,6 +400,8 @@ export default function AdminClient({
           </div>
         ) : adminTab === "students" ? (
           <StudentProgressManager concepts={concepts} />
+        ) : adminTab === "classes" ? (
+          <ClassRosterManager users={users} />
         ) : adminTab === "users" ? (
           <div style={{ flex: 1, background: "#fff", borderRadius: 20, border: "1px solid #EFEAF8", boxShadow: "0 8px 24px rgba(90,63,214,.06)", padding: "28px 32px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>

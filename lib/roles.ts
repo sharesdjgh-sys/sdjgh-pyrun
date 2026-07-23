@@ -17,3 +17,14 @@ export function isStudentRole(role: unknown): boolean {
 export function canOpenAdminPage(role: unknown): boolean {
   return role === "teacher" || isAdministratorRole(role);
 }
+
+export function canManageStudentClass(
+  role: unknown,
+  assignedClasses: Iterable<{ grade: number; classNumber: number }>,
+  grade: number | null,
+  classNumber: number | null
+): boolean {
+  if (isAdministratorRole(role)) return true;
+  if (role !== "teacher" || grade === null || classNumber === null) return false;
+  return [...assignedClasses].some((item) => item.grade === grade && item.classNumber === classNumber);
+}
