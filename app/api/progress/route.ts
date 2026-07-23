@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
-import { userConceptClears, userConceptPractices, feedbackHistory, concepts } from "@/lib/db/schema";
+import { userConceptClears, userConceptPractices, userConceptUnlocks, feedbackHistory, concepts } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { authenticatedUserId, calculateProgress } from "@/lib/progress";
 
@@ -21,6 +21,11 @@ export async function GET() {
 
   const clearedConceptIds = clears.map((c) => c.conceptId);
 
+  const manualUnlocks = await db
+    .select({ conceptId: userConceptUnlocks.conceptId })
+    .from(userConceptUnlocks)
+    .where(eq(userConceptUnlocks.userId, userId));
+
   const practices = await db
     .select({ conceptId: userConceptPractices.conceptId })
     .from(userConceptPractices)
@@ -38,6 +43,7 @@ export async function GET() {
 
   return NextResponse.json({
     clearedConceptIds,
+    manuallyUnlockedConceptIds: manualUnlocks.map((item) => item.conceptId),
     practicedConceptIds: practices.map((item) => item.conceptId),
     totalConcepts,
     feedbackHistory: history.map((h) => ({

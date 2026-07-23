@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
-import { userConceptClears, userConceptPractices, feedbackHistory, concepts } from "@/lib/db/schema";
+import { userConceptClears, userConceptPractices, userConceptUnlocks, feedbackHistory, concepts } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { generateFeedback, judgePractice } from "@/lib/gemini";
-import { isConceptUnlocked } from "@/lib/progress";
+import { effectiveConceptAccessIds, isConceptUnlocked } from "@/lib/progress";
 import { parsePython } from "@/lib/python-parser";
 import { rateLimit, RequestValidationError, validateFeedback } from "@/lib/api-guard";
+import { isStudentRole } from "@/lib/roles";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -14,6 +15,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
   const userId = Number(session.user.id);
+  const role = (session.user as { role?: string }).role;
+  const isStudent = isStudentRole(role);
 
   try {
     const rate = rateLimit(req, `feedback:${userId}`, 15);
@@ -45,14 +48,27 @@ export async function POST(req: NextRequest) {
     const newlyEarnedConceptIds: number[] = [];
 
     if (practiceConceptId !== null && isSuccess && parseResult.syntaxValid) {
-      const clears = await db
-        .select({ conceptId: userConceptClears.conceptId })
-        .from(userConceptClears)
-        .where(eq(userConceptClears.userId, userId));
-      const clearedIds = clears.map((c) => c.conceptId);
+      let clearedIds: number[] = [];
+      let manuallyUnlockedIds: number[] = [];
+      if (isStudent) {
+        const [clears, manualUnlocks] = await Promise.all([
+          db
+            .select({ conceptId: userConceptClears.conceptId })
+            .from(userConceptClears)
+            .where(eq(userConceptClears.userId, userId)),
+          db
+            .select({ conceptId: userConceptUnlocks.conceptId })
+            .from(userConceptUnlocks)
+            .where(eq(userConceptUnlocks.userId, userId)),
+        ]);
+        clearedIds = clears.map((c) => c.conceptId);
+        manuallyUnlockedIds = manualUnlocks.map((item) => item.conceptId);
+      }
 
-      // 순차 잠금: 앞 단계를 클리어하지 않은 개념은 채점하지 않는다.
-      if (isConceptUnlocked(practiceConceptId, clearedIds)) {
+      const accessIds = effectiveConceptAccessIds(clearedIds, manuallyUnlockedIds);
+
+      // 학생에게만 순차 잠금을 적용한다. 교사와 관리자는 모든 문제를 자유롭게 확인할 수 있다.
+      if (!isStudent || isConceptUnlocked(practiceConceptId, accessIds)) {
         const [concept] = await db
           .select({ nameKo: concepts.nameKo, practiceCode: concepts.practiceCode })
           .from(concepts)
@@ -71,7 +87,8 @@ export async function POST(req: NextRequest) {
             solved = verdict.solved;
           }
 
-          if (solved && !clearedIds.includes(practiceConceptId)) {
+          // 뱃지(개념 클리어 기록)는 학생 계정에만 지급한다.
+          if (isStudent && solved && !clearedIds.includes(practiceConceptId)) {
             await db
               .insert(userConceptClears)
               .values({ userId, conceptId: practiceConceptId })

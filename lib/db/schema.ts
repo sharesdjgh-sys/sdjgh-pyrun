@@ -74,6 +74,25 @@ export const userConceptPractices = pgTable(
   })
 );
 
+// A teacher can open a concept for an individual student without marking it as completed.
+export const userConceptUnlocks = pgTable(
+  "user_concept_unlocks",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    conceptId: integer("concept_id")
+      .notNull()
+      .references(() => concepts.id, { onDelete: "cascade" }),
+    unlockedByUserId: integer("unlocked_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    unlockedAt: timestamp("unlocked_at").defaultNow(),
+  },
+  (table) => ({
+    userConceptUnlockUnique: uniqueIndex("user_concept_unlock_unique").on(table.userId, table.conceptId),
+  })
+);
+
 export const dataFiles = pgTable("data_files", {
   id: serial("id").primaryKey(),
   filename: varchar("filename", { length: 255 }).notNull().unique(),

@@ -5,6 +5,7 @@ import { db } from "@/lib/db/index";
 import { concepts } from "@/lib/db/schema";
 import { asc } from "drizzle-orm";
 import type { CurriculumItem } from "@/lib/curriculum";
+import { isStudentRole } from "@/lib/roles";
 
 export default async function LearnPage() {
   const session = await auth();
@@ -22,5 +23,13 @@ export default async function LearnPage() {
     };
   }
 
-  return <LearnClient userName={session.user?.name || "학생"} curriculum={curriculum} />;
+  const role = (session.user as { role?: string } | undefined)?.role;
+
+  return (
+    <LearnClient
+      userName={session.user?.name || "학생"}
+      curriculum={curriculum}
+      isStudent={isStudentRole(role)}
+    />
+  );
 }

@@ -1,12 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { RequestValidationError, validateFeedback, validateRegistration } from "../lib/api-guard";
-import { authenticatedUserId, calculateProgress, isConceptUnlocked, nextConceptId } from "../lib/progress";
+import { authenticatedUserId, calculateProgress, effectiveConceptAccessIds, isConceptUnlocked, nextConceptId } from "../lib/progress";
+import { isStudentRole } from "../lib/roles";
 
 test("authentication helper rejects missing and malformed sessions", () => {
   assert.equal(authenticatedUserId(null), null);
   assert.equal(authenticatedUserId({ user: { id: "abc" } }), null);
   assert.equal(authenticatedUserId({ user: { id: "7" } }), 7);
+});
+
+test("student-only learning features recognize only the student role", () => {
+  assert.equal(isStudentRole("student"), true);
+  assert.equal(isStudentRole("teacher"), false);
+  assert.equal(isStudentRole("admin"), false);
+  assert.equal(isStudentRole(undefined), false);
 });
 
 test("progress calculation is bounded and uses dynamic totals", () => {
@@ -22,15 +30,17 @@ test("API validation enforces account and payload limits", () => {
 });
 
 test("concept unlocking is sequential within a level and independent across levels", () => {
-  // 각 레벨의 첫 개념은 항상 열려 있다 (lv1=0, lv2=17, lv3=31)
+  // 로봇 소개와 각 레벨의 첫 학습 개념은 항상 열려 있다 (lv1=1, lv2=17, lv3=31)
   assert.equal(isConceptUnlocked(0, []), true);
+  assert.equal(isConceptUnlocked(1, []), true);
   assert.equal(isConceptUnlocked(17, []), true);
   assert.equal(isConceptUnlocked(31, []), true);
   // 앞 단계를 클리어해야 다음이 열린다
-  assert.equal(isConceptUnlocked(1, []), false);
-  assert.equal(isConceptUnlocked(1, [0]), true);
   assert.equal(isConceptUnlocked(2, [0]), false);
-  assert.equal(isConceptUnlocked(2, [0, 1]), true);
+  assert.equal(isConceptUnlocked(2, [1]), true);
+  // LV1은 화면의 단원 순서를 따른다 (자료형의 마지막인 10 다음에 연산자 3)
+  assert.equal(isConceptUnlocked(3, [1, 2, 7, 8, 9]), false);
+  assert.equal(isConceptUnlocked(3, [1, 2, 7, 8, 9, 10]), true);
   // 클리어한 개념은 항상 열려 있다
   assert.equal(isConceptUnlocked(5, [5]), true);
   // 커리큘럼에 없는 개념은 잠긴다
@@ -38,11 +48,25 @@ test("concept unlocking is sequential within a level and independent across leve
 });
 
 test("nextConceptId follows level order and stops at level boundaries", () => {
-  assert.equal(nextConceptId(0), 1);
+  assert.equal(nextConceptId(0), 1); // 로봇 소개 다음 안내는 LV1 첫 학습인 출력
+  assert.equal(nextConceptId(1), 2);
+  assert.equal(nextConceptId(10), 3); // 화면의 다음 단원인 연산자로 이동
   assert.equal(nextConceptId(16), null); // lv1 마지막 → lv2로 넘어가지 않음
   assert.equal(nextConceptId(17), 18);
   assert.equal(nextConceptId(40), null); // lv3 마지막
   assert.equal(nextConceptId(999), null);
+});
+
+test("teacher unlock overrides prerequisites without awarding completion", () => {
+  const clearedIds = [1];
+  const accessIds = effectiveConceptAccessIds(clearedIds, [7]);
+
+  assert.deepEqual(clearedIds, [1]);
+  assert.equal(accessIds.has(2), true);
+  assert.equal(accessIds.has(7), true);
+  assert.equal(isConceptUnlocked(7, accessIds), true);
+  assert.equal(isConceptUnlocked(8, accessIds), true);
+  assert.equal(isConceptUnlocked(9, accessIds), false);
 });
 
 test("feedback validation accepts optional practiceConceptId", () => {

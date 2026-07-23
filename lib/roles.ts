@@ -10,6 +10,10 @@ export function isAdministratorRole(role: unknown): boolean {
   return role === "administrator" || role === "admin";
 }
 
+export function isStudentRole(role: unknown): boolean {
+  return role === "student";
+}
+
 export function canOpenAdminPage(role: unknown): boolean {
   return role === "teacher" || isAdministratorRole(role);
 }

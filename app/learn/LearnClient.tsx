@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { usePyodide } from "@/hooks/usePyodide";
 import { parsePython } from "@/lib/python-parser";
-import { isConceptUnlocked } from "@/lib/progress";
+import { effectiveConceptAccessIds, isConceptUnlocked } from "@/lib/progress";
 import { animationQueue, type RobotCommand } from "@/lib/animation-queue";
 import RobotStage from "@/components/robot/RobotStage";
 import RobotApiTooltip from "@/components/robot/RobotApiTooltip";
@@ -399,9 +399,10 @@ plt.show()
 interface LearnClientProps {
   userName: string;
   curriculum: Record<number, CurriculumItem>;
+  isStudent: boolean;
 }
 
-export default function LearnClient({ userName, curriculum }: LearnClientProps) {
+export default function LearnClient({ userName, curriculum, isStudent }: LearnClientProps) {
   const [code, setCode] = useState(INITIAL_CODE);
   const [output, setOutput] = useState("");
   const [execError, setExecError] = useState("");
@@ -416,6 +417,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const [practiceConceptId, setPracticeConceptId] = useState<number | null>(null);
   // 클리어(뱃지 획득)한 개념 목록. 순차 잠금 해제의 기준.
   const [clearedConceptIds, setClearedConceptIds] = useState<Set<number>>(new Set());
+  const [manuallyUnlockedConceptIds, setManuallyUnlockedConceptIds] = useState<Set<number>>(new Set());
   const [conceptExpanded, setConceptExpanded] = useState(true);
   const [showOutput, setShowOutput] = useState(false);
   const [fontSize, setFontSize] = useState(9);
@@ -470,13 +472,20 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, []);
 
   useEffect(() => {
+    if (!isStudent) return;
+
     fetch("/api/progress")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (Array.isArray(data?.clearedConceptIds)) setClearedConceptIds(new Set<number>(data.clearedConceptIds));
+        if (Array.isArray(data?.manuallyUnlockedConceptIds)) {
+          setManuallyUnlockedConceptIds(new Set<number>(data.manuallyUnlockedConceptIds));
+        }
       })
       .catch(() => { /* 조회 실패 시 첫 개념만 열린 기본 상태로 시작 */ });
-  }, []);
+  }, [isStudent]);
+
+  const accessibleConceptIds = effectiveConceptAccessIds(clearedConceptIds, manuallyUnlockedConceptIds);
 
   useEffect(() => {
     setPracticeConceptId(null);
@@ -631,6 +640,15 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     setNewBadgeIds([]);
     setPracticeConceptId(null);
     setShowSpeech(false);
+    setOutput("");
+    setExecError("");
+    setHasRun(false);
+    setShowOutput(false);
+    setPendingFeedback(null);
+    setCommands([]);
+    setShowVariable(false);
+    setIsError(false);
+    setPlots([]);
     if (id >= 31) {
       setSelectedLv3ConceptId(id);
     } else {
@@ -813,8 +831,8 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     const badge = BADGE_METADATA_LV3.find(b => b.conceptId === id);
                     if (!badge) return null;
                     const selected = id === selectedLv3ConceptId;
-                    const cleared = clearedConceptIds.has(id);
-                    const unlocked = isConceptUnlocked(id, clearedConceptIds);
+                    const cleared = isStudent && clearedConceptIds.has(id);
+                    const unlocked = !isStudent || isConceptUnlocked(id, accessibleConceptIds);
                     return (
                       <button
                         key={id}
@@ -918,8 +936,8 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     if (!badge) return null;
                     const name = badge.nameKo.replace(" 마스터", "");
                     const selected = id === selectedConceptId;
-                    const cleared = clearedConceptIds.has(id);
-                    const unlocked = isConceptUnlocked(id, clearedConceptIds);
+                    const cleared = isStudent && clearedConceptIds.has(id);
+                    const unlocked = !isStudent || isConceptUnlocked(id, accessibleConceptIds);
                     return (
                       <button
                         key={id}

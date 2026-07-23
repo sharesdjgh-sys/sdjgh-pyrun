@@ -1,0 +1,229 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
+import { effectiveConceptAccessIds, isConceptUnlocked, LEVEL_CONCEPT_ORDERS } from "@/lib/progress";
+import { Check, Clock3, Lock, LockOpen, PlayCircle, RotateCcw, Users } from "lucide-react";
+
+interface ConceptSummary {
+  id: number;
+  nameKo: string;
+}
+
+interface StudentStatus {
+  id: number;
+  username: string;
+  displayName: string | null;
+  createdAt: string | null;
+  clearedConceptIds: number[];
+  practicedConceptIds: number[];
+  manuallyUnlockedConceptIds: number[];
+  submissionCount: number;
+  successfulRunCount: number;
+  lastActivityAt: string | null;
+}
+
+interface StudentProgressManagerProps {
+  concepts: ConceptSummary[];
+}
+
+const LEVEL_GROUPS = [UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3];
+const TOTAL_LEARNING_CONCEPTS = LEVEL_CONCEPT_ORDERS.flat().length;
+
+function formatDate(value: string | null) {
+  if (!value) return "아직 활동 없음";
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+export default function StudentProgressManager({ concepts }: StudentProgressManagerProps) {
+  const [students, setStudents] = useState<StudentStatus[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [level, setLevel] = useState<1 | 2 | 3>(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [unlockingConceptId, setUnlockingConceptId] = useState<number | null>(null);
+
+  async function loadStudents() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/students");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "학생 정보를 불러오지 못했습니다.");
+      const nextStudents: StudentStatus[] = data.students ?? [];
+      setStudents(nextStudents);
+      setSelectedStudentId((current) => current ?? nextStudents[0]?.id ?? null);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "학생 정보를 불러오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadStudents();
+  }, []);
+
+  const selectedStudent = students.find((student) => student.id === selectedStudentId) ?? null;
+  const clearedIds = new Set(selectedStudent?.clearedConceptIds ?? []);
+  const practicedIds = new Set(selectedStudent?.practicedConceptIds ?? []);
+  const manualUnlockIds = new Set(selectedStudent?.manuallyUnlockedConceptIds ?? []);
+  const accessIds = effectiveConceptAccessIds(clearedIds, manualUnlockIds);
+  const completedCount = selectedStudent?.clearedConceptIds.filter((id) => LEVEL_CONCEPT_ORDERS.flat().includes(id)).length ?? 0;
+  const progressPercent = Math.round((completedCount / TOTAL_LEARNING_CONCEPTS) * 100);
+
+  async function unlockConcept(conceptId: number) {
+    if (!selectedStudent || unlockingConceptId !== null) return;
+    setUnlockingConceptId(conceptId);
+    setMessage("");
+
+    try {
+      const res = await fetch("/api/admin/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentId: selectedStudent.id, conceptId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "잠금 해제에 실패했습니다.");
+
+      setStudents((current) => current.map((student) => (
+        student.id === selectedStudent.id
+          ? { ...student, manuallyUnlockedConceptIds: [...new Set([...student.manuallyUnlockedConceptIds, conceptId])] }
+          : student
+      )));
+      const conceptName = concepts.find((concept) => concept.id === conceptId)?.nameKo ?? "선택한 단원";
+      setMessage(`${selectedStudent.displayName || selectedStudent.username} 학생의 '${conceptName}' 단원을 열었습니다.`);
+    } catch (unlockError) {
+      setMessage(unlockError instanceof Error ? unlockError.message : "잠금 해제에 실패했습니다.");
+    } finally {
+      setUnlockingConceptId(null);
+    }
+  }
+
+  if (loading) {
+    return <div style={{ flex: 1, padding: 40, textAlign: "center", color: "#8B83A8" }}>학생 수업 정보를 불러오는 중...</div>;
+  }
+
+  if (error) {
+    return (
+      <div style={{ flex: 1, padding: 40, textAlign: "center", color: "#D93668" }}>
+        <div style={{ marginBottom: 14 }}>{error}</div>
+        <button onClick={() => void loadStudents()} style={{ padding: "9px 16px", border: 0, borderRadius: 10, background: "#7B5CF0", color: "#fff", cursor: "pointer", fontWeight: 700 }}>다시 시도</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 17, fontWeight: 800, color: "#3D2E8A" }}>
+            <Users size={20} color="#7B5CF0" /> 학생 수업 관리
+          </div>
+          <div style={{ marginTop: 5, fontSize: 13, color: "#8B83A8" }}>학생별 학습 현황을 확인하고 필요한 단원을 직접 열어줄 수 있습니다.</div>
+        </div>
+        <button onClick={() => void loadStudents()} title="새로고침" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#7B5CF0", cursor: "pointer", fontWeight: 700 }}>
+          <RotateCcw size={14} /> 새로고침
+        </button>
+      </div>
+
+      {students.length === 0 ? (
+        <div style={{ padding: 50, textAlign: "center", background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, color: "#9A93B5" }}>등록된 학생 계정이 없습니다.</div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", gap: 16, alignItems: "start" }}>
+          <aside style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 18, padding: 10, boxShadow: "0 8px 24px rgba(90,63,214,.05)" }}>
+            {students.map((student) => {
+              const active = student.id === selectedStudentId;
+              const studentCompleted = student.clearedConceptIds.filter((id) => LEVEL_CONCEPT_ORDERS.flat().includes(id)).length;
+              return (
+                <button key={student.id} onClick={() => { setSelectedStudentId(student.id); setMessage(""); }} style={{ width: "100%", textAlign: "left", padding: "12px 13px", marginBottom: 5, border: active ? "1px solid #CFC2F5" : "1px solid transparent", borderRadius: 12, background: active ? "#F3EFFE" : "transparent", cursor: "pointer", fontFamily: "inherit" }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: active ? "#6C4BEF" : "#443B63" }}>{student.displayName || student.username}</div>
+                  <div style={{ marginTop: 2, fontSize: 11.5, color: "#9A93B5" }}>@{student.username}</div>
+                  <div style={{ marginTop: 8, height: 5, borderRadius: 99, background: "#EDE8F8", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.round((studentCompleted / TOTAL_LEARNING_CONCEPTS) * 100)}%`, height: "100%", background: "linear-gradient(90deg,#9B7FFF,#18C99A)" }} />
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: "#7A7198" }}>{studentCompleted}/{TOTAL_LEARNING_CONCEPTS} 완료</div>
+                </button>
+              );
+            })}
+          </aside>
+
+          {selectedStudent && (
+            <section style={{ minWidth: 0, background: "#fff", border: "1px solid #EFEAF8", borderRadius: 18, padding: 20, boxShadow: "0 8px 24px rgba(90,63,214,.05)" }}>
+              <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", gap: 16 }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#3D2E8A" }}>{selectedStudent.displayName || selectedStudent.username}</div>
+                  <div style={{ marginTop: 3, fontSize: 12, color: "#9A93B5" }}>@{selectedStudent.username}</div>
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#7B5CF0" }}>{progressPercent}%</div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 9, margin: "16px 0" }}>
+                {[
+                  ["완료 단원", `${completedCount}개`, <Check key="check" size={15} />],
+                  ["연습 단원", `${practicedIds.size}개`, <PlayCircle key="play" size={15} />],
+                  ["코드 제출", `${selectedStudent.submissionCount}회`, <LockOpen key="submit" size={15} />],
+                  ["최근 활동", formatDate(selectedStudent.lastActivityAt), <Clock3 key="clock" size={15} />],
+                ].map(([label, value, icon]) => (
+                  <div key={String(label)} style={{ padding: "11px 12px", background: "#F8F5FF", borderRadius: 12, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "#8B83A8" }}>{icon}{label}</div>
+                    <div style={{ marginTop: 5, fontSize: label === "최근 활동" ? 11.5 : 16, fontWeight: 800, color: "#4B416A", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {message && <div style={{ marginBottom: 12, padding: "9px 12px", borderRadius: 10, background: message.includes("실패") ? "#FFF0F3" : "#ECFBF6", color: message.includes("실패") ? "#D93668" : "#168A68", fontSize: 12.5, fontWeight: 700 }}>{message}</div>}
+
+              <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                {([1, 2, 3] as const).map((levelNumber) => (
+                  <button key={levelNumber} onClick={() => setLevel(levelNumber)} style={{ padding: "7px 15px", border: 0, borderRadius: 9, background: level === levelNumber ? "#7B5CF0" : "#F0ECF9", color: level === levelNumber ? "#fff" : "#7A7198", cursor: "pointer", fontWeight: 800 }}>Lv.{levelNumber}</button>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {LEVEL_GROUPS[level - 1].map((group) => (
+                  <div key={group.label}>
+                    <div style={{ marginBottom: 5, fontSize: 11.5, fontWeight: 800, color: group.color }}>{group.label}</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 6 }}>
+                      {group.ids.filter((id) => id !== 0).map((conceptId) => {
+                        const concept = concepts.find((item) => item.id === conceptId);
+                        if (!concept) return null;
+                        const cleared = clearedIds.has(conceptId);
+                        const directlyUnlocked = manualUnlockIds.has(conceptId);
+                        const accessible = isConceptUnlocked(conceptId, accessIds);
+                        const canUnlock = !cleared && !accessible;
+
+                        return (
+                          <div key={conceptId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "9px 10px", border: `1px solid ${cleared ? "#BCECDC" : directlyUnlocked ? "#D5C8F7" : "#EDE8F6"}`, borderRadius: 10, background: cleared ? "#F0FBF7" : directlyUnlocked ? "#F6F2FE" : "#fff" }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 12.5, fontWeight: 700, color: "#4B416A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{concept.nameKo}</div>
+                              <div style={{ marginTop: 2, fontSize: 10.5, color: cleared ? "#18A67A" : directlyUnlocked ? "#7B5CF0" : accessible ? "#8B83A8" : "#B2AAC7" }}>
+                                {cleared ? "학생 완료 · 뱃지 획득" : directlyUnlocked ? "선생님이 잠금 해제" : accessible ? "현재 학습 가능" : "잠김"}
+                              </div>
+                            </div>
+                            {canUnlock ? (
+                              <button onClick={() => void unlockConcept(conceptId)} disabled={unlockingConceptId !== null} style={{ flex: "none", display: "flex", alignItems: "center", gap: 4, padding: "6px 8px", border: "1px solid #CFC2F5", borderRadius: 8, background: "#F3EFFE", color: "#6C4BEF", cursor: unlockingConceptId !== null ? "wait" : "pointer", fontSize: 10.5, fontWeight: 800 }}>
+                                <LockOpen size={11} /> {unlockingConceptId === conceptId ? "처리 중" : "잠금 해제"}
+                              </button>
+                            ) : cleared ? <Check size={16} color="#18A67A" /> : accessible ? <LockOpen size={15} color="#9A8AC7" /> : <Lock size={15} color="#B2AAC7" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

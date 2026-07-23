@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
 import { USER_ROLES, isAdministratorRole, type UserRole } from "@/lib/roles";
 import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, Users } from "lucide-react";
+import StudentProgressManager from "./StudentProgressManager";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu,
@@ -68,7 +69,7 @@ export default function AdminClient({
   const [levelFilter, setLevelFilter] = useState<1 | 2 | 3>(1);
 
   const isAdministrator = isAdministratorRole(currentRole);
-  const [adminTab, setAdminTab] = useState<"curriculum" | "data" | "users">("curriculum");
+  const [adminTab, setAdminTab] = useState<"curriculum" | "data" | "students" | "users">("curriculum");
   const [csvFiles, setCsvFiles] = useState<Array<{filename: string; url: string}>>([]);
   const [csvUploading, setCsvUploading] = useState(false);
   const [csvMessage, setCsvMessage] = useState("");
@@ -236,9 +237,10 @@ export default function AdminClient({
 
   const selectedConcept = concepts.find((c) => c.id === selectedId);
   const filteredGroups = levelFilter === 1 ? UNIT_GROUPS_LV1 : levelFilter === 2 ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV3;
-  const adminTabs: Array<["curriculum" | "data" | "users", string]> = [
+  const adminTabs: Array<["curriculum" | "data" | "students" | "users", string]> = [
     ["curriculum", "커리큘럼 편집"],
     ["data", "데이터 파일 관리"],
+    ["students", "학생 수업 관리"],
     ...(isAdministrator ? ([["users", "회원 관리"]] as Array<["users", string]>) : []),
   ];
 
@@ -394,6 +396,8 @@ export default function AdminClient({
               </div>
             )}
           </div>
+        ) : adminTab === "students" ? (
+          <StudentProgressManager concepts={concepts} />
         ) : adminTab === "users" ? (
           <div style={{ flex: 1, background: "#fff", borderRadius: 20, border: "1px solid #EFEAF8", boxShadow: "0 8px 24px rgba(90,63,214,.06)", padding: "28px 32px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -451,10 +455,10 @@ export default function AdminClient({
                         disabled={updatingUserId !== null || isSelf}
                         style={{
                           padding: "7px 11px",
-                          border: "1.5px solid #FFD3E0",
+                          border: "1.5px solid #DC3F54",
                           borderRadius: 10,
-                          background: "#fff",
-                          color: "#D93668",
+                          background: "linear-gradient(180deg, #FF6B7A, #E84C5F)",
+                          color: "#fff",
                           fontFamily: "inherit",
                           fontSize: 12.5,
                           fontWeight: 800,
