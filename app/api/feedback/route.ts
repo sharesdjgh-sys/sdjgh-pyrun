@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { userConceptClears, userConceptPractices, feedbackHistory, concepts } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { generateFeedback, judgePractice } from "@/lib/gemini";
+import { isConceptUnlocked } from "@/lib/progress";
 import { parsePython } from "@/lib/python-parser";
 import { rateLimit, RequestValidationError, validateFeedback } from "@/lib/api-guard";
 
@@ -44,31 +45,33 @@ export async function POST(req: NextRequest) {
     const newlyEarnedConceptIds: number[] = [];
 
     if (practiceConceptId !== null && isSuccess && parseResult.syntaxValid) {
-      const [concept] = await db
-        .select({ nameKo: concepts.nameKo, practiceCode: concepts.practiceCode })
-        .from(concepts)
-        .where(eq(concepts.id, practiceConceptId));
+      const clears = await db
+        .select({ conceptId: userConceptClears.conceptId })
+        .from(userConceptClears)
+        .where(eq(userConceptClears.userId, userId));
+      const clearedIds = clears.map((c) => c.conceptId);
 
-      if (concept?.practiceCode) {
-        const verdict = await judgePractice({
-          conceptName: concept.nameKo,
-          problem: concept.practiceCode,
-          code,
-          stdout: stdout || "",
-        });
+      // 순차 잠금: 앞 단계를 클리어하지 않은 개념은 채점하지 않는다.
+      if (isConceptUnlocked(practiceConceptId, clearedIds)) {
+        const [concept] = await db
+          .select({ nameKo: concepts.nameKo, practiceCode: concepts.practiceCode })
+          .from(concepts)
+          .where(eq(concepts.id, practiceConceptId));
 
-        if (verdict) {
-          feedback = verdict.feedback;
-          solved = verdict.solved;
-        }
+        if (concept?.practiceCode) {
+          const verdict = await judgePractice({
+            conceptName: concept.nameKo,
+            problem: concept.practiceCode,
+            code,
+            stdout: stdout || "",
+          });
 
-        if (solved) {
-          const existing = await db
-            .select({ id: userConceptClears.id })
-            .from(userConceptClears)
-            .where(and(eq(userConceptClears.userId, userId), eq(userConceptClears.conceptId, practiceConceptId)));
+          if (verdict) {
+            feedback = verdict.feedback;
+            solved = verdict.solved;
+          }
 
-          if (existing.length === 0) {
+          if (solved && !clearedIds.includes(practiceConceptId)) {
             await db
               .insert(userConceptClears)
               .values({ userId, conceptId: practiceConceptId })

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { usePyodide } from "@/hooks/usePyodide";
 import { parsePython } from "@/lib/python-parser";
+import { isConceptUnlocked } from "@/lib/progress";
 import { animationQueue, type RobotCommand } from "@/lib/animation-queue";
 import RobotStage from "@/components/robot/RobotStage";
 import RobotApiTooltip from "@/components/robot/RobotApiTooltip";
@@ -14,7 +15,7 @@ import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
 import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, BADGE_METADATA_LV3, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
 import type { CurriculumItem } from "@/lib/curriculum";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu } from "lucide-react";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Lock, Check } from "lucide-react";
 import Image from "next/image";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
@@ -409,9 +410,12 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   const [speechText, setSpeechText] = useState("");
   const [showSpeech, setShowSpeech] = useState(false);
   const [newBadgeIds, setNewBadgeIds] = useState<number[]>([]);
+  const [badgeFeedback, setBadgeFeedback] = useState("");
   const [selectedConceptId, setSelectedConceptId] = useState(0);
   // 지금 에디터에 로드된 연습문제의 개념 ID. 문제 풀이 중일 때만 서버 채점을 요청한다.
   const [practiceConceptId, setPracticeConceptId] = useState<number | null>(null);
+  // 클리어(뱃지 획득)한 개념 목록. 순차 잠금 해제의 기준.
+  const [clearedConceptIds, setClearedConceptIds] = useState<Set<number>>(new Set());
   const [conceptExpanded, setConceptExpanded] = useState(true);
   const [showOutput, setShowOutput] = useState(false);
   const [fontSize, setFontSize] = useState(9);
@@ -439,6 +443,9 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
 
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runningRef = useRef(false);
+  // 로봇 애니메이션이 아직 재생 중인지. AI 채점 응답이 애니메이션보다 늦게 오는 경우가 많아,
+  // 응답 시점에 애니메이션이 이미 끝났으면 피드백/뱃지를 바로 표시해야 한다.
+  const animationDoneRef = useRef(true);
 
   const [plots, setPlots] = useState<string[]>([]);
 
@@ -460,6 +467,15 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     }, 700);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/progress")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data?.clearedConceptIds)) setClearedConceptIds(new Set<number>(data.clearedConceptIds));
+      })
+      .catch(() => { /* 조회 실패 시 첫 개념만 열린 기본 상태로 시작 */ });
   }, []);
 
   useEffect(() => {
@@ -534,6 +550,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
     }
 
     const queueCommands = animationQueue.get();
+    animationDoneRef.current = queueCommands.length === 0;
     setCommands(queueCommands);
 
     try {
@@ -550,6 +567,9 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
         const data = await res.json();
         let feedback: string = data.feedback;
         const badgeIds: number[] = data.newlyEarnedBadgeIds;
+        if (badgeIds.length > 0) {
+          setClearedConceptIds((prev) => new Set([...prev, ...badgeIds]));
+        }
 
         if (!success) {
           const friendlyExplanation = getFriendlyErrorExplanation(stderr);
@@ -560,19 +580,20 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
           }
         }
 
-        if (success && queueCommands.length > 0) {
+        if (success && !animationDoneRef.current) {
           setPendingFeedback({ feedback, badgeIds });
         } else {
           setPendingFeedback(null);
           showSpeechBubble(feedback);
           if (success && badgeIds.length > 0) {
+            setBadgeFeedback(feedback);
             setNewBadgeIds(badgeIds);
             setCommands([{ type: "dance", params: {} }]);
           }
         }
       } else {
         const fallback = success ? "잘 했어요! 코드가 잘 동작합니다." : getFriendlyErrorExplanation(stderr);
-        if (success && queueCommands.length > 0) {
+        if (success && !animationDoneRef.current) {
           setPendingFeedback({ feedback: fallback, badgeIds: [] });
         } else {
           setPendingFeedback(null);
@@ -581,7 +602,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
       }
     } catch {
       const fallback = success ? "잘 했어요! 코드가 잘 동작합니다." : getFriendlyErrorExplanation(stderr);
-      if (success && queueCommands.length > 0) {
+      if (success && !animationDoneRef.current) {
         setPendingFeedback({ feedback: fallback, badgeIds: [] });
       } else {
         setPendingFeedback(null);
@@ -593,15 +614,31 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
   }, [pyLoading, code, mode, practiceConceptId, executeCode, showSpeechBubble]);
 
   const handleAnimationComplete = useCallback(() => {
+    animationDoneRef.current = true;
     if (pendingFeedback) {
       showSpeechBubble(pendingFeedback.feedback);
       if (pendingFeedback.badgeIds.length > 0) {
+        setBadgeFeedback(pendingFeedback.feedback);
         setNewBadgeIds(pendingFeedback.badgeIds);
         setCommands([{ type: "dance", params: {} }]);
       }
       setPendingFeedback(null);
     }
   }, [pendingFeedback, showSpeechBubble]);
+
+  // 축하 팝업의 "다음 단계 공부하기": 다음 개념을 선택하고 예제 코드를 로드
+  const handleGoNextConcept = useCallback((id: number) => {
+    setNewBadgeIds([]);
+    setPracticeConceptId(null);
+    setShowSpeech(false);
+    if (id >= 31) {
+      setSelectedLv3ConceptId(id);
+    } else {
+      setSelectedConceptId(id);
+    }
+    const example = curriculum[id];
+    if (example?.exampleCode) setCode(example.exampleCode);
+  }, [curriculum]);
 
   const handleLoadExample = useCallback(() => {
     setPracticeConceptId(null);
@@ -776,28 +813,38 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     const badge = BADGE_METADATA_LV3.find(b => b.conceptId === id);
                     if (!badge) return null;
                     const selected = id === selectedLv3ConceptId;
+                    const cleared = clearedConceptIds.has(id);
+                    const unlocked = isConceptUnlocked(id, clearedConceptIds);
                     return (
                       <button
                         key={id}
+                        disabled={!unlocked}
+                        title={unlocked ? undefined : "이전 문제를 풀면 잠금 해제!"}
                         onClick={() => {
                           setSelectedLv3ConceptId(id);
                           setPracticeConceptId(null);
                           setCode(curriculum[id]?.exampleCode ?? "");
                         }}
                         style={{
-                          width: "100%", textAlign: "left", display: "block",
+                          width: "100%", textAlign: "left",
+                          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6,
                           padding: "7px 10px", borderRadius: 10, border: "none",
-                          cursor: "pointer", fontFamily: "inherit", fontSize: 13,
+                          cursor: unlocked ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 13,
                           fontWeight: selected ? 700 : 500,
                           background: selected ? "linear-gradient(135deg,#34D9A6,#18C99A)" : "transparent",
-                          color: selected ? "#fff" : "#7A6FA0",
+                          color: selected ? "#fff" : unlocked ? "#7A6FA0" : "#C9C1DE",
                           marginBottom: 1, transition: "all .13s",
                           boxShadow: selected ? "0 3px 8px rgba(24,201,154,.22)" : "none",
                         }}
-                        onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "#E8F5E9"; }}
+                        onMouseEnter={(e) => { if (!selected && unlocked) e.currentTarget.style.background = "#E8F5E9"; }}
                         onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
                       >
-                        {badge.nameKo}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge.nameKo}</span>
+                        {cleared ? (
+                          <Check size={13} color={selected ? "#fff" : "#18C99A"} strokeWidth={3} style={{ flexShrink: 0 }} />
+                        ) : !unlocked ? (
+                          <Lock size={12} color="#C9C1DE" style={{ flexShrink: 0 }} />
+                        ) : null}
                       </button>
                     );
                   })}
@@ -871,9 +918,13 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                     if (!badge) return null;
                     const name = badge.nameKo.replace(" 마스터", "");
                     const selected = id === selectedConceptId;
+                    const cleared = clearedConceptIds.has(id);
+                    const unlocked = isConceptUnlocked(id, clearedConceptIds);
                     return (
                       <button
                         key={id}
+                        disabled={!unlocked}
+                        title={unlocked ? undefined : "이전 문제를 풀면 잠금 해제!"}
                         onClick={() => {
                           setSelectedConceptId(id);
                           setPracticeConceptId(null);
@@ -883,24 +934,32 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
                         style={{
                           width: "100%",
                           textAlign: "left",
-                          display: "block",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 6,
                           padding: "7px 10px",
                           borderRadius: 10,
                           border: "none",
-                          cursor: "pointer",
+                          cursor: unlocked ? "pointer" : "not-allowed",
                           fontFamily: "inherit",
                           fontSize: 13,
                           fontWeight: selected ? 700 : 500,
                           background: selected ? "linear-gradient(135deg,#9B7FFF,#7B5CF0)" : "transparent",
-                          color: selected ? "#fff" : "#7A6FA0",
+                          color: selected ? "#fff" : unlocked ? "#7A6FA0" : "#C9C1DE",
                           marginBottom: 1,
                           transition: "all .13s",
                           boxShadow: selected ? "0 3px 8px rgba(123,92,240,.22)" : "none",
                         }}
-                        onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "#F3EFFE"; }}
+                        onMouseEnter={(e) => { if (!selected && unlocked) e.currentTarget.style.background = "#F3EFFE"; }}
                         onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
                       >
-                        {name}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+                        {cleared ? (
+                          <Check size={13} color={selected ? "#fff" : "#18C99A"} strokeWidth={3} style={{ flexShrink: 0 }} />
+                        ) : !unlocked ? (
+                          <Lock size={12} color="#C9C1DE" style={{ flexShrink: 0 }} />
+                        ) : null}
                       </button>
                     );
                   })}
@@ -1508,7 +1567,7 @@ export default function LearnClient({ userName, curriculum }: LearnClientProps) 
         </div>
       </div>
 
-      <BadgeCelebration badgeIds={newBadgeIds} onClose={() => setNewBadgeIds([])} />
+      <BadgeCelebration badgeIds={newBadgeIds} feedback={badgeFeedback} onClose={() => setNewBadgeIds([])} onNext={handleGoNextConcept} />
 
       {/* 제작사 로고 */}
       <div style={{ position: "fixed", bottom: 14, right: 18, zIndex: 5, opacity: 0.6 }}>
