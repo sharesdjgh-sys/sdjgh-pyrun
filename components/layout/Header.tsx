@@ -3,15 +3,20 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
-import { canOpenAdminPage, isAdministratorRole } from "@/lib/roles";
+import { canOpenAdminPage, isAdministratorRole, isStudentRole } from "@/lib/roles";
 
 export default function Header() {
   const { data: session } = useSession();
   const name = session?.user?.name || "학생";
   const initial = name.slice(0, 1);
-  const role = (session?.user as { role?: string } | undefined)?.role;
+  const sessionUser = session?.user as { username?: string; role?: string } | undefined;
+  const username = sessionUser?.username;
+  const role = sessionUser?.role;
   const canManage = canOpenAdminPage(role);
   const isAdmin = isAdministratorRole(role);
+  const identityText = username
+    ? isStudentRole(role) ? `아이디: ${username}` : `@${username}`
+    : null;
 
   return (
     <header
@@ -37,11 +42,21 @@ export default function Header() {
       {/* Right side */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {/* User badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F4F0FE", borderRadius: 99, padding: "5px 12px 5px 5px" }}>
+        <div
+          title={identityText ?? name}
+          style={{ display: "flex", alignItems: "center", gap: 8, background: "#F4F0FE", borderRadius: 99, padding: "5px 12px 5px 5px" }}
+        >
           <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(140deg,#FF8FB8,#FF5C8A)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 14 }}>
             {initial}
           </div>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#544D70" }}>{name}</span>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#544D70" }}>{name}</span>
+            {identityText && (
+              <span style={{ marginTop: 2, fontSize: 10.5, fontWeight: 600, color: "#8B83A8" }}>
+                {identityText}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Admin link — teacher/admin only */}

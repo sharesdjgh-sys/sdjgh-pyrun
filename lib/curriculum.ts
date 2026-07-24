@@ -79,7 +79,7 @@ robot.say("Robot API 완전 정복!")`,
 #   robot.say("텍스트")          말하기
 #   robot.emotion("happy/sad/angry/surprised")  감정
 #   robot.move(칸수)             이동 (1~20)
-#   robot.turn("left"/"right")  방향 전환
+#   robot.turn("left"/"right"/"up"/"down")  방향 전환
 #   robot.jump()                점프
 #   robot.bounce(횟수)          바운스 (1~5)
 #   robot.spin()                360° 회전
@@ -130,8 +130,8 @@ robot.emotion("happy")`,
     practiceCode: `# 문제: 아래 출력 결과가 정확히 나오도록 코드를 완성하세요.
 #
 # 출력 결과:
-#   안녕 안녕 안녕
-#   사과 + 바나나
+#   안녕안녕안녕
+#   사과바나나
 #   3 * 4 = 12
 
 import robot
@@ -139,8 +139,8 @@ import robot
 # "안녕"을 3번 반복 출력 (hint: * 사용)
 print("안녕" * 3)
 
-# "사과"와 "바나나"를 + 기호로 이어 출력 (hint: + 사용)
-print("사과" + " + " + "바나나")
+# "사과"와 "바나나"를 + 연산자로 이어 출력 (hint: + 사용)
+print("사과" + "바나나")
 
 # "3 * 4 = "와 3*4 계산 결과를 함께 출력
 print("3 * 4 =", 3 * 4)
@@ -249,9 +249,9 @@ print("a < b:", a < b)     # 작다(less than): False
 print("a >= b:", a >= b)   # 크거나 같다(greater than or equal to): True
 print("a <= b:", a <= b)   # 작거나 같다(less than or equal to): False
 
-# 문자열도 비교할 수 있습니다 (알파벳 순서 기준, a가 가장 작고 z가 가장 큽니다)
+# 문자열도 비교할 수 있습니다 (앞에서부터 한 글자씩 사전식으로 비교합니다)
 print("apple < banana:", "apple" < "banana")     # True
-print("apple < applepie:", "apple" < "applepie") # 길이가 짧으면 작습니다: True
+print("apple < applepie:", "apple" < "applepie") # 앞부분이 같으면 더 짧은 문자열이 작습니다: True
 
 robot.say(f"{a}이 {b}보다 크다? {a > b}")
 robot.emotion("happy")`,
@@ -448,31 +448,31 @@ robot.say(f"반지름 {radius}인 원!")`,
 text1 = "안녕하세요"
 print("1.", text1)                       # 문자열 전체 출력
 print("2. 첫 글자:", text1[0])            # 인덱스 0 = 첫 번째 글자
-print("2. 뒤에서 두 번째:", text1[-2])    # 음수 인덱스 = 뒤에서부터
+print("3. 뒤에서 두 번째:", text1[-2])    # 음수 인덱스 = 뒤에서부터
 
-print("3. 3~4번째:", text1[2:4])          # 슬라이싱: 인덱스 2부터 4 미만
-print("3. 중간 부분:", text1[1:-1])       # 1번 인덱스부터 마지막 전까지
+print("4. 3~4번째:", text1[2:4])          # 슬라이싱: 인덱스 2부터 4 미만
+print("5. 중간 부분:", text1[1:-1])       # 1번 인덱스부터 마지막 전까지
 
 # 여러 줄 문자열은 따옴표 3개(""")를 사용합니다.
-text2 = """4. 동해물과 백두산이
+text2 = """6. 동해물과 백두산이
 마르고 닳도록
 하느님이 보우하사
 우리 나라 만세"""
 print(text2)
 
-print("5. 이것은\\n한줄씩\\n줄바꿈")    # \\n = 줄바꿈
-print("6. 이것은\\t탭으로\\t띄우기")   # \\t = 탭 간격
+print("7. 이것은\\n한줄씩\\n줄바꿈")    # \\n = 줄바꿈
+print("8. 이것은\\t탭으로\\t띄우기")   # \\t = 탭 간격
 
-print("7. 문자열", "더하기")            # 콤마로 이어 출력
-print("7. 문자열 " + "더하기")          # + 연산자로 문자열 연결
-print("8. 문자열 " + "복제 " * 5)       # * 연산자로 문자열 반복
+print("9. 문자열", "더하기")            # 콤마로 이어 출력
+print("10. 문자열 " + "더하기")         # + 연산자로 문자열 연결
+print("11. 문자열 " + "복제 " * 5)      # * 연산자로 문자열 반복
 
 # 문자열 포매팅 3가지 방법
-print("9. 이름은 %s이고, 나이는 %d입니다." % ("홍길동", 19))
+print("12. 이름은 %s이고, 나이는 %d입니다." % ("홍길동", 19))
 name = "앨리스"
 age = 30
-print("10. format 방식: {}이고, 나이는 {}입니다.".format(name, age))
-print(f"11. f-string 방식: {name}이고, 나이는 {age}입니다.")  # 가장 현대적
+print("13. format 방식: {}이고, 나이는 {}입니다.".format(name, age))
+print(f"14. f-string 방식: {name}이고, 나이는 {age}입니다.")  # 가장 현대적
 
 robot.say(f"첫 글자는 {text1[0]}!")`,
     explanation: "문자열은 인덱스([0], [-1])로 글자를 꺼내거나, 슬라이싱([2:4])으로 일부를 잘라낼 수 있습니다.",
@@ -619,12 +619,11 @@ else:
 
 # if / elif / else 구조 (여러 조건을 순서대로 확인합니다)
 other = "도착지점"
-abc = "바닥"
 
 print("1. 충돌 가능 오브젝트: 바닥, 도착지점, 장애물")
 print("2. 충돌한 대상:", other)
 
-if abc == "바닥":
+if other == "바닥":
     print("3. 바닥에 떨어지면 탈락입니다. 게임을 재시작합니다.")
 elif other == "도착지점":   # elif = else if (앞의 조건이 거짓일 때 확인)
     print("3. 도착지점에 도착했습니다. 게임을 종료합니다.")
@@ -1031,7 +1030,7 @@ print(a ** b)   # 제곱: 25
 print(a // b)   # 나눗셈 몫: 2
 print(a % b)    # 나눗셈 나머지: 1
 
-robot.say(f"int:{a}, float:{b}")
+robot.say(f"a:{type(a).__name__}, b:{type(b).__name__}")
 robot.emotion("happy")`,
     practiceCode: `# 문제: 세 수 a=10, b=3, c=2.5를 이용한 계산
 # 조건:
@@ -1252,7 +1251,7 @@ robot.move(result[0] % 4 + 1)`,
   21: {
     nameKo: "딕셔너리",
     nameEn: "dictionary",
-    explanation: "딕셔너리는 key:value 쌍으로 데이터를 저장합니다. 순서 없이 key로 빠르게 검색할 수 있어 API 데이터에 자주 사용됩니다.",
+    explanation: "딕셔너리는 key:value 쌍을 삽입 순서대로 저장하며, key로 값을 빠르게 검색할 수 있어 API 데이터에 자주 사용됩니다.",
     exampleCode: `import robot
 
 # 딕셔너리 - key:value 대응 관계를 나타내는 자료형입니다.
@@ -1311,14 +1310,14 @@ robot.emotion("happy")`,
 
 # 집합(set) - 중복을 허용하지 않는 순서 없는 자료형입니다.
 s2 = set([1, 2, 3])
-print(s2)   # {1, 2, 3}
+print(s2)   # 원소: 1, 2, 3 (출력 순서는 달라질 수 있음)
 
 # 교집합, 합집합, 차집합 (연산자 사용)
 s1 = set([1, 2, 3, 4, 5, 6])
 s2 = set([4, 5, 6, 7, 8, 9])
-print(s1 & s2)   # 교집합: {4, 5, 6}
-print(s1 | s2)   # 합집합: {1, 2, 3, 4, 5, 6, 7, 8, 9}
-print(s1 - s2)   # 차집합: {1, 2, 3}
+print(s1 & s2)   # 교집합 원소: 4, 5, 6
+print(s1 | s2)   # 합집합 원소: 1, 2, 3, 4, 5, 6, 7, 8, 9
+print(s1 - s2)   # 차집합 원소: 1, 2, 3
 
 # 메서드로도 같은 결과를 얻을 수 있습니다.
 print(s1.intersection(s2))   # 교집합
@@ -1328,11 +1327,11 @@ print(s1.difference(s2))      # 차집합
 # 집합 메서드
 s1 = set([1, 2, 3])
 s1.add(4)           # 값 1개 추가
-print(s1)           # {1, 2, 3, 4}
+print(s1)           # 원소: 1, 2, 3, 4 (출력 순서는 달라질 수 있음)
 s1.update([5, 6])   # 값 여러 개 추가
-print(s1)           # {1, 2, 3, 4, 5, 6}
+print(s1)           # 원소: 1, 2, 3, 4, 5, 6 (출력 순서는 달라질 수 있음)
 s1.remove(2)        # 특정 값 제거
-print(s1)           # {1, 3, 4, 5, 6}
+print(s1)           # 원소: 1, 3, 4, 5, 6 (출력 순서는 달라질 수 있음)
 
 robot.say("집합 연산 완성!")`,
     practiceCode: `# 문제: 세트로 반 학생 취미를 분석하세요.
@@ -1363,17 +1362,17 @@ robot.dance()`,
   23: {
     nameKo: "변수와 복사",
     nameEn: "variable_copy",
-    explanation: "변수는 객체의 주소를 가리킵니다. 리스트를 그냥 대입하면 주소를 공유해서 같이 변합니다. 독립적인 복사본을 만들려면 슬라이싱이나 copy()를 사용하세요.",
+    explanation: "변수는 객체를 참조합니다. 리스트를 그냥 대입하면 같은 객체를 공유해서 같이 변합니다. 독립적인 복사본을 만들려면 슬라이싱이나 copy()를 사용하세요.",
     exampleCode: `import robot
 
-# 변수 - 메모리에 저장된 객체에 대한 참조(주소)입니다.
+# 변수는 메모리에 저장된 객체를 참조합니다.
 a = [1, 2, 3]
-print(id(a))   # id()로 객체의 메모리 주소 확인
+print(id(a))   # id()로 객체의 고유한 식별자 확인
 
-# 대입 - 같은 객체를 가리킵니다 (주소를 공유합니다).
+# 대입 - 같은 객체를 가리킵니다.
 a = [1, 2, 3]
 b = a            # 변수 a를 그대로 b에 대입했습니다.
-print(id(a), id(b))   # 두 변수의 주소가 동일합니다.
+print(id(a), id(b))   # 두 변수의 객체 식별자가 동일합니다.
 print(b is a)          # True: a와 b는 같은 객체를 참조합니다.
 
 b.append(4)      # b를 수정하면 a도 함께 변합니다!
@@ -1383,7 +1382,7 @@ print("b:", b)   # [1, 2, 3, 4]
 # 복사 (슬라이싱) - 독립적인 새 객체를 만듭니다.
 a = [1, 2, 3]
 c = a[:]         # 리스트 전체를 슬라이싱하여 복사합니다.
-print(id(a), id(c))   # 두 변수의 주소가 다릅니다.
+print(id(a), id(c))   # 두 변수의 객체 식별자가 다릅니다.
 c.append(4)
 print("a:", a)   # [1, 2, 3] - 변하지 않음
 print("c:", c)   # [1, 2, 3, 4]
@@ -1923,7 +1922,7 @@ print(list(map(two_times, [1, 2, 3, 4])))   # [2, 4, 6, 8]
 print(list(map(lambda x: x * 2, [1, 2, 3, 4])))          # [2, 4, 6, 8]
 print(list(filter(lambda x: x > 0, [1, -3, 2, 0, -5, 6])))  # [1, 2, 6]
 
-# zip: 동일한 개수의 데이터를 병렬로 묶습니다.
+# zip: 여러 데이터의 같은 위치 요소를 묶으며, 가장 짧은 데이터가 끝나면 종료합니다.
 print(list(zip([1, 2, 3], [4, 5, 6])))   # [(1,4), (2,5), (3,6)]
 print(list(zip("abc", "def")))            # [('a','d'), ('b','e'), ('c','f')]
 
@@ -2084,9 +2083,11 @@ import matplotlib.pyplot as plt
 df = load_data('titanic')
 numeric_df = df.select_dtypes(include=['number'])
 
-# Q1. 'Survived'와 가장 상관관계가 높은 변수는?
+# Q1. 'Survived' 자신을 제외하고 가장 연관성이 큰 변수는?
 corr = numeric_df.corr()
-print("Survived 상관계수:\\n", corr['Survived'].sort_values(ascending=False))
+survived_corr = corr['Survived'].drop('Survived')
+order = survived_corr.abs().sort_values(ascending=False).index
+print("Survived 상관계수:\\n", survived_corr.loc[order])
 
 # Q2. 히트맵 색상을 'Blues'로 바꿔서 그려보세요
 plt.figure(figsize=(8, 6))
@@ -2220,14 +2221,18 @@ fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
 sns.boxplot(
     data=df, x='Survived', y='Age',
-    palette={'0': '#FF5C8A', '1': '#7B5CF0'}, ax=axes[0]
+    hue='Survived',
+    palette={0: '#FF5C8A', 1: '#7B5CF0'},
+    legend=False, ax=axes[0]
 )
 axes[0].set_title('생존 여부별 나이')
 axes[0].set_xlabel('0=사망  1=생존')
 
 sns.boxplot(
     data=df, x='Pclass', y='Fare',
-    palette={'1': '#FFC23C', '2': '#7B5CF0', '3': '#18C99A'}, ax=axes[1]
+    hue='Pclass',
+    palette={1: '#FFC23C', 2: '#7B5CF0', 3: '#18C99A'},
+    legend=False, ax=axes[1]
 )
 axes[1].set_title('객실 등급별 요금')
 plt.tight_layout()
@@ -2381,8 +2386,8 @@ df['Sex'] = LabelEncoder().fit_transform(df['Sex'])
 df = pd.get_dummies(df, columns=['Embarked'], drop_first=True, dtype=int)
 df = df.dropna()
 
-# 요금(Fare) 예측
-X = df.drop(columns=['Fare'])
+# 요금(Fare) 예측: 생존 결과는 예측 입력에서 제외
+X = df.drop(columns=['Fare', 'Survived'])
 y = df['Fare']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -2402,7 +2407,7 @@ plt.figure(figsize=(7, 4))
 plt.bar(scores.keys(), scores.values(), color=['#7B5CF0', '#18C99A', '#FF5C8A'])
 plt.title('회귀 모델 R² 비교')
 plt.ylabel('R² Score')
-plt.ylim(0, 1)
+plt.axhline(0, color='black', linewidth=0.8)
 plt.tight_layout()
 plt.show()
 `,
@@ -2438,7 +2443,7 @@ print(f"R²: {r2_score(y_test, y_pred):.4f}")
   39: {
     nameKo: "분류 분석",
     nameEn: "Classification",
-    explanation: "범주를 예측하는 분류 분석이에요. SVM, KNN, 결정 트리, 랜덤 포레스트로 생존 여부를 예측해봐요.",
+    explanation: "범주를 예측하는 분류 분석이에요. 거리 기반 KNN과 SVM에는 StandardScaler로 특성의 단위를 맞추고, 결정 트리·랜덤 포레스트와 결과를 비교해봐요.",
     exampleCode: `import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -2485,7 +2490,8 @@ plt.show()
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
-from sklearn.preprocessing import LabelEncoder
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 df = load_data('titanic')
 df = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
@@ -2500,7 +2506,10 @@ y = df['Survived']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 # 🎯 KNN 모델로 생존 여부를 예측해보세요 (n_neighbors=5)
-model = KNeighborsClassifier(n_neighbors=___)
+model = make_pipeline(
+    StandardScaler(),
+    KNeighborsClassifier(n_neighbors=___)
+)
 model.fit(___, ___)
 y_pred = model.predict(___)
 
@@ -2512,7 +2521,7 @@ print(classification_report(y_test, y_pred))
   40: {
     nameKo: "모델 성능 비교",
     nameEn: "Model Comparison",
-    explanation: "여러 분류 모델의 정확도를 한눈에 비교해요. 데이터에 맞는 최적의 모델을 찾는 것이 기계학습의 핵심이에요!",
+    explanation: "여러 분류 모델의 정확도를 한눈에 비교해요. 단위에 민감한 모델은 StandardScaler를 적용해 같은 조건에서 비교하고, 데이터에 맞는 모델을 찾아봐요.",
     exampleCode: `import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
@@ -2522,7 +2531,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import LabelEncoder
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 df = load_data('titanic')
 df = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
@@ -2539,11 +2549,17 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 models = {
-    '로지스틱 회귀': LogisticRegression(max_iter=200),
+    '로지스틱 회귀': make_pipeline(
+        StandardScaler(), LogisticRegression(max_iter=200)
+    ),
     '결정 트리':     DecisionTreeClassifier(random_state=42),
     '랜덤 포레스트': RandomForestClassifier(n_estimators=100, random_state=42),
-    'KNN':           KNeighborsClassifier(n_neighbors=5),
-    'SVM':           SVC(random_state=42),
+    'KNN':           make_pipeline(
+        StandardScaler(), KNeighborsClassifier(n_neighbors=5)
+    ),
+    'SVM':           make_pipeline(
+        StandardScaler(), SVC(random_state=42)
+    ),
 }
 
 results = {}
