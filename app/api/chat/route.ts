@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { rateLimit, RequestValidationError, validateStudentChat } from "@/lib/api-guard";
 import { sessionTenant } from "@/lib/curriculum-access";
 import { generateStudentHintChat } from "@/lib/gemini";
-import { getStudentAddress } from "@/lib/student-name";
+import { getStudentVocative } from "@/lib/student-name";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const input = validateStudentChat(await req.json());
     const answer = await generateStudentHintChat({
       ...input,
-      studentName: getStudentAddress(session?.user?.name),
+      studentName: getStudentVocative(session?.user?.name),
     });
     return NextResponse.json({ answer });
   } catch (error) {

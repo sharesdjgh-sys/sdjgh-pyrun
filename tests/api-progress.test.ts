@@ -22,7 +22,7 @@ import { curriculumLevelOrders } from "../lib/curriculum-model";
 import { canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
 import { createStudentPracticeTemplate } from "../lib/practice-template";
-import { getStudentAddress, getStudentCallName } from "../lib/student-name";
+import { getStudentAddress, getStudentCallName, getStudentVocative } from "../lib/student-name";
 
 test("authentication helper rejects missing and malformed sessions", () => {
   assert.equal(authenticatedUserId(null), null);
@@ -206,4 +206,7 @@ test("student names use a friendly teacher-style address", () => {
   assert.equal(getStudentCallName("이도윤"), "도윤");
   assert.equal(getStudentAddress("이도윤"), "도윤 학생");
   assert.equal(getStudentAddress("학생"), "학생");
+  assert.equal(getStudentVocative("이도윤"), "도윤아");
+  assert.equal(getStudentVocative("김민서"), "민서야");
+  assert.equal(getStudentVocative("학생"), "학생");
 });

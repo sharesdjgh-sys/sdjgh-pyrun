@@ -11,7 +11,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { getStudentAddress } from "@/lib/student-name";
+import { getStudentVocative } from "@/lib/student-name";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -139,10 +139,10 @@ interface StudentHintChatbotProps {
 }
 
 function createWelcomeMessage(studentName: string) {
-  const greeting = `안녕하세요, ${getStudentAddress(studentName)}!`;
-  return `${greeting} 나는 파이쌤이에요.
+  const greeting = `안녕, ${getStudentVocative(studentName)}!`;
+  return `${greeting} 나는 같이 코딩을 고민해주는 파이런 학습 파트너야.
 
-정답을 대신 풀어주지는 않지만, 어디를 살펴봐야 하는지와 필요한 개념을 차근차근 알려줄게요.`;
+코딩이 어렵고 막히는 건 당연해. 부담 갖지 말고 편하게 물어봐! 어디를 살펴보면 좋을지 한 걸음씩 같이 찾아보자.`;
 }
 
 const QUICK_QUESTIONS = [
@@ -202,7 +202,7 @@ export default function StudentHintChatbot({
         ? data.answer
         : typeof data.error === "string"
           ? data.error
-          : "힌트를 준비하지 못했어요. 잠시 후 다시 질문해주세요.";
+          : "힌트를 준비하지 못했어. 잠시 후에 다시 물어봐 줘.";
       const assistantMessage: ChatMessage = { role: "assistant", content: answer };
       setMessages((current) => [
         ...current,
@@ -211,7 +211,7 @@ export default function StudentHintChatbot({
     } catch {
       const assistantMessage: ChatMessage = {
         role: "assistant",
-        content: "네트워크 연결을 확인한 뒤 다시 질문해주세요.",
+        content: "네트워크 연결을 확인한 뒤 다시 물어봐 줘.",
       };
       setMessages((current) => [
         ...current,
@@ -232,7 +232,7 @@ export default function StudentHintChatbot({
       {open && (
         <section
           className="student-hint-chat-panel"
-          aria-label="파이쌤"
+          aria-label="파이런 학습 파트너"
           style={{
             position: "fixed",
             right: 20,
@@ -256,8 +256,8 @@ export default function StudentHintChatbot({
               <Image src="/pyrun_studio-favicon.png" alt="" width={36} height={31} style={{ objectFit: "contain" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: "#3D2E8A", fontSize: 15, fontWeight: 900 }}>파이쌤</div>
-              <div style={{ marginTop: 2, color: "#82769F", fontSize: 11.5 }}>정답 대신 생각할 수 있는 힌트를 줄게요</div>
+              <div style={{ color: "#3D2E8A", fontSize: 15, fontWeight: 900 }}>파이런 학습 파트너</div>
+              <div style={{ marginTop: 2, color: "#82769F", fontSize: 11.5 }}>어려운 부분을 같이 하나씩 풀어보자</div>
             </div>
             <button onClick={resetChat} aria-label="대화 지우기" title="대화 지우기" style={{ width: 32, height: 32, display: "grid", placeItems: "center", border: 0, borderRadius: 9, background: "rgba(255,255,255,.7)", color: "#887BA7", cursor: "pointer" }}>
               <Trash2 size={15} />
@@ -328,7 +328,7 @@ export default function StudentHintChatbot({
                   }
                 }}
                 rows={3}
-                placeholder="막힌 부분을 물어보세요"
+                placeholder="막힌 부분을 편하게 물어봐"
                 aria-label="챗봇 질문"
                 style={{ flex: 1, minWidth: 0, minHeight: 60, maxHeight: 180, overflowY: "auto", resize: "vertical", border: 0, outline: 0, background: "transparent", color: "#403755", fontFamily: "inherit", fontSize: 12.5, lineHeight: 1.5 }}
               />
@@ -366,7 +366,7 @@ export default function StudentHintChatbot({
               cursor: "pointer",
             }}
           >
-            <Image src="/pyrun_studio-favicon.png" alt="파이쌤" width={61} height={53} priority style={{ objectFit: "contain" }} />
+            <Image src="/pyrun_studio-favicon.png" alt="파이런 학습 파트너" width={61} height={53} priority style={{ objectFit: "contain" }} />
           </button>
       </div>
     </>
