@@ -135,10 +135,6 @@ export default function RegisterPage() {
             이미 계정이 있나요?{" "}
             <Link href="/login" style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>로그인</Link>
           </div>
-          <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#8B83A8" }}>
-            학교가 아직 등록되지 않았나요?{" "}
-            <Link href="/register-school" style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>새 학교 시작하기</Link>
-          </div>
         </div>
       </div>
     </div>

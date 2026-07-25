@@ -7,6 +7,7 @@ import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2
 import StudentProgressManager from "./StudentProgressManager";
 import ClassRosterManager from "./ClassRosterManager";
 import TeacherCurriculumManager from "./TeacherCurriculumManager";
+import SchoolManager from "./SchoolManager";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu,
@@ -35,6 +36,8 @@ interface UserSummary {
   username: string;
   role: string;
   displayName: string | null;
+  schoolId: number;
+  schoolName: string;
 }
 
 interface EditData {
@@ -71,7 +74,7 @@ export default function AdminClient({
   const [levelFilter, setLevelFilter] = useState<1 | 2 | 3>(1);
 
   const isAdministrator = isAdministratorRole(currentRole);
-  type AdminTab = "my-curricula" | "curriculum" | "data" | "students" | "classes" | "users";
+  type AdminTab = "my-curricula" | "curriculum" | "data" | "students" | "classes" | "users" | "schools";
   const [adminTab, setAdminTab] = useState<AdminTab>("my-curricula");
   const [csvFiles, setCsvFiles] = useState<Array<{filename: string; url: string}>>([]);
   const [csvUploading, setCsvUploading] = useState(false);
@@ -80,6 +83,7 @@ export default function AdminClient({
   const [userMessage, setUserMessage] = useState("");
   const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentSchoolId = users.find((user) => user.id === currentUserId)?.schoolId;
 
   useEffect(() => {
     fetch("/api/data/list")
@@ -146,7 +150,7 @@ export default function AdminClient({
         return;
       }
 
-      setUsers((prev) => prev.map((user) => (user.id === userId ? data.user : user)));
+      setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, ...data.user } : user)));
       setUserMessage("회원 등급을 변경했습니다.");
     } catch {
       setUserMessage("네트워크 오류가 발생했습니다.");
@@ -246,6 +250,7 @@ export default function AdminClient({
     ["students", "학생 수업 관리"],
     ...(isAdministrator ? ([["classes", "학급·계정 관리"]] as Array<[AdminTab, string]>) : []),
     ...(isAdministrator ? ([["users", "회원 관리"]] as Array<[AdminTab, string]>) : []),
+    ...(isAdministrator ? ([["schools", "학교 관리"]] as Array<[AdminTab, string]>) : []),
   ];
 
   return (
@@ -405,7 +410,9 @@ export default function AdminClient({
         ) : adminTab === "students" ? (
           <StudentProgressManager />
         ) : adminTab === "classes" ? (
-          <ClassRosterManager users={users} />
+          <ClassRosterManager users={users.filter((user) => user.schoolId === currentSchoolId)} />
+        ) : adminTab === "schools" ? (
+          <SchoolManager />
         ) : adminTab === "users" ? (
           <div style={{ flex: 1, background: "#fff", borderRadius: 20, border: "1px solid #EFEAF8", boxShadow: "0 8px 24px rgba(90,63,214,.06)", padding: "28px 32px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -434,6 +441,7 @@ export default function AdminClient({
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: "#3D2E8A" }}>{user.displayName || user.username}</div>
                       <div style={{ fontSize: 12, color: "#9A93B5" }}>@{user.username}{isSelf ? " · 현재 계정" : ""}</div>
+                      <div style={{ marginTop: 2, fontSize: 11.5, color: "#7B5CF0", fontWeight: 700 }}>{user.schoolName}</div>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#7B5CF0" }}>{ROLE_LABELS[role]}</div>
                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>

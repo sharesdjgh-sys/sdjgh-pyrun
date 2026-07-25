@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
-import { feedbackHistory, userConceptClears, userConceptPractices, users } from "@/lib/db/schema";
+import { feedbackHistory, schools, userConceptClears, userConceptPractices, users } from "@/lib/db/schema";
 import { sessionTenant } from "@/lib/curriculum-access";
 import { isAdministratorRole, isUserRole, type UserRole } from "@/lib/roles";
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 async function requireAdministrator() {
   const context = sessionTenant(await auth());
@@ -29,9 +29,11 @@ export async function GET() {
       username: users.username,
       role: users.role,
       displayName: users.displayName,
+      schoolId: users.schoolId,
+      schoolName: schools.name,
     })
     .from(users)
-    .where(eq(users.schoolId, authResult.schoolId))
+    .innerJoin(schools, eq(users.schoolId, schools.id))
     .orderBy(asc(users.id));
 
   return NextResponse.json({ users: rows });
@@ -63,7 +65,7 @@ export async function PATCH(req: NextRequest) {
   const [updatedUser] = await db
     .update(users)
     .set({ role: role as UserRole })
-    .where(and(eq(users.id, targetUserId), eq(users.schoolId, authResult.schoolId)))
+    .where(eq(users.id, targetUserId))
     .returning({
       id: users.id,
       username: users.username,
@@ -96,7 +98,7 @@ export async function DELETE(req: NextRequest) {
   const [targetUser] = await db
     .select({ id: users.id, username: users.username })
     .from(users)
-    .where(and(eq(users.id, targetUserId), eq(users.schoolId, authResult.schoolId)))
+    .where(eq(users.id, targetUserId))
     .limit(1);
 
   if (!targetUser) {
@@ -106,7 +108,7 @@ export async function DELETE(req: NextRequest) {
   await db.delete(feedbackHistory).where(eq(feedbackHistory.userId, targetUserId));
   await db.delete(userConceptClears).where(eq(userConceptClears.userId, targetUserId));
   await db.delete(userConceptPractices).where(eq(userConceptPractices.userId, targetUserId));
-  await db.delete(users).where(and(eq(users.id, targetUserId), eq(users.schoolId, authResult.schoolId)));
+  await db.delete(users).where(eq(users.id, targetUserId));
 
   return NextResponse.json({ ok: true, userId: targetUser.id, username: targetUser.username });
 }

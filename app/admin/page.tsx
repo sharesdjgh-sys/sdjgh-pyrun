@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db/index";
-import { concepts, users } from "@/lib/db/schema";
+import { concepts, schools, users } from "@/lib/db/schema";
 import { resolveCurriculumIdForUser, sessionTenant } from "@/lib/curriculum-access";
 import { canOpenAdminPage, isAdministratorRole } from "@/lib/roles";
 import { and, asc, eq } from "drizzle-orm";
@@ -33,9 +33,11 @@ export default async function AdminPage() {
           username: users.username,
           role: users.role,
           displayName: users.displayName,
+          schoolId: users.schoolId,
+          schoolName: schools.name,
         })
         .from(users)
-        .where(eq(users.schoolId, context.schoolId))
+        .innerJoin(schools, eq(users.schoolId, schools.id))
         .orderBy(asc(users.id))
     : [];
 
