@@ -24,9 +24,12 @@ function groupNameFor(conceptId: number) {
 async function seed() {
   await db.insert(schools).values({
     id: DEFAULT_SCHOOL_ID,
-    name: "기본 학교",
-    code: "default",
-  }).onConflictDoNothing();
+    name: "서대전여자고등학교",
+    code: "서대전여고",
+  }).onConflictDoUpdate({
+    target: schools.id,
+    set: { name: "서대전여자고등학교", code: "서대전여고" },
+  });
 
   await db.insert(curriculumSets).values({
     id: DEFAULT_CURRICULUM_ID,

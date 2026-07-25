@@ -8,7 +8,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        schoolCode: { label: "학교 코드", type: "text" },
+        schoolCode: { label: "학교명", type: "text" },
         username: { label: "아이디", type: "text" },
         password: { label: "비밀번호", type: "password" },
       },
@@ -34,7 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               .where(eq(users.username, username))
               .limit(2);
 
-        // 학교 코드가 없어도 동일 아이디가 한 학교에만 존재하면 기존 방식으로 로그인할 수 있습니다.
+        // 학교명이 없어도 동일 아이디가 한 학교에만 존재하면 기존 방식으로 로그인할 수 있습니다.
         if (candidates.length !== 1) return null;
         const user = candidates[0].user;
 

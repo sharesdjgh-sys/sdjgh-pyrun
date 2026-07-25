@@ -61,13 +61,13 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>학교 코드</label>
+            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>학교명</label>
             <input
               type="text"
               value={form.schoolCode}
               onChange={(e) => setForm({ ...form, schoolCode: e.target.value })}
               style={inputStyle}
-              placeholder="학교에서 안내받은 코드"
+              placeholder="예: 서대전여고"
               required
             />
 

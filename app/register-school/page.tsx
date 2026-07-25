@@ -55,10 +55,10 @@ export default function RegisterSchoolPage() {
         </p>
         {error && <div style={{ marginBottom: 16, padding: 11, borderRadius: 10, background: "#FFF0F4", color: "#E23E70", fontSize: 13 }}>{error}</div>}
         <form onSubmit={submit}>
-          <label style={{ fontSize: 12.5, color: "#776F91", fontWeight: 700 }}>학교 이름</label>
+          <label style={{ fontSize: 12.5, color: "#776F91", fontWeight: 700 }}>학교 정식 명칭</label>
           <input style={inputStyle} value={form.schoolName} onChange={(event) => setForm({ ...form, schoolName: event.target.value })} placeholder="예: 새봄중학교" required />
-          <label style={{ fontSize: 12.5, color: "#776F91", fontWeight: 700 }}>학교 코드</label>
-          <input style={inputStyle} value={form.schoolCode} onChange={(event) => setForm({ ...form, schoolCode: event.target.value.toLowerCase() })} placeholder="예: saebom-middle" pattern="[a-z0-9-]{3,40}" required />
+          <label style={{ fontSize: 12.5, color: "#776F91", fontWeight: 700 }}>로그인 학교명</label>
+          <input style={inputStyle} value={form.schoolCode} onChange={(event) => setForm({ ...form, schoolCode: event.target.value.toLowerCase() })} placeholder="예: 대신고" pattern="[가-힣a-z0-9-]{2,40}" required />
           <label style={{ fontSize: 12.5, color: "#776F91", fontWeight: 700 }}>관리자 이름</label>
           <input style={inputStyle} value={form.displayName} onChange={(event) => setForm({ ...form, displayName: event.target.value })} placeholder="예: 김선생" required />
           <label style={{ fontSize: 12.5, color: "#776F91", fontWeight: 700 }}>관리자 아이디</label>

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const { username, password, displayName } = validateRegistration(body);
     const schoolCode = typeof body.schoolCode === "string" && body.schoolCode.trim()
       ? body.schoolCode.trim().toLowerCase()
-      : "default";
+      : "서대전여고";
 
     const [school] = await db
       .select({ id: schools.id })
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       .where(eq(schools.code, schoolCode))
       .limit(1);
     if (!school) {
-      return NextResponse.json({ error: "등록되지 않은 학교 코드입니다." }, { status: 400 });
+      return NextResponse.json({ error: "등록되지 않은 학교명입니다." }, { status: 400 });
     }
 
     const existing = await db

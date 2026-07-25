@@ -76,14 +76,15 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>학교 코드</label>
+            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>학교명</label>
             <input
               type="text"
               value={schoolCode}
               onChange={(e) => setSchoolCode(e.target.value)}
               style={{ width: "100%", padding: "14px 16px", border: "2px solid #ECE7F8", borderRadius: 14, background: "#FBFAFF", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 16 }}
-              placeholder="기존 사용자는 생략할 수 있어요"
+              placeholder="예: 서대전여고"
               autoComplete="organization"
+              required
             />
 
             <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>아이디</label>

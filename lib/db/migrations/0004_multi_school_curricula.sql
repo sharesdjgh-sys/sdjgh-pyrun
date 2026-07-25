@@ -6,8 +6,13 @@ CREATE TABLE IF NOT EXISTS "schools" (
 );
 
 INSERT INTO "schools" ("id", "name", "code")
-VALUES (1, '기본 학교', 'default')
-ON CONFLICT ("id") DO NOTHING;
+VALUES (1, '서대전여자고등학교', '서대전여고')
+ON CONFLICT ("id") DO UPDATE
+SET "name" = EXCLUDED."name", "code" = EXCLUDED."code";
+
+UPDATE "schools"
+SET "name" = '서대전여자고등학교', "code" = '서대전여고'
+WHERE "id" = 1 AND "code" = 'default';
 
 SELECT setval(
   pg_get_serial_sequence('"schools"', 'id'),

@@ -27,14 +27,14 @@ export async function POST(req: NextRequest) {
     if (schoolName.length < 2) {
       return NextResponse.json({ error: "학교 이름을 2자 이상 입력해주세요." }, { status: 400 });
     }
-    if (!/^[a-z0-9-]{3,40}$/.test(schoolCode)) {
+    if (!/^[가-힣a-z0-9-]{2,40}$/.test(schoolCode)) {
       return NextResponse.json(
-        { error: "학교 코드는 영문 소문자, 숫자, 하이픈으로 3~40자여야 합니다." },
+        { error: "로그인 학교명은 한글 학교 이름 또는 영문·숫자·하이픈으로 2~40자여야 합니다." },
         { status: 400 }
       );
     }
-    if (schoolCode === "default") {
-      return NextResponse.json({ error: "사용할 수 없는 학교 코드입니다." }, { status: 400 });
+    if (schoolCode === "default" || schoolCode === "서대전여고") {
+      return NextResponse.json({ error: "사용할 수 없는 학교명입니다." }, { status: 400 });
     }
 
     const [existingSchool] = await db
@@ -43,14 +43,14 @@ export async function POST(req: NextRequest) {
       .where(eq(schools.code, schoolCode))
       .limit(1);
     if (existingSchool) {
-      return NextResponse.json({ error: "이미 사용 중인 학교 코드입니다." }, { status: 409 });
+      return NextResponse.json({ error: "이미 등록된 로그인 학교명입니다." }, { status: 409 });
     }
 
     const [template] = await db
       .select({ curriculumId: curriculumSets.id })
       .from(curriculumSets)
       .innerJoin(schools, eq(curriculumSets.schoolId, schools.id))
-      .where(and(eq(schools.code, "default"), eq(curriculumSets.isDefault, true)))
+      .where(and(eq(schools.code, "서대전여고"), eq(curriculumSets.isDefault, true)))
       .limit(1);
     if (!template) {
       return NextResponse.json({ error: "기본 커리큘럼을 찾을 수 없습니다." }, { status: 500 });
