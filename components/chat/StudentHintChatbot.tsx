@@ -11,6 +11,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { getStudentAddress } from "@/lib/student-name";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -129,6 +130,7 @@ function AssistantMessageContent({ content }: { content: string }) {
 }
 
 interface StudentHintChatbotProps {
+  studentName: string;
   conceptName: string;
   conceptDescription: string;
   code: string;
@@ -136,9 +138,12 @@ interface StudentHintChatbotProps {
   error: string;
 }
 
-const WELCOME_MESSAGE = `안녕하세요! 나는 파이런 힌트봇이에요.
+function createWelcomeMessage(studentName: string) {
+  const greeting = `안녕하세요, ${getStudentAddress(studentName)}!`;
+  return `${greeting} 나는 파이쌤이에요.
 
 정답을 대신 풀어주지는 않지만, 어디를 살펴봐야 하는지와 필요한 개념을 차근차근 알려줄게요.`;
+}
 
 const QUICK_QUESTIONS = [
   "어디에서 실수했는지 알려줘",
@@ -147,15 +152,17 @@ const QUICK_QUESTIONS = [
 ];
 
 export default function StudentHintChatbot({
+  studentName,
   conceptName,
   conceptDescription,
   code,
   output,
   error,
 }: StudentHintChatbotProps) {
+  const welcomeMessage = createWelcomeMessage(studentName);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: WELCOME_MESSAGE },
+    { role: "assistant", content: welcomeMessage },
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -216,7 +223,7 @@ export default function StudentHintChatbot({
   }
 
   function resetChat() {
-    setMessages([{ role: "assistant", content: WELCOME_MESSAGE }]);
+    setMessages([{ role: "assistant", content: welcomeMessage }]);
     setInput("");
   }
 
@@ -225,31 +232,31 @@ export default function StudentHintChatbot({
       {open && (
         <section
           className="student-hint-chat-panel"
-          aria-label="파이런 힌트봇"
+          aria-label="파이쌤"
           style={{
             position: "fixed",
             right: 20,
-            bottom: 108,
+            bottom: 74,
             width: 530,
-            height: 560,
+            height: 594,
             maxWidth: "calc(100vw - 40px)",
-            maxHeight: "calc(100vh - 132px)",
+            maxHeight: "calc(100vh - 98px)",
             zIndex: 100,
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
             border: "1px solid #DED3FA",
-            borderRadius: 24,
+            borderRadius: "24px 24px 12px 24px",
             background: "#fff",
             boxShadow: "0 22px 60px rgba(69,45,150,.24)",
           }}
         >
           <header style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 14px", background: "linear-gradient(135deg,#F5F0FF,#EEE7FF)", borderBottom: "1px solid #E8DFFC" }}>
-            <div style={{ width: 45, height: 45, display: "grid", placeItems: "center", overflow: "hidden", borderRadius: 14, background: "#fff", boxShadow: "0 5px 14px rgba(123,92,240,.16)" }}>
-              <Image src="/pyrun_studio-favicon.png" alt="" width={45} height={38} style={{ objectFit: "contain" }} />
+            <div style={{ width: 38, height: 38, display: "grid", placeItems: "center", overflow: "hidden", borderRadius: 12, background: "#fff", boxShadow: "0 5px 14px rgba(123,92,240,.16)" }}>
+              <Image src="/pyrun_studio-favicon.png" alt="" width={36} height={31} style={{ objectFit: "contain" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: "#3D2E8A", fontSize: 15, fontWeight: 900 }}>파이런 힌트봇</div>
+              <div style={{ color: "#3D2E8A", fontSize: 15, fontWeight: 900 }}>파이쌤</div>
               <div style={{ marginTop: 2, color: "#82769F", fontSize: 11.5 }}>정답 대신 생각할 수 있는 힌트를 줄게요</div>
             </div>
             <button onClick={resetChat} aria-label="대화 지우기" title="대화 지우기" style={{ width: 32, height: 32, display: "grid", placeItems: "center", border: 0, borderRadius: 9, background: "rgba(255,255,255,.7)", color: "#887BA7", cursor: "pointer" }}>
@@ -315,21 +322,21 @@ export default function StudentHintChatbot({
                 value={input}
                 onChange={(event) => setInput(event.target.value.slice(0, 1_000))}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
+                  if (event.key === "Enter" && event.ctrlKey) {
                     event.preventDefault();
                     void sendMessage();
                   }
                 }}
-                rows={2}
+                rows={3}
                 placeholder="막힌 부분을 물어보세요"
                 aria-label="챗봇 질문"
-                style={{ flex: 1, minWidth: 0, maxHeight: 80, resize: "none", border: 0, outline: 0, background: "transparent", color: "#403755", fontFamily: "inherit", fontSize: 12.5, lineHeight: 1.4 }}
+                style={{ flex: 1, minWidth: 0, minHeight: 60, maxHeight: 180, overflowY: "auto", resize: "vertical", border: 0, outline: 0, background: "transparent", color: "#403755", fontFamily: "inherit", fontSize: 12.5, lineHeight: 1.5 }}
               />
               <button onClick={() => void sendMessage()} disabled={!input.trim() || sending} aria-label="질문 보내기" style={{ width: 36, height: 36, flex: "none", display: "grid", placeItems: "center", border: 0, borderRadius: 11, background: !input.trim() || sending ? "#D9D1EC" : "#7B5CF0", color: "#fff", cursor: !input.trim() || sending ? "not-allowed" : "pointer" }}>
                 <Send size={16} />
               </button>
             </div>
-            <div style={{ marginTop: 6, textAlign: "center", color: "#A59CB9", fontSize: 9.5 }}>힌트를 참고해 직접 코드를 고쳐보세요.</div>
+            <div style={{ marginTop: 6, textAlign: "center", color: "#A59CB9", fontSize: 9.5 }}>Enter로 줄바꿈 · Ctrl + Enter로 질문 보내기</div>
           </div>
         </section>
       )}
@@ -345,19 +352,21 @@ export default function StudentHintChatbot({
             aria-label={open ? "챗봇 닫기" : "힌트 챗봇 열기"}
             aria-expanded={open}
             style={{
-              width: 78,
-              height: 78,
+              width: 65,
+              height: 65,
               display: "grid",
               placeItems: "center",
               overflow: "hidden",
-              border: "3px solid #fff",
-              borderRadius: 24,
+              border: open ? "3px solid #DED3FA" : "3px solid #fff",
+              borderRadius: 20,
               background: "linear-gradient(145deg,#F7F3FF,#E9DEFF)",
-              boxShadow: "0 12px 30px rgba(100,65,209,.3)",
+              boxShadow: open
+                ? "0 8px 18px rgba(100,65,209,.22)"
+                : "0 12px 30px rgba(100,65,209,.3)",
               cursor: "pointer",
             }}
           >
-            <Image src="/pyrun_studio-favicon.png" alt="파이런 힌트봇" width={74} height={64} priority style={{ objectFit: "contain" }} />
+            <Image src="/pyrun_studio-favicon.png" alt="파이쌤" width={61} height={53} priority style={{ objectFit: "contain" }} />
           </button>
       </div>
     </>

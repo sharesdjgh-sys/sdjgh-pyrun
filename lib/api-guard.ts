@@ -61,6 +61,17 @@ export function validateFeedback(input: unknown) {
   };
 }
 
+export function validateExtraPracticeRequest(input: unknown) {
+  if (!input || typeof input !== "object") {
+    throw new RequestValidationError("요청 형식이 올바르지 않습니다.");
+  }
+  const conceptId = (input as Record<string, unknown>).conceptId;
+  if (typeof conceptId !== "number" || !Number.isInteger(conceptId) || conceptId < 0) {
+    throw new RequestValidationError("단원 정보가 올바르지 않습니다.");
+  }
+  return { conceptId };
+}
+
 export type StudentChatMessage = {
   role: "user" | "assistant";
   content: string;

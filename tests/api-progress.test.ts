@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   RequestValidationError,
   sanitizeStudentHintPart,
+  validateExtraPracticeRequest,
   validateFeedback,
   validateRegistration,
   validateStudentChat,
@@ -21,6 +22,7 @@ import { curriculumLevelOrders } from "../lib/curriculum-model";
 import { canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
 import { createStudentPracticeTemplate } from "../lib/practice-template";
+import { getStudentAddress, getStudentCallName } from "../lib/student-name";
 
 test("authentication helper rejects missing and malformed sessions", () => {
   assert.equal(authenticatedUserId(null), null);
@@ -175,6 +177,13 @@ test("feedback validation accepts optional practiceConceptId", () => {
   assert.throws(() => validateFeedback({ ...base, practiceConceptId: "3" }), RequestValidationError);
 });
 
+test("extra practice generation requires a valid concept ID", () => {
+  assert.deepEqual(validateExtraPracticeRequest({ conceptId: 12 }), { conceptId: 12 });
+  assert.equal(validateExtraPracticeRequest({ conceptId: 0 }).conceptId, 0);
+  assert.throws(() => validateExtraPracticeRequest({ conceptId: -1 }), RequestValidationError);
+  assert.throws(() => validateExtraPracticeRequest({ conceptId: "12" }), RequestValidationError);
+});
+
 test("student hint chat validates short conversations and removes answer code", () => {
   const parsed = validateStudentChat({
     messages: [{ role: "user", content: "왜 오류가 나나요?" }],
@@ -191,4 +200,10 @@ test("student hint chat validates short conversations and removes answer code", 
   const sanitized = sanitizeStudentHintPart("개념을 먼저 확인해요.\n```python\nanswer = 42\nprint(answer)\n```\nanswer = 42");
   assert.equal(sanitized, "개념을 먼저 확인해요.");
   assert.equal(sanitizeStudentHintPart("`print(value)`를 그대로 쓰세요"), "문법 형태를 그대로 쓰세요");
+});
+
+test("student names use a friendly teacher-style address", () => {
+  assert.equal(getStudentCallName("이도윤"), "도윤");
+  assert.equal(getStudentAddress("이도윤"), "도윤 학생");
+  assert.equal(getStudentAddress("학생"), "학생");
 });

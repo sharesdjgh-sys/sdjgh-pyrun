@@ -26,7 +26,7 @@ export default function LoginPage() {
     const result = await signIn("credentials", { schoolCode, username, password, redirect: false });
     setLoading(false);
     if (result?.error) {
-      setError("아이디 또는 비밀번호가 올바르지 않습니다.");
+      setError("학번 또는 비밀번호가 올바르지 않습니다.");
     } else {
       router.push("/learn");
     }
@@ -87,7 +87,7 @@ export default function LoginPage() {
               required
             />
 
-            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>아이디</label>
+            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>학번</label>
             <input
               type="text"
               value={username}
@@ -95,7 +95,7 @@ export default function LoginPage() {
               style={{ width: "100%", padding: "14px 16px", border: "2px solid #ECE7F8", borderRadius: 14, background: "#FBFAFF", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 16 }}
               onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
               onBlur={(e) => { e.target.style.borderColor = "#ECE7F8"; e.target.style.background = "#FBFAFF"; }}
-              placeholder="아이디를 입력하세요"
+              placeholder="학번을 입력하세요"
               required
             />
 

@@ -16,7 +16,7 @@ import Header from "@/components/layout/Header";
 import StudentHintChatbot from "@/components/chat/StudentHintChatbot";
 import type { CurriculumItem } from "@/lib/curriculum";
 import { curriculumLevelOrders, groupCurriculumUnits, type CurriculumView } from "@/lib/curriculum-model";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Lock, Check } from "lucide-react";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Lock, Check, Sparkles } from "lucide-react";
 import Image from "next/image";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
@@ -399,6 +399,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   const [selectedConceptId, setSelectedConceptId] = useState(0);
   // 지금 에디터에 로드된 연습문제의 개념 ID. 문제 풀이 중일 때만 서버 채점을 요청한다.
   const [practiceConceptId, setPracticeConceptId] = useState<number | null>(null);
+  const [generatingAiPractice, setGeneratingAiPractice] = useState(false);
   // 클리어(뱃지 획득)한 개념 목록. 순차 잠금 해제의 기준.
   const [clearedConceptIds, setClearedConceptIds] = useState<Set<number>>(new Set());
   const [manuallyUnlockedConceptIds, setManuallyUnlockedConceptIds] = useState<Set<number>>(new Set());
@@ -703,6 +704,58 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       setPracticeConceptId(selectedConceptId);
     }
   }, [mode, selectedConceptId, selectedLv3ConceptId, curriculum]);
+
+  const handleGenerateAiPractice = useCallback(async () => {
+    if (mode === "mechdog" || generatingAiPractice) return;
+    const conceptId = mode === "lv3" ? selectedLv3ConceptId : selectedConceptId;
+    setGeneratingAiPractice(true);
+    setShowSpeech(false);
+
+    try {
+      const response = await fetch("/api/practice/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conceptId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || typeof data.starterCode !== "string") {
+        throw new Error(
+          typeof data.error === "string" ? data.error : "추가 문제를 만들지 못했습니다."
+        );
+      }
+
+      setCode(data.starterCode);
+      // AI 추가 문제는 자유 연습이며 필수 문제의 뱃지 판정과 분리한다.
+      setPracticeConceptId(null);
+      setOutput("");
+      setExecError("");
+      setHasRun(false);
+      setShowOutput(false);
+      setPendingFeedback(null);
+      setCommands([]);
+      setShowVariable(false);
+      setIsError(false);
+      setPlots([]);
+      showSpeechBubble(
+        `${userName}, ${data.title || "새로운 추가 문제"}를 준비했어! 편집기의 조건을 읽고 천천히 풀어보자.`,
+        7000
+      );
+    } catch (error) {
+      showSpeechBubble(
+        error instanceof Error ? error.message : "추가 문제를 만들지 못했습니다.",
+        7000
+      );
+    } finally {
+      setGeneratingAiPractice(false);
+    }
+  }, [
+    generatingAiPractice,
+    mode,
+    selectedConceptId,
+    selectedLv3ConceptId,
+    showSpeechBubble,
+    userName,
+  ]);
 
   const handleReset = useCallback(() => {
     setPracticeConceptId(null);
@@ -1270,6 +1323,40 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                 문제 풀기
               </button>
 
+              {/* Generate extra AI practice */}
+              <button
+                onClick={() => void handleGenerateAiPractice()}
+                disabled={mode === "mechdog" || generatingAiPractice}
+                title={mode === "mechdog" ? "파이썬 단원에서 사용할 수 있어요." : "현재 단원의 새로운 추가 문제 만들기"}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "11px 16px",
+                  border: "1.5px solid #E4DBFF",
+                  borderRadius: 13,
+                  background: generatingAiPractice ? "#F4F0FC" : "#fff",
+                  color: mode === "mechdog" ? "#B8B0CA" : "#7B5CF0",
+                  fontWeight: 700,
+                  fontSize: 13.5,
+                  cursor: mode === "mechdog" || generatingAiPractice ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                  transition: "background .13s",
+                  opacity: mode === "mechdog" ? 0.65 : 1,
+                }}
+                onMouseEnter={(event) => {
+                  if (mode !== "mechdog" && !generatingAiPractice) {
+                    event.currentTarget.style.background = "#F6F2FE";
+                  }
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.background = generatingAiPractice ? "#F4F0FC" : "#fff";
+                }}
+              >
+                <Sparkles size={15} strokeWidth={2.2} />
+                {generatingAiPractice ? "문제 만드는 중..." : "AI 추가 문제"}
+              </button>
+
               {/* Output toggle */}
               {hasRun && (
                 <button
@@ -1611,6 +1698,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
 
       {isStudent && (
         <StudentHintChatbot
+          studentName={userName}
           conceptName={displayConcept?.nameKo ?? "자유 학습"}
           conceptDescription={displayConcept?.explanation ?? ""}
           code={code}
@@ -1620,7 +1708,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       )}
 
       {/* 제작사 로고 */}
-      <div style={{ position: "fixed", bottom: 14, right: isStudent ? 112 : 18, zIndex: 5, opacity: 0.6 }}>
+      <div style={{ position: "fixed", bottom: 14, right: isStudent ? 99 : 18, zIndex: 5, opacity: 0.6 }}>
         <Image
           src="/lifeprofessor-logo.png"
           alt="인생교수의 AI 연구소"

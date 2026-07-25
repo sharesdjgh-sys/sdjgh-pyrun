@@ -3,9 +3,11 @@ import { auth } from "@/lib/auth";
 import { rateLimit, RequestValidationError, validateStudentChat } from "@/lib/api-guard";
 import { sessionTenant } from "@/lib/curriculum-access";
 import { generateStudentHintChat } from "@/lib/gemini";
+import { getStudentAddress } from "@/lib/student-name";
 
 export async function POST(req: NextRequest) {
-  const context = sessionTenant(await auth());
+  const session = await auth();
+  const context = sessionTenant(session);
   if (!context) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
@@ -20,7 +22,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const input = validateStudentChat(await req.json());
-    const answer = await generateStudentHintChat(input);
+    const answer = await generateStudentHintChat({
+      ...input,
+      studentName: getStudentAddress(session?.user?.name),
+    });
     return NextResponse.json({ answer });
   } catch (error) {
     if (error instanceof RequestValidationError) {
