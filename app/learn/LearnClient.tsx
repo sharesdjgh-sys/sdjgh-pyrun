@@ -13,8 +13,9 @@ import DataVizPanel from "@/components/editor/DataVizPanel";
 import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
+import StudentHintChatbot from "@/components/chat/StudentHintChatbot";
 import type { CurriculumItem } from "@/lib/curriculum";
-import { groupCurriculumUnits, type CurriculumView } from "@/lib/curriculum-model";
+import { curriculumLevelOrders, groupCurriculumUnits, type CurriculumView } from "@/lib/curriculum-model";
 import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Lock, Check } from "lucide-react";
 import Image from "next/image";
 
@@ -411,12 +412,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   const [selectedLv3ConceptId, setSelectedLv3ConceptId] = useState(31);
 
   const levelOrders = useMemo(
-    () => [1, 2, 3]
-      .map((level) => curriculumView.units
-        .filter((unit) => unit.level === level)
-        .sort((a, b) => a.orderIndex - b.orderIndex)
-        .map((unit) => unit.id))
-      .filter((order) => order.length > 0),
+    () => curriculumLevelOrders(curriculumView.units),
     [curriculumView.units]
   );
   const currentLevel = mode === "lv3" ? 3 : mode === "lv2" ? 2 : 1;
@@ -849,7 +845,8 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                     if (!badge) return null;
                     const selected = id === selectedLv3ConceptId;
                     const cleared = isStudent && clearedConceptIds.has(id);
-                    const unlocked = !isStudent || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders);
+                    const unit = curriculumView.units.find((item) => item.id === id);
+                    const unlocked = !isStudent || unit?.sourceConceptId === 0 || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders);
                     return (
                       <button
                         key={id}
@@ -954,7 +951,8 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                     const name = badge.nameKo.replace(" 마스터", "");
                     const selected = id === selectedConceptId;
                     const cleared = isStudent && clearedConceptIds.has(id);
-                    const unlocked = !isStudent || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders);
+                    const unit = curriculumView.units.find((item) => item.id === id);
+                    const unlocked = !isStudent || unit?.sourceConceptId === 0 || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders);
                     return (
                       <button
                         key={id}
@@ -1611,8 +1609,18 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
         onNext={handleGoNextConcept}
       />
 
+      {isStudent && (
+        <StudentHintChatbot
+          conceptName={displayConcept?.nameKo ?? "자유 학습"}
+          conceptDescription={displayConcept?.explanation ?? ""}
+          code={code}
+          output={output}
+          error={execError}
+        />
+      )}
+
       {/* 제작사 로고 */}
-      <div style={{ position: "fixed", bottom: 14, right: 18, zIndex: 5, opacity: 0.6 }}>
+      <div style={{ position: "fixed", bottom: 14, right: isStudent ? 112 : 18, zIndex: 5, opacity: 0.6 }}>
         <Image
           src="/lifeprofessor-logo.png"
           alt="인생교수의 AI 연구소"

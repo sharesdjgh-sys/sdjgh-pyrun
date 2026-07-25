@@ -37,6 +37,9 @@ export async function POST(req: NextRequest) {
       });
     }
     const { code, stdout, stderr, isSuccess, practiceConceptId } = validateFeedback(await req.json());
+    const practiceUnit = practiceConceptId === null
+      ? undefined
+      : curriculumUnits.find((unit) => unit.id === practiceConceptId);
 
     // Server-side re-parse (don't trust client-sent concept IDs)
     const parseResult = parsePython(code || "");
@@ -84,7 +87,11 @@ export async function POST(req: NextRequest) {
       const accessIds = effectiveConceptAccessIdsForOrders(clearedIds, manuallyUnlockedIds, orders);
 
       // 학생에게만 순차 잠금을 적용한다. 교사와 관리자는 모든 문제를 자유롭게 확인할 수 있다.
-      if (!isStudent || isConceptUnlockedInOrders(practiceConceptId, accessIds, orders)) {
+      if (
+        !isStudent ||
+        practiceUnit?.sourceConceptId === 0 ||
+        isConceptUnlockedInOrders(practiceConceptId, accessIds, orders)
+      ) {
         const [concept] = await db
           .select({ nameKo: concepts.nameKo, practiceCode: concepts.practiceCode })
           .from(concepts)

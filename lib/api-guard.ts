@@ -60,3 +60,64 @@ export function validateFeedback(input: unknown) {
     practiceConceptId,
   };
 }
+
+export type StudentChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export function validateStudentChat(input: unknown) {
+  if (!input || typeof input !== "object") {
+    throw new RequestValidationError("요청 형식이 올바르지 않습니다.");
+  }
+  const data = input as Record<string, unknown>;
+  if (!Array.isArray(data.messages) || data.messages.length < 1 || data.messages.length > 10) {
+    throw new RequestValidationError("대화는 1~10개 메시지만 보낼 수 있습니다.");
+  }
+
+  const messages = data.messages.map((item) => {
+    if (!item || typeof item !== "object") {
+      throw new RequestValidationError("대화 형식이 올바르지 않습니다.");
+    }
+    const message = item as Record<string, unknown>;
+    if (message.role !== "user" && message.role !== "assistant") {
+      throw new RequestValidationError("대화 역할이 올바르지 않습니다.");
+    }
+    return {
+      role: message.role,
+      content: requiredString(message.content, "메시지", 1, 1_000),
+    } satisfies StudentChatMessage;
+  });
+
+  const context = data.context && typeof data.context === "object"
+    ? data.context as Record<string, unknown>
+    : {};
+  const clipped = (value: unknown, max: number) =>
+    typeof value === "string" ? value.trim().slice(0, max) : "";
+
+  return {
+    messages,
+    context: {
+      conceptName: clipped(context.conceptName, 100),
+      conceptDescription: clipped(context.conceptDescription, 1_000),
+      code: clipped(context.code, 8_000),
+      output: clipped(context.output, 2_000),
+      error: clipped(context.error, 2_000),
+    },
+  };
+}
+
+export function sanitizeStudentHintPart(value: unknown) {
+  if (typeof value !== "string") return "";
+  const withoutBlocks = value
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`\n]+`/g, "문법 형태");
+  const codeLine = /^\s*(?:import\s|from\s|def\s|class\s|for\s|while\s|if\s|elif\s|else\s*:|try\s*:|except\b|with\s|return\b|print\s*\(|[A-Za-z_]\w*\s*=)/;
+  return withoutBlocks
+    .split(/\r?\n/)
+    .filter((line) => !codeLine.test(line))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 700);
+}

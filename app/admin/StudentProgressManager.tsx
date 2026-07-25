@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { groupCurriculumUnits, type LearningUnitMeta } from "@/lib/curriculum-model";
+import { curriculumLevelOrders, groupCurriculumUnits, type LearningUnitMeta } from "@/lib/curriculum-model";
 import {
   effectiveConceptAccessIdsForOrders,
   isConceptUnlockedInOrders,
@@ -133,12 +133,7 @@ export default function StudentProgressManager() {
   const selectedCurriculum = curriculumForStudent(selectedStudent);
   const curriculumUnits = selectedCurriculum?.units ?? [];
   const curriculumUnitIds = new Set(curriculumUnits.map((unit) => unit.id));
-  const conceptOrders = [1, 2, 3]
-    .map((levelNumber) => curriculumUnits
-      .filter((unit) => unit.level === levelNumber)
-      .sort((a, b) => a.orderIndex - b.orderIndex)
-      .map((unit) => unit.id))
-    .filter((order) => order.length > 0);
+  const conceptOrders = curriculumLevelOrders(curriculumUnits);
   const visibleGroups = groupCurriculumUnits(curriculumUnits, level);
   const clearedIds = new Set(selectedStudent?.clearedConceptIds ?? []);
   const manualUnlockIds = new Set(selectedStudent?.manuallyUnlockedConceptIds ?? []);
@@ -282,12 +277,15 @@ export default function StudentProgressManager() {
                   <div key={group.label}>
                     <div style={{ marginBottom: 5, fontSize: 11.5, fontWeight: 800, color: group.color }}>{group.label}</div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 6 }}>
-                      {group.ids.filter((id) => id !== 0).map((conceptId) => {
+                      {group.ids.filter((id) =>
+                        curriculumUnits.find((unit) => unit.id === id)?.sourceConceptId !== 0
+                      ).map((conceptId) => {
                         const concept = curriculumUnits.find((item) => item.id === conceptId);
                         if (!concept) return null;
                         const cleared = clearedIds.has(conceptId);
                         const directlyUnlocked = manualUnlockIds.has(conceptId);
-                        const accessible = isConceptUnlockedInOrders(conceptId, accessIds, conceptOrders);
+                        const accessible = concept.sourceConceptId === 0 ||
+                          isConceptUnlockedInOrders(conceptId, accessIds, conceptOrders);
                         const canUnlock = !cleared && !accessible;
 
                         return (

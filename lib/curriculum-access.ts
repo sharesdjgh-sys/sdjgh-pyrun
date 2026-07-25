@@ -8,6 +8,7 @@ import {
   users,
 } from "@/lib/db/schema";
 import { isAdministratorRole, isStudentRole } from "@/lib/roles";
+import { curriculumLevelOrders } from "@/lib/curriculum-model";
 
 export type SessionTenant = {
   userId: number;
@@ -131,14 +132,13 @@ export async function getCurriculumUnits(curriculumId: number, includeInactive =
     .orderBy(asc(concepts.level), asc(concepts.orderIndex), asc(concepts.id));
 }
 
-export function curriculumOrders(units: Array<{ id: number; level: number; orderIndex: number }>): number[][] {
-  const levels = new Map<number, Array<{ id: number; orderIndex: number }>>();
-  for (const unit of units) {
-    const list = levels.get(unit.level) ?? [];
-    list.push(unit);
-    levels.set(unit.level, list);
-  }
-  return [...levels.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([, list]) => list.sort((a, b) => a.orderIndex - b.orderIndex).map((item) => item.id));
+export function curriculumOrders(
+  units: Array<{
+    id: number;
+    sourceConceptId?: number | null;
+    level: number;
+    orderIndex: number;
+  }>,
+): number[][] {
+  return curriculumLevelOrders(units);
 }

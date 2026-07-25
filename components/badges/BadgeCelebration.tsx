@@ -66,7 +66,11 @@ export default function BadgeCelebration({
   const Icon = firstBadge ? (ICON_MAP[firstBadge.iconName] || Terminal) : Terminal;
   const hex = firstBadge ? (COLOR_HEX[firstBadge.colorClass] || "#18C99A") : "#18C99A";
 
-  const nextId = firstBadge ? nextConceptIdInOrders(firstBadge.id, conceptOrders) : null;
+  const nextId = firstBadge
+    ? firstBadge.sourceConceptId === 0
+      ? (conceptOrders[0]?.[0] ?? null)
+      : nextConceptIdInOrders(firstBadge.id, conceptOrders)
+    : null;
   const nextBadge = nextId !== null ? badges.find((b) => b.id === nextId) : undefined;
 
   return (

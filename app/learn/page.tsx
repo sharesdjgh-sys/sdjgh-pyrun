@@ -41,6 +41,7 @@ export default async function LearnPage() {
     name: curriculumSet?.name ?? "배정된 커리큘럼 없음",
     units: rows.map((row) => ({
       id: row.id,
+      sourceConceptId: row.sourceConceptId,
       level: row.level,
       groupName: row.groupName,
       orderIndex: row.orderIndex,
