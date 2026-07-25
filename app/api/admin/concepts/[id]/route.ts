@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
-import { concepts } from "@/lib/db/schema";
-import { canOpenAdminPage } from "@/lib/roles";
-import { eq } from "drizzle-orm";
+import { concepts, curriculumSets } from "@/lib/db/schema";
+import { sessionTenant } from "@/lib/curriculum-access";
+import { isAdministratorRole } from "@/lib/roles";
+import { and, eq } from "drizzle-orm";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  const role = (session?.user as { role?: string } | undefined)?.role;
-  if (!session || !canOpenAdminPage(role)) {
+  const context = sessionTenant(await auth());
+  if (!context || !isAdministratorRole(context.role)) {
     return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
   }
 
   const { id } = await params;
   const conceptId = Number(id);
-  if (!Number.isInteger(conceptId) || conceptId < 0 || conceptId > 40) {
+  if (!Number.isInteger(conceptId) || conceptId < 0) {
     return NextResponse.json({ error: "잘못된 개념 ID입니다." }, { status: 400 });
   }
 
@@ -32,6 +32,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "변경할 내용이 없습니다." }, { status: 400 });
   }
 
-  await db.update(concepts).set(updateData).where(eq(concepts.id, conceptId));
+  const [ownedConcept] = await db
+    .select({ id: concepts.id })
+    .from(concepts)
+    .innerJoin(curriculumSets, eq(concepts.curriculumId, curriculumSets.id))
+    .where(and(eq(concepts.id, conceptId), eq(curriculumSets.schoolId, context.schoolId)))
+    .limit(1);
+  if (!ownedConcept) {
+    return NextResponse.json({ error: "단원을 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  await db.update(concepts).set(updateData).where(eq(concepts.id, ownedConcept.id));
   return NextResponse.json({ ok: true });
 }

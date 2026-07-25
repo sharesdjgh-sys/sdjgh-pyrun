@@ -7,13 +7,24 @@ import {
   integer,
   boolean,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
+
+export const schools = pgTable("schools", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  code: varchar("code", { length: 40 }).notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 export const users = pgTable(
   "users",
   {
     id: serial("id").primaryKey(),
-    username: varchar("username", { length: 50 }).notNull().unique(),
+    schoolId: integer("school_id")
+      .notNull()
+      .references(() => schools.id),
+    username: varchar("username", { length: 50 }).notNull(),
     passwordHash: text("password_hash").notNull(),
     role: varchar("role", { length: 20 }).notNull().default("student"),
     displayName: varchar("display_name", { length: 100 }),
@@ -24,7 +35,9 @@ export const users = pgTable(
     createdAt: timestamp("created_at").defaultNow(),
   },
   (table) => ({
-    studentNumberUnique: uniqueIndex("users_student_number_unique").on(table.studentNumber),
+    studentNumberUnique: uniqueIndex("users_school_student_number_unique").on(table.schoolId, table.studentNumber),
+    schoolUsernameUnique: uniqueIndex("users_school_username_unique").on(table.schoolId, table.username),
+    schoolRoleIndex: index("users_school_role_index").on(table.schoolId, table.role),
   })
 );
 
@@ -48,16 +61,53 @@ export const teacherClassAssignments = pgTable(
   })
 );
 
-export const concepts = pgTable("concepts", {
-  id: serial("id").primaryKey(),
-  nameKo: varchar("name_ko", { length: 50 }).notNull(),
-  nameEn: varchar("name_en", { length: 50 }).notNull(),
-  orderIndex: integer("order_index").notNull(),
-  description: text("description"),
-  level: integer("level").notNull().default(1),
-  exampleCode: text("example_code"),
-  practiceCode: text("practice_code"),
-});
+export const curriculumSets = pgTable(
+  "curriculum_sets",
+  {
+    id: serial("id").primaryKey(),
+    schoolId: integer("school_id")
+      .notNull()
+      .references(() => schools.id, { onDelete: "cascade" }),
+    ownerTeacherId: integer("owner_teacher_id").references(() => users.id, { onDelete: "set null" }),
+    name: varchar("name", { length: 120 }).notNull(),
+    description: text("description"),
+    isDefault: boolean("is_default").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    schoolIndex: index("curriculum_sets_school_index").on(table.schoolId),
+    ownerIndex: index("curriculum_sets_owner_index").on(table.ownerTeacherId),
+  })
+);
+
+export const concepts = pgTable(
+  "concepts",
+  {
+    id: serial("id").primaryKey(),
+    curriculumId: integer("curriculum_id")
+      .notNull()
+      .references(() => curriculumSets.id, { onDelete: "cascade" }),
+    sourceConceptId: integer("source_concept_id"),
+    createdByUserId: integer("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    nameKo: varchar("name_ko", { length: 50 }).notNull(),
+    nameEn: varchar("name_en", { length: 50 }).notNull(),
+    groupName: varchar("group_name", { length: 80 }).notNull().default("기타"),
+    orderIndex: integer("order_index").notNull(),
+    description: text("description"),
+    level: integer("level").notNull().default(1),
+    exampleCode: text("example_code"),
+    practiceCode: text("practice_code"),
+    isActive: boolean("is_active").notNull().default(true),
+  },
+  (table) => ({
+    curriculumOrderIndex: index("concepts_curriculum_order_index").on(
+      table.curriculumId,
+      table.level,
+      table.orderIndex
+    ),
+  })
+);
 
 export const badges = pgTable("badges", {
   id: serial("id").primaryKey(),
@@ -123,12 +173,46 @@ export const userConceptUnlocks = pgTable(
   })
 );
 
-export const dataFiles = pgTable("data_files", {
-  id: serial("id").primaryKey(),
-  filename: varchar("filename", { length: 255 }).notNull().unique(),
-  content: text("content").notNull(),
-  uploadedAt: timestamp("uploaded_at").defaultNow(),
-});
+export const classCurriculumAssignments = pgTable(
+  "class_curriculum_assignments",
+  {
+    id: serial("id").primaryKey(),
+    schoolId: integer("school_id")
+      .notNull()
+      .references(() => schools.id, { onDelete: "cascade" }),
+    grade: integer("grade").notNull(),
+    classNumber: integer("class_number").notNull(),
+    curriculumId: integer("curriculum_id")
+      .notNull()
+      .references(() => curriculumSets.id, { onDelete: "cascade" }),
+    assignedByUserId: integer("assigned_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    assignedAt: timestamp("assigned_at").defaultNow(),
+  },
+  (table) => ({
+    schoolClassUnique: uniqueIndex("class_curriculum_school_class_unique").on(
+      table.schoolId,
+      table.grade,
+      table.classNumber
+    ),
+  })
+);
+
+export const dataFiles = pgTable(
+  "data_files",
+  {
+    id: serial("id").primaryKey(),
+    schoolId: integer("school_id")
+      .notNull()
+      .references(() => schools.id, { onDelete: "cascade" }),
+    uploadedByUserId: integer("uploaded_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    filename: varchar("filename", { length: 255 }).notNull(),
+    content: text("content").notNull(),
+    uploadedAt: timestamp("uploaded_at").defaultNow(),
+  },
+  (table) => ({
+    schoolFilenameUnique: uniqueIndex("data_files_school_filename_unique").on(table.schoolId, table.filename),
+  })
+);
 
 export const feedbackHistory = pgTable("feedback_history", {
   id: serial("id").primaryKey(),

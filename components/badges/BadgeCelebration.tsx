@@ -7,8 +7,8 @@ import {
   Binary, FileText, ListChecks, Parentheses, BookOpen, Layers, Copy, Repeat, RefreshCcw,
   Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
 } from "lucide-react";
-import { BADGE_METADATA, BADGE_METADATA_LV2, BADGE_METADATA_LV3 } from "@/lib/curriculum";
-import { nextConceptId } from "@/lib/progress";
+import type { LearningUnitMeta } from "@/lib/curriculum-model";
+import { nextConceptIdInOrders } from "@/lib/progress";
 import { COLOR_HEX } from "./colorMap";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -18,16 +18,23 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
 };
 
-const ALL_BADGES = [...BADGE_METADATA, ...BADGE_METADATA_LV2, ...BADGE_METADATA_LV3];
-
 interface BadgeCelebrationProps {
   badgeIds: number[]; // 새로 획득한 뱃지의 conceptId 목록
+  badges: LearningUnitMeta[];
+  conceptOrders: number[][];
   feedback?: string; // AI 칭찬 문구
   onClose: () => void;
   onNext?: (conceptId: number) => void; // "다음 단계 공부하기" 클릭 시 다음 개념 ID 전달
 }
 
-export default function BadgeCelebration({ badgeIds, feedback, onClose, onNext }: BadgeCelebrationProps) {
+export default function BadgeCelebration({
+  badgeIds,
+  badges,
+  conceptOrders,
+  feedback,
+  onClose,
+  onNext,
+}: BadgeCelebrationProps) {
   const confettiRef = useRef<{ style: Record<string, string> }[] | null>(null);
 
   if (!confettiRef.current) {
@@ -52,15 +59,15 @@ export default function BadgeCelebration({ badgeIds, feedback, onClose, onNext }
   if (badgeIds.length === 0) return null;
 
   const badgeMeta = badgeIds
-    .map((cid) => ALL_BADGES.find((b) => b.conceptId === cid))
-    .filter((b): b is (typeof ALL_BADGES)[number] => Boolean(b));
+    .map((cid) => badges.find((b) => b.id === cid))
+    .filter((b): b is LearningUnitMeta => Boolean(b));
 
   const firstBadge = badgeMeta[0];
   const Icon = firstBadge ? (ICON_MAP[firstBadge.iconName] || Terminal) : Terminal;
   const hex = firstBadge ? (COLOR_HEX[firstBadge.colorClass] || "#18C99A") : "#18C99A";
 
-  const nextId = firstBadge ? nextConceptId(firstBadge.conceptId) : null;
-  const nextBadge = nextId !== null ? ALL_BADGES.find((b) => b.conceptId === nextId) : undefined;
+  const nextId = firstBadge ? nextConceptIdInOrders(firstBadge.id, conceptOrders) : null;
+  const nextBadge = nextId !== null ? badges.find((b) => b.id === nextId) : undefined;
 
   return (
     <div
@@ -84,7 +91,7 @@ export default function BadgeCelebration({ badgeIds, feedback, onClose, onNext }
 
         <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 24, marginTop: 8, color: "#2C2747" }}>새 뱃지 획득!</div>
         <div style={{ fontSize: 14, color: "#8B83A8", marginTop: 4, marginBottom: 22 }}>
-          {firstBadge ? `${firstBadge.nameKo.replace(" 마스터", "")} 개념을 마스터했어요` : "첫 개념을 성공했어요"}
+          {firstBadge ? `${firstBadge.nameKo} 개념을 마스터했어요` : "첫 개념을 성공했어요"}
         </div>
 
         <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
@@ -93,7 +100,7 @@ export default function BadgeCelebration({ badgeIds, feedback, onClose, onNext }
           </div>
           {firstBadge && (
             <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: hex }}>
-              {firstBadge.nameKo}
+              {firstBadge.badgeNameKo}
             </div>
           )}
         </div>
@@ -109,14 +116,14 @@ export default function BadgeCelebration({ badgeIds, feedback, onClose, onNext }
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" />
             </svg>
-            다음 단계 잠금 해제: {nextBadge.nameKo.replace(" 마스터", "")}
+            다음 단계 잠금 해제: {nextBadge.nameKo}
           </div>
         )}
 
         {nextBadge && onNext ? (
           <>
             <button
-              onClick={() => onNext(nextBadge.conceptId)}
+              onClick={() => onNext(nextBadge.id)}
               style={{ marginTop: 18, width: "100%", padding: 14, border: "none", borderRadius: 16, background: "linear-gradient(180deg,#8B6CFF,#7B5CF0)", color: "#fff", fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 16, cursor: "pointer", boxShadow: "0 5px 0 #5B3FD6", transition: "transform .12s" }}
               onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(3px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 0 #5B3FD6"; }}
               onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = ""; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 5px 0 #5B3FD6"; }}

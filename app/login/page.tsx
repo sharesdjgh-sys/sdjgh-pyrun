@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -8,16 +8,22 @@ import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [schoolCode, setSchoolCode] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("schoolCode");
+    if (code) setSchoolCode(code);
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const result = await signIn("credentials", { username, password, redirect: false });
+    const result = await signIn("credentials", { schoolCode, username, password, redirect: false });
     setLoading(false);
     if (result?.error) {
       setError("아이디 또는 비밀번호가 올바르지 않습니다.");
@@ -70,6 +76,16 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit}>
+            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>학교 코드</label>
+            <input
+              type="text"
+              value={schoolCode}
+              onChange={(e) => setSchoolCode(e.target.value)}
+              style={{ width: "100%", padding: "14px 16px", border: "2px solid #ECE7F8", borderRadius: 14, background: "#FBFAFF", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 16 }}
+              placeholder="기존 사용자는 생략할 수 있어요"
+              autoComplete="organization"
+            />
+
             <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>아이디</label>
             <input
               type="text"

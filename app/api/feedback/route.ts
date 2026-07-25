@@ -2,22 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { userConceptClears, userConceptPractices, userConceptUnlocks, feedbackHistory, concepts } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { generateFeedback, judgePractice } from "@/lib/gemini";
-import { effectiveConceptAccessIds, isConceptUnlocked } from "@/lib/progress";
+import { effectiveConceptAccessIdsForOrders, isConceptUnlockedInOrders } from "@/lib/progress";
 import { parsePython } from "@/lib/python-parser";
 import { rateLimit, RequestValidationError, validateFeedback } from "@/lib/api-guard";
 import { isStudentRole } from "@/lib/roles";
 import { createStudentPracticeTemplate } from "@/lib/practice-template";
+import {
+  curriculumOrders,
+  getCurriculumUnits,
+  resolveCurriculumIdForUser,
+  sessionTenant,
+} from "@/lib/curriculum-access";
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const context = sessionTenant(await auth());
+  if (!context) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
-  const userId = Number(session.user.id);
-  const role = (session.user as { role?: string }).role;
+  const userId = context.userId;
+  const role = context.role;
   const isStudent = isStudentRole(role);
+  const curriculumId = await resolveCurriculumIdForUser(context);
+  const curriculumUnits = curriculumId ? await getCurriculumUnits(curriculumId) : [];
+  const orders = curriculumOrders(curriculumUnits);
 
   try {
     const rate = rateLimit(req, `feedback:${userId}`, 15);
@@ -35,12 +44,18 @@ export async function POST(req: NextRequest) {
 
     // Get concept names for AI feedback
     const conceptNames: string[] = [];
+    const mappedDetectedConceptIds: number[] = [];
     if (detectedConceptIds.length > 0) {
       const conceptRows = await db
-        .select({ nameKo: concepts.nameKo })
+        .select({ id: concepts.id, nameKo: concepts.nameKo })
         .from(concepts)
-        .where(inArray(concepts.id, detectedConceptIds));
+        .where(and(
+          curriculumId ? eq(concepts.curriculumId, curriculumId) : eq(concepts.curriculumId, -1),
+          inArray(concepts.sourceConceptId, detectedConceptIds),
+          eq(concepts.isActive, true)
+        ));
       conceptNames.push(...conceptRows.map((c) => c.nameKo));
+      mappedDetectedConceptIds.push(...conceptRows.map((c) => c.id));
     }
 
     // 연습문제 풀이인 경우: 문제 지문은 클라이언트를 믿지 않고 DB에서 직접 읽어 Gemini로 채점한다.
@@ -66,14 +81,18 @@ export async function POST(req: NextRequest) {
         manuallyUnlockedIds = manualUnlocks.map((item) => item.conceptId);
       }
 
-      const accessIds = effectiveConceptAccessIds(clearedIds, manuallyUnlockedIds);
+      const accessIds = effectiveConceptAccessIdsForOrders(clearedIds, manuallyUnlockedIds, orders);
 
       // 학생에게만 순차 잠금을 적용한다. 교사와 관리자는 모든 문제를 자유롭게 확인할 수 있다.
-      if (!isStudent || isConceptUnlocked(practiceConceptId, accessIds)) {
+      if (!isStudent || isConceptUnlockedInOrders(practiceConceptId, accessIds, orders)) {
         const [concept] = await db
           .select({ nameKo: concepts.nameKo, practiceCode: concepts.practiceCode })
           .from(concepts)
-          .where(eq(concepts.id, practiceConceptId));
+          .where(and(
+            eq(concepts.id, practiceConceptId),
+            curriculumId ? eq(concepts.curriculumId, curriculumId) : eq(concepts.curriculumId, -1),
+            eq(concepts.isActive, true)
+          ));
 
         if (concept?.practiceCode) {
           const verdict = await judgePractice({
@@ -113,7 +132,7 @@ export async function POST(req: NextRequest) {
 
     // Browser-reported successes are also recorded as practice evidence.
     if (isSuccess && parseResult.syntaxValid) {
-      for (const conceptId of detectedConceptIds) {
+      for (const conceptId of mappedDetectedConceptIds) {
         await db
           .insert(userConceptPractices)
           .values({ userId, conceptId })
@@ -124,7 +143,7 @@ export async function POST(req: NextRequest) {
     // Save feedback history
     await db.insert(feedbackHistory).values({
       userId,
-      conceptIds: detectedConceptIds,
+      conceptIds: mappedDetectedConceptIds,
       codeSubmitted: code || "",
       outputText: stdout || null,
       aiFeedback: feedback,
@@ -135,7 +154,7 @@ export async function POST(req: NextRequest) {
       feedback,
       // 축하 오버레이는 conceptId 기준으로 뱃지 메타데이터를 찾는다.
       newlyEarnedBadgeIds: newlyEarnedConceptIds,
-      practicedConceptIds: isSuccess && parseResult.syntaxValid ? detectedConceptIds : [],
+      practicedConceptIds: isSuccess && parseResult.syntaxValid ? mappedDetectedConceptIds : [],
       completionStatus: solved ? "cleared" : "practice",
     });
   } catch (error) {

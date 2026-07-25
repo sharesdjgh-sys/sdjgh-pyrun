@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ username: "", password: "", displayName: "" });
+  const [form, setForm] = useState({ schoolCode: "", username: "", password: "", displayName: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -61,6 +61,16 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit}>
+            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>학교 코드</label>
+            <input
+              type="text"
+              value={form.schoolCode}
+              onChange={(e) => setForm({ ...form, schoolCode: e.target.value })}
+              style={inputStyle}
+              placeholder="학교에서 안내받은 코드"
+              required
+            />
+
             <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>
               닉네임 <span style={{ color: "#BDB6D4", fontWeight: 500 }}>(선택)</span>
             </label>
@@ -124,6 +134,10 @@ export default function RegisterPage() {
           <div style={{ textAlign: "center", marginTop: 18, fontSize: 14, color: "#8B83A8" }}>
             이미 계정이 있나요?{" "}
             <Link href="/login" style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>로그인</Link>
+          </div>
+          <div style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#8B83A8" }}>
+            학교가 아직 등록되지 않았나요?{" "}
+            <Link href="/register-school" style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>새 학교 시작하기</Link>
           </div>
         </div>
       </div>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { usePyodide } from "@/hooks/usePyodide";
 import { parsePython } from "@/lib/python-parser";
-import { effectiveConceptAccessIds, isConceptUnlocked } from "@/lib/progress";
+import { effectiveConceptAccessIdsForOrders, isConceptUnlockedInOrders } from "@/lib/progress";
 import { animationQueue, type RobotCommand } from "@/lib/animation-queue";
 import RobotStage from "@/components/robot/RobotStage";
 import RobotApiTooltip from "@/components/robot/RobotApiTooltip";
@@ -13,8 +13,8 @@ import DataVizPanel from "@/components/editor/DataVizPanel";
 import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
-import { BADGE_METADATA, BADGE_METADATA_LV2, UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, BADGE_METADATA_LV3, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
 import type { CurriculumItem } from "@/lib/curriculum";
+import { groupCurriculumUnits, type CurriculumView } from "@/lib/curriculum-model";
 import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Lock, Check } from "lucide-react";
 import Image from "next/image";
 
@@ -378,31 +378,14 @@ robot.draw("star")
 robot.dance()
 `;
 
-const INITIAL_CODE_LV3 = `import matplotlib.pyplot as plt
-import numpy as np
-
-# 샘플 데이터
-x = np.linspace(0, 10, 200)
-
-plt.figure(figsize=(8, 4))
-plt.plot(x, np.sin(x), color='#7B5CF0', linewidth=2, label='sin(x)')
-plt.plot(x, np.cos(x), color='#18C99A', linewidth=2, label='cos(x)')
-plt.title('PyRun Studio - Data Visualization Test')
-plt.xlabel('x')
-plt.ylabel('y')
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
-`;
-
 interface LearnClientProps {
   userName: string;
   curriculum: Record<number, CurriculumItem>;
+  curriculumView: CurriculumView;
   isStudent: boolean;
 }
 
-export default function LearnClient({ userName, curriculum, isStudent }: LearnClientProps) {
+export default function LearnClient({ userName, curriculum, curriculumView, isStudent }: LearnClientProps) {
   const [code, setCode] = useState(INITIAL_CODE);
   const [output, setOutput] = useState("");
   const [execError, setExecError] = useState("");
@@ -427,8 +410,25 @@ export default function LearnClient({ userName, curriculum, isStudent }: LearnCl
   const [selectedMechdogId, setSelectedMechdogId] = useState(MECDOG_EXAMPLES[0].id);
   const [selectedLv3ConceptId, setSelectedLv3ConceptId] = useState(31);
 
-  const currentBadges = mode === "lv2" ? BADGE_METADATA_LV2 : BADGE_METADATA;
-  const currentUnitGroups = mode === "lv2" ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV1;
+  const levelOrders = useMemo(
+    () => [1, 2, 3]
+      .map((level) => curriculumView.units
+        .filter((unit) => unit.level === level)
+        .sort((a, b) => a.orderIndex - b.orderIndex)
+        .map((unit) => unit.id))
+      .filter((order) => order.length > 0),
+    [curriculumView.units]
+  );
+  const currentLevel = mode === "lv3" ? 3 : mode === "lv2" ? 2 : 1;
+  const currentBadges = curriculumView.units
+    .filter((unit) => unit.level === currentLevel)
+    .map((unit) => ({
+      conceptId: unit.id,
+      nameKo: unit.badgeNameKo,
+      iconName: unit.iconName,
+      colorClass: unit.colorClass,
+    }));
+  const currentUnitGroups = groupCurriculumUnits(curriculumView.units, currentLevel);
 
   const [characterType, setCharacterType] = useState<"robot" | "dog" | "game" | "mechdog">("robot");
   const [isError, setIsError] = useState(false);
@@ -485,7 +485,11 @@ export default function LearnClient({ userName, curriculum, isStudent }: LearnCl
       .catch(() => { /* 조회 실패 시 첫 개념만 열린 기본 상태로 시작 */ });
   }, [isStudent]);
 
-  const accessibleConceptIds = effectiveConceptAccessIds(clearedConceptIds, manuallyUnlockedConceptIds);
+  const accessibleConceptIds = effectiveConceptAccessIdsForOrders(
+    clearedConceptIds,
+    manuallyUnlockedConceptIds,
+    levelOrders
+  );
 
   useEffect(() => {
     setPracticeConceptId(null);
@@ -499,8 +503,13 @@ export default function LearnClient({ userName, curriculum, isStudent }: LearnCl
     // mechdog 전용 캐릭터는 다른 모드에서 선택 불가하므로 로봇으로 복귀
     setCharacterType((prev) => (prev === "mechdog" ? "robot" : prev));
     if (mode === "lv3") {
-      setSelectedLv3ConceptId(31);
-      setCode(curriculum[31]?.exampleCode ?? "");
+      const firstId = curriculumView.units
+        .filter((unit) => unit.level === 3)
+        .sort((a, b) => a.orderIndex - b.orderIndex)[0]?.id;
+      if (firstId !== undefined) {
+        setSelectedLv3ConceptId(firstId);
+        setCode(curriculum[firstId]?.exampleCode ?? "");
+      }
       setPlots([]);
       (async () => {
         await initLv3();
@@ -519,7 +528,14 @@ export default function LearnClient({ userName, curriculum, isStudent }: LearnCl
       })();
       return;
     }
-    const firstId = mode === "lv2" ? 17 : 0;
+    const level = mode === "lv2" ? 2 : 1;
+    const firstId = curriculumView.units
+      .filter((unit) => unit.level === level)
+      .sort((a, b) => a.orderIndex - b.orderIndex)[0]?.id;
+    if (firstId === undefined) {
+      setCode("");
+      return;
+    }
     setSelectedConceptId(firstId);
     const example = curriculum[firstId];
     if (example?.exampleCode) setCode(example.exampleCode);
@@ -649,14 +665,15 @@ export default function LearnClient({ userName, curriculum, isStudent }: LearnCl
     setShowVariable(false);
     setIsError(false);
     setPlots([]);
-    if (id >= 31) {
+    const targetUnit = curriculumView.units.find((unit) => unit.id === id);
+    if (targetUnit?.level === 3) {
       setSelectedLv3ConceptId(id);
     } else {
       setSelectedConceptId(id);
     }
     const example = curriculum[id];
     if (example?.exampleCode) setCode(example.exampleCode);
-  }, [curriculum]);
+  }, [curriculum, curriculumView.units]);
 
   const handleLoadExample = useCallback(() => {
     setPracticeConceptId(null);
@@ -821,18 +838,18 @@ export default function LearnClient({ userName, curriculum, isStudent }: LearnCl
           {mode === "lv3" ? (
             /* lv3 데이터 분석 단원 목록 */
             <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 12px" }}>
-              {UNIT_GROUPS_LV3.map((group) => (
+              {currentUnitGroups.map((group) => (
                 <div key={group.label} style={{ marginBottom: 6 }}>
                   <div style={{ fontSize: 10.5, fontWeight: 700, color: group.color, letterSpacing: 0.5, padding: "6px 8px 3px", textTransform: "uppercase" }}>
                     {(() => { const Icon = GROUP_ICON_MAP[group.icon]; return Icon ? <Icon size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} /> : null; })()}
                     {group.label}
                   </div>
                   {group.ids.map((id) => {
-                    const badge = BADGE_METADATA_LV3.find(b => b.conceptId === id);
+                    const badge = currentBadges.find(b => b.conceptId === id);
                     if (!badge) return null;
                     const selected = id === selectedLv3ConceptId;
                     const cleared = isStudent && clearedConceptIds.has(id);
-                    const unlocked = !isStudent || isConceptUnlocked(id, accessibleConceptIds);
+                    const unlocked = !isStudent || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders);
                     return (
                       <button
                         key={id}
@@ -937,7 +954,7 @@ export default function LearnClient({ userName, curriculum, isStudent }: LearnCl
                     const name = badge.nameKo.replace(" 마스터", "");
                     const selected = id === selectedConceptId;
                     const cleared = isStudent && clearedConceptIds.has(id);
-                    const unlocked = !isStudent || isConceptUnlocked(id, accessibleConceptIds);
+                    const unlocked = !isStudent || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders);
                     return (
                       <button
                         key={id}
@@ -1585,7 +1602,14 @@ export default function LearnClient({ userName, curriculum, isStudent }: LearnCl
         </div>
       </div>
 
-      <BadgeCelebration badgeIds={newBadgeIds} feedback={badgeFeedback} onClose={() => setNewBadgeIds([])} onNext={handleGoNextConcept} />
+      <BadgeCelebration
+        badgeIds={newBadgeIds}
+        badges={curriculumView.units}
+        conceptOrders={levelOrders}
+        feedback={badgeFeedback}
+        onClose={() => setNewBadgeIds([])}
+        onNext={handleGoNextConcept}
+      />
 
       {/* 제작사 로고 */}
       <div style={{ position: "fixed", bottom: 14, right: 18, zIndex: 5, opacity: 0.6 }}>

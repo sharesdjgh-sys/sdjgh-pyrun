@@ -4,7 +4,8 @@ import { db } from "@/lib/db/index";
 import { users } from "@/lib/db/schema";
 import { isAdministratorRole } from "@/lib/roles";
 import { parseSchoolStudentNumber } from "@/lib/student-number";
-import { eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
+import { sessionTenant } from "@/lib/curriculum-access";
 
 const MAX_CSV_BYTES = 1_000_000;
 const MAX_STUDENTS = 500;
@@ -52,14 +53,11 @@ function findHeader(headers: string[], aliases: string[]) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  const currentUserId = Number(session?.user?.id);
-  if (!session || !Number.isInteger(currentUserId)) {
+  const context = sessionTenant(await auth());
+  if (!context) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
-
-  const [currentUser] = await db.select({ role: users.role }).from(users).where(eq(users.id, currentUserId)).limit(1);
-  if (!currentUser || !isAdministratorRole(currentUser.role)) {
+  if (!isAdministratorRole(context.role)) {
     return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
   }
 
@@ -110,7 +108,10 @@ export async function POST(req: NextRequest) {
   const existingUsers = await db
     .select({ id: users.id, username: users.username, studentNumber: users.studentNumber, role: users.role })
     .from(users)
-    .where(or(inArray(users.username, studentNumbers), inArray(users.studentNumber, studentNumbers)));
+    .where(and(
+      eq(users.schoolId, context.schoolId),
+      or(inArray(users.username, studentNumbers), inArray(users.studentNumber, studentNumbers))
+    ));
 
   const conflictingStudent = existingUsers.find((user) => user.studentNumber && user.studentNumber !== user.username);
   if (conflictingStudent) {
@@ -143,6 +144,7 @@ export async function POST(req: NextRequest) {
       updated += 1;
     } else {
       await db.insert(users).values({
+        schoolId: context.schoolId,
         username: student.studentNumber,
         passwordHash: await bcrypt.hash(student.password, 10),
         role: "student",

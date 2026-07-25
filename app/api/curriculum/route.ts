@@ -1,9 +1,22 @@
+import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db/index";
-import { concepts } from "@/lib/db/schema";
-import { asc } from "drizzle-orm";
+import {
+  getCurriculumUnits,
+  resolveCurriculumIdForUser,
+  sessionTenant,
+} from "@/lib/curriculum-access";
 
 export async function GET() {
-  const rows = await db.select().from(concepts).orderBy(asc(concepts.orderIndex));
+  const context = sessionTenant(await auth());
+  if (!context) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+
+  const curriculumId = await resolveCurriculumIdForUser(context);
+  if (!curriculumId) {
+    return NextResponse.json([]);
+  }
+
+  const rows = await getCurriculumUnits(curriculumId);
   return NextResponse.json(rows);
 }

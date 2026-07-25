@@ -14,6 +14,14 @@ export function effectiveConceptAccessIds(
   clearedIds: Iterable<number>,
   manuallyUnlockedIds: Iterable<number>
 ): Set<number> {
+  return effectiveConceptAccessIdsForOrders(clearedIds, manuallyUnlockedIds, LEVEL_CONCEPT_ORDERS);
+}
+
+export function effectiveConceptAccessIdsForOrders(
+  clearedIds: Iterable<number>,
+  manuallyUnlockedIds: Iterable<number>,
+  orders: number[][]
+): Set<number> {
   const effective = new Set(clearedIds);
 
   for (const unlockedId of manuallyUnlockedIds) {
@@ -22,7 +30,7 @@ export function effectiveConceptAccessIds(
       continue;
     }
 
-    for (const order of LEVEL_CONCEPT_ORDERS) {
+    for (const order of orders) {
       const idx = order.indexOf(unlockedId);
       if (idx === -1) continue;
       order.slice(0, idx + 1).forEach((id) => effective.add(id));
@@ -34,10 +42,18 @@ export function effectiveConceptAccessIds(
 }
 
 export function isConceptUnlocked(conceptId: number, clearedIds: Iterable<number>): boolean {
+  return isConceptUnlockedInOrders(conceptId, clearedIds, LEVEL_CONCEPT_ORDERS);
+}
+
+export function isConceptUnlockedInOrders(
+  conceptId: number,
+  clearedIds: Iterable<number>,
+  orders: number[][]
+): boolean {
   const cleared = new Set(clearedIds);
   if (cleared.has(conceptId)) return true;
   if (conceptId === INTRO_CONCEPT_ID) return true;
-  for (const order of LEVEL_CONCEPT_ORDERS) {
+  for (const order of orders) {
     const idx = order.indexOf(conceptId);
     if (idx === -1) continue;
     return order.slice(0, idx).every((id) => cleared.has(id));
@@ -47,8 +63,12 @@ export function isConceptUnlocked(conceptId: number, clearedIds: Iterable<number
 
 // 방금 클리어한 개념의 바로 다음 개념 ID (레벨 마지막이면 null)
 export function nextConceptId(conceptId: number): number | null {
-  if (conceptId === INTRO_CONCEPT_ID) return LEVEL_CONCEPT_ORDERS[0]?.[0] ?? null;
-  for (const order of LEVEL_CONCEPT_ORDERS) {
+  return nextConceptIdInOrders(conceptId, LEVEL_CONCEPT_ORDERS);
+}
+
+export function nextConceptIdInOrders(conceptId: number, orders: number[][]): number | null {
+  if (conceptId === INTRO_CONCEPT_ID) return orders[0]?.find((id) => id !== INTRO_CONCEPT_ID) ?? null;
+  for (const order of orders) {
     const idx = order.indexOf(conceptId);
     if (idx === -1) continue;
     return idx + 1 < order.length ? order[idx + 1] : null;

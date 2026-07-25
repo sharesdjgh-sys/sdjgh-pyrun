@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
-import { effectiveConceptAccessIds, isConceptUnlocked, LEVEL_CONCEPT_ORDERS } from "@/lib/progress";
+import { groupCurriculumUnits, type LearningUnitMeta } from "@/lib/curriculum-model";
+import {
+  effectiveConceptAccessIdsForOrders,
+  isConceptUnlockedInOrders,
+} from "@/lib/progress";
 import { Check, Clock3, Lock, LockOpen, PlayCircle, RotateCcw, Users } from "lucide-react";
-
-interface ConceptSummary {
-  id: number;
-  nameKo: string;
-}
 
 interface StudentStatus {
   id: number;
@@ -27,12 +25,13 @@ interface StudentStatus {
   lastActivityAt: string | null;
 }
 
-interface StudentProgressManagerProps {
-  concepts: ConceptSummary[];
+interface CurriculumDefinition {
+  id: number;
+  name: string;
+  isDefault: boolean;
+  assignments: Array<{ grade: number; classNumber: number }>;
+  units: LearningUnitMeta[];
 }
-
-const LEVEL_GROUPS = [UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3];
-const TOTAL_LEARNING_CONCEPTS = LEVEL_CONCEPT_ORDERS.flat().length;
 
 function formatDate(value: string | null) {
   if (!value) return "아직 활동 없음";
@@ -45,8 +44,9 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export default function StudentProgressManager({ concepts }: StudentProgressManagerProps) {
+export default function StudentProgressManager() {
   const [students, setStudents] = useState<StudentStatus[]>([]);
+  const [curricula, setCurricula] = useState<CurriculumDefinition[]>([]);
   const [assignedClasses, setAssignedClasses] = useState<Array<{ grade: number; classNumber: number }>>([]);
   const [unrestricted, setUnrestricted] = useState(false);
   const [selectedClassKey, setSelectedClassKey] = useState("");
@@ -67,6 +67,7 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
       const nextStudents: StudentStatus[] = data.students ?? [];
       const nextAssignedClasses: Array<{ grade: number; classNumber: number }> = data.assignedClasses ?? [];
       setStudents(nextStudents);
+      setCurricula(data.curricula ?? []);
       setAssignedClasses(nextAssignedClasses);
       setUnrestricted(Boolean(data.unrestricted));
       const firstClass = nextAssignedClasses[0]
@@ -123,12 +124,30 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
   }
 
   const selectedStudent = students.find((student) => student.id === selectedStudentId) ?? null;
+  const curriculumForStudent = (student: StudentStatus | null) => {
+    if (!student) return curricula.find((item) => item.isDefault) ?? null;
+    return curricula.find((item) => item.assignments.some((assignment) =>
+      assignment.grade === student.grade && assignment.classNumber === student.classNumber
+    )) ?? curricula.find((item) => item.isDefault) ?? null;
+  };
+  const selectedCurriculum = curriculumForStudent(selectedStudent);
+  const curriculumUnits = selectedCurriculum?.units ?? [];
+  const curriculumUnitIds = new Set(curriculumUnits.map((unit) => unit.id));
+  const conceptOrders = [1, 2, 3]
+    .map((levelNumber) => curriculumUnits
+      .filter((unit) => unit.level === levelNumber)
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .map((unit) => unit.id))
+    .filter((order) => order.length > 0);
+  const visibleGroups = groupCurriculumUnits(curriculumUnits, level);
   const clearedIds = new Set(selectedStudent?.clearedConceptIds ?? []);
-  const practicedIds = new Set(selectedStudent?.practicedConceptIds ?? []);
   const manualUnlockIds = new Set(selectedStudent?.manuallyUnlockedConceptIds ?? []);
-  const accessIds = effectiveConceptAccessIds(clearedIds, manualUnlockIds);
-  const completedCount = selectedStudent?.clearedConceptIds.filter((id) => LEVEL_CONCEPT_ORDERS.flat().includes(id)).length ?? 0;
-  const progressPercent = Math.round((completedCount / TOTAL_LEARNING_CONCEPTS) * 100);
+  const accessIds = effectiveConceptAccessIdsForOrders(clearedIds, manualUnlockIds, conceptOrders);
+  const completedCount = selectedStudent?.clearedConceptIds.filter((id) => curriculumUnitIds.has(id)).length ?? 0;
+  const practicedCount = selectedStudent?.practicedConceptIds.filter((id) => curriculumUnitIds.has(id)).length ?? 0;
+  const progressPercent = curriculumUnits.length > 0
+    ? Math.round((completedCount / curriculumUnits.length) * 100)
+    : 0;
 
   async function unlockConcept(conceptId: number) {
     if (!selectedStudent || unlockingConceptId !== null) return;
@@ -149,7 +168,7 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
           ? { ...student, manuallyUnlockedConceptIds: [...new Set([...student.manuallyUnlockedConceptIds, conceptId])] }
           : student
       )));
-      const conceptName = concepts.find((concept) => concept.id === conceptId)?.nameKo ?? "선택한 단원";
+      const conceptName = curriculumUnits.find((concept) => concept.id === conceptId)?.nameKo ?? "선택한 단원";
       setMessage(`${selectedStudent.displayName || selectedStudent.username} 학생의 '${conceptName}' 단원을 열었습니다.`);
     } catch (unlockError) {
       setMessage(unlockError instanceof Error ? unlockError.message : "잠금 해제에 실패했습니다.");
@@ -203,15 +222,18 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
           <aside style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 18, padding: 10, boxShadow: "0 8px 24px rgba(90,63,214,.05)" }}>
             {filteredStudents.map((student) => {
               const active = student.id === selectedStudentId;
-              const studentCompleted = student.clearedConceptIds.filter((id) => LEVEL_CONCEPT_ORDERS.flat().includes(id)).length;
+              const studentCurriculum = curriculumForStudent(student);
+              const studentUnitIds = new Set(studentCurriculum?.units.map((unit) => unit.id) ?? []);
+              const studentTotal = studentUnitIds.size;
+              const studentCompleted = student.clearedConceptIds.filter((id) => studentUnitIds.has(id)).length;
               return (
                 <button key={student.id} onClick={() => { setSelectedStudentId(student.id); setMessage(""); }} style={{ width: "100%", textAlign: "left", padding: "12px 13px", marginBottom: 5, border: active ? "1px solid #CFC2F5" : "1px solid transparent", borderRadius: 12, background: active ? "#F3EFFE" : "transparent", cursor: "pointer", fontFamily: "inherit" }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: active ? "#6C4BEF" : "#443B63" }}>{student.displayName || student.username}</div>
                   <div style={{ marginTop: 2, fontSize: 11.5, color: "#9A93B5" }}>{student.seatNumber ? `${student.seatNumber}번 · ` : ""}학번 {student.studentNumber || student.username}</div>
                   <div style={{ marginTop: 8, height: 5, borderRadius: 99, background: "#EDE8F8", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.round((studentCompleted / TOTAL_LEARNING_CONCEPTS) * 100)}%`, height: "100%", background: "linear-gradient(90deg,#9B7FFF,#18C99A)" }} />
+                    <div style={{ width: `${studentTotal > 0 ? Math.round((studentCompleted / studentTotal) * 100) : 0}%`, height: "100%", background: "linear-gradient(90deg,#9B7FFF,#18C99A)" }} />
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 11, color: "#7A7198" }}>{studentCompleted}/{TOTAL_LEARNING_CONCEPTS} 완료</div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: "#7A7198" }}>{studentCompleted}/{studentTotal} 완료</div>
                 </button>
               );
             })}
@@ -226,6 +248,9 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
                     {selectedStudent.grade && selectedStudent.classNumber ? `${selectedStudent.grade}학년 ${selectedStudent.classNumber}반 · ` : ""}
                     {selectedStudent.seatNumber ? `${selectedStudent.seatNumber}번 · ` : ""}학번 {selectedStudent.studentNumber || selectedStudent.username}
                   </div>
+                  <div style={{ marginTop: 4, fontSize: 11.5, color: "#7B5CF0", fontWeight: 700 }}>
+                    {selectedCurriculum?.name ?? "배정된 커리큘럼 없음"}
+                  </div>
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 900, color: "#7B5CF0" }}>{progressPercent}%</div>
               </div>
@@ -233,7 +258,7 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 9, margin: "16px 0" }}>
                 {[
                   ["완료 단원", `${completedCount}개`, <Check key="check" size={15} />],
-                  ["연습 단원", `${practicedIds.size}개`, <PlayCircle key="play" size={15} />],
+                  ["연습 단원", `${practicedCount}개`, <PlayCircle key="play" size={15} />],
                   ["코드 제출", `${selectedStudent.submissionCount}회`, <LockOpen key="submit" size={15} />],
                   ["최근 활동", formatDate(selectedStudent.lastActivityAt), <Clock3 key="clock" size={15} />],
                 ].map(([label, value, icon]) => (
@@ -253,16 +278,16 @@ export default function StudentProgressManager({ concepts }: StudentProgressMana
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {LEVEL_GROUPS[level - 1].map((group) => (
+                {visibleGroups.map((group) => (
                   <div key={group.label}>
                     <div style={{ marginBottom: 5, fontSize: 11.5, fontWeight: 800, color: group.color }}>{group.label}</div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 6 }}>
                       {group.ids.filter((id) => id !== 0).map((conceptId) => {
-                        const concept = concepts.find((item) => item.id === conceptId);
+                        const concept = curriculumUnits.find((item) => item.id === conceptId);
                         if (!concept) return null;
                         const cleared = clearedIds.has(conceptId);
                         const directlyUnlocked = manualUnlockIds.has(conceptId);
-                        const accessible = isConceptUnlocked(conceptId, accessIds);
+                        const accessible = isConceptUnlockedInOrders(conceptId, accessIds, conceptOrders);
                         const canUnlock = !cleared && !accessible;
 
                         return (

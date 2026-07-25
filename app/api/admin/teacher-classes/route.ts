@@ -2,22 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { teacherClassAssignments, users } from "@/lib/db/schema";
+import { sessionTenant } from "@/lib/curriculum-access";
 import { isAdministratorRole } from "@/lib/roles";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 async function requireAdministrator() {
-  const session = await auth();
-  const userId = Number(session?.user?.id);
-  if (!session || !Number.isInteger(userId)) {
+  const context = sessionTenant(await auth());
+  if (!context) {
     return { denied: NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }) };
   }
 
-  const [currentUser] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
-  if (!currentUser || !isAdministratorRole(currentUser.role)) {
+  if (!isAdministratorRole(context.role)) {
     return { denied: NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 }) };
   }
 
-  return { userId };
+  return context;
 }
 
 export async function GET() {
@@ -32,6 +31,8 @@ export async function GET() {
       classNumber: teacherClassAssignments.classNumber,
     })
     .from(teacherClassAssignments)
+    .innerJoin(users, eq(teacherClassAssignments.teacherUserId, users.id))
+    .where(eq(users.schoolId, authResult.schoolId))
     .orderBy(asc(teacherClassAssignments.grade), asc(teacherClassAssignments.classNumber));
 
   return NextResponse.json({ assignments });
@@ -50,7 +51,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "교사와 학년·반을 올바르게 입력해주세요." }, { status: 400 });
   }
 
-  const [teacher] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.id, teacherUserId)).limit(1);
+  const [teacher] = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(and(eq(users.id, teacherUserId), eq(users.schoolId, authResult.schoolId)))
+    .limit(1);
   if (!teacher || teacher.role !== "teacher") {
     return NextResponse.json({ error: "교사 계정을 찾을 수 없습니다." }, { status: 404 });
   }
@@ -83,9 +88,23 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "유효하지 않은 학급 배정입니다." }, { status: 400 });
   }
 
+  const [ownedAssignment] = await db
+    .select({ id: teacherClassAssignments.id })
+    .from(teacherClassAssignments)
+    .innerJoin(users, eq(teacherClassAssignments.teacherUserId, users.id))
+    .where(and(
+      eq(teacherClassAssignments.id, assignmentId),
+      eq(users.schoolId, authResult.schoolId)
+    ))
+    .limit(1);
+
+  if (!ownedAssignment) {
+    return NextResponse.json({ error: "학급 배정을 찾을 수 없습니다." }, { status: 404 });
+  }
+
   const [deleted] = await db
     .delete(teacherClassAssignments)
-    .where(eq(teacherClassAssignments.id, assignmentId))
+    .where(eq(teacherClassAssignments.id, ownedAssignment.id))
     .returning({ id: teacherClassAssignments.id });
 
   if (!deleted) return NextResponse.json({ error: "학급 배정을 찾을 수 없습니다." }, { status: 404 });

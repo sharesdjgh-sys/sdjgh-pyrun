@@ -2,27 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { feedbackHistory, userConceptClears, userConceptPractices, users } from "@/lib/db/schema";
+import { sessionTenant } from "@/lib/curriculum-access";
 import { isAdministratorRole, isUserRole, type UserRole } from "@/lib/roles";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 async function requireAdministrator() {
-  const session = await auth();
-  const userId = Number(session?.user?.id);
-  if (!session || !Number.isInteger(userId)) {
+  const context = sessionTenant(await auth());
+  if (!context) {
     return { denied: NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }) };
   }
 
-  const [currentUser] = await db
-    .select({ role: users.role })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  if (!currentUser || !isAdministratorRole(currentUser.role)) {
+  if (!isAdministratorRole(context.role)) {
     return { denied: NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 }) };
   }
 
-  return { userId };
+  return context;
 }
 
 export async function GET() {
@@ -37,6 +31,7 @@ export async function GET() {
       displayName: users.displayName,
     })
     .from(users)
+    .where(eq(users.schoolId, authResult.schoolId))
     .orderBy(asc(users.id));
 
   return NextResponse.json({ users: rows });
@@ -68,7 +63,7 @@ export async function PATCH(req: NextRequest) {
   const [updatedUser] = await db
     .update(users)
     .set({ role: role as UserRole })
-    .where(eq(users.id, targetUserId))
+    .where(and(eq(users.id, targetUserId), eq(users.schoolId, authResult.schoolId)))
     .returning({
       id: users.id,
       username: users.username,
@@ -101,7 +96,7 @@ export async function DELETE(req: NextRequest) {
   const [targetUser] = await db
     .select({ id: users.id, username: users.username })
     .from(users)
-    .where(eq(users.id, targetUserId))
+    .where(and(eq(users.id, targetUserId), eq(users.schoolId, authResult.schoolId)))
     .limit(1);
 
   if (!targetUser) {
@@ -111,7 +106,7 @@ export async function DELETE(req: NextRequest) {
   await db.delete(feedbackHistory).where(eq(feedbackHistory.userId, targetUserId));
   await db.delete(userConceptClears).where(eq(userConceptClears.userId, targetUserId));
   await db.delete(userConceptPractices).where(eq(userConceptPractices.userId, targetUserId));
-  await db.delete(users).where(eq(users.id, targetUserId));
+  await db.delete(users).where(and(eq(users.id, targetUserId), eq(users.schoolId, authResult.schoolId)));
 
   return NextResponse.json({ ok: true, userId: targetUser.id, username: targetUser.username });
 }

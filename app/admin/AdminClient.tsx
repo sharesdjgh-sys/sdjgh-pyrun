@@ -6,6 +6,7 @@ import { USER_ROLES, isAdministratorRole, type UserRole } from "@/lib/roles";
 import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, Users } from "lucide-react";
 import StudentProgressManager from "./StudentProgressManager";
 import ClassRosterManager from "./ClassRosterManager";
+import TeacherCurriculumManager from "./TeacherCurriculumManager";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu,
@@ -70,7 +71,8 @@ export default function AdminClient({
   const [levelFilter, setLevelFilter] = useState<1 | 2 | 3>(1);
 
   const isAdministrator = isAdministratorRole(currentRole);
-  const [adminTab, setAdminTab] = useState<"curriculum" | "data" | "students" | "classes" | "users">("curriculum");
+  type AdminTab = "my-curricula" | "curriculum" | "data" | "students" | "classes" | "users";
+  const [adminTab, setAdminTab] = useState<AdminTab>("my-curricula");
   const [csvFiles, setCsvFiles] = useState<Array<{filename: string; url: string}>>([]);
   const [csvUploading, setCsvUploading] = useState(false);
   const [csvMessage, setCsvMessage] = useState("");
@@ -238,12 +240,12 @@ export default function AdminClient({
 
   const selectedConcept = concepts.find((c) => c.id === selectedId);
   const filteredGroups = levelFilter === 1 ? UNIT_GROUPS_LV1 : levelFilter === 2 ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV3;
-  const adminTabs: Array<["curriculum" | "data" | "students" | "classes" | "users", string]> = [
-    ["curriculum", "커리큘럼 편집"],
+  const adminTabs: Array<[AdminTab, string]> = [
+    ["my-curricula", "내 커리큘럼"],
     ["data", "데이터 파일 관리"],
     ["students", "학생 수업 관리"],
-    ...(isAdministrator ? ([["classes", "학급·계정 관리"]] as Array<["classes", string]>) : []),
-    ...(isAdministrator ? ([["users", "회원 관리"]] as Array<["users", string]>) : []),
+    ...(isAdministrator ? ([["classes", "학급·계정 관리"]] as Array<[AdminTab, string]>) : []),
+    ...(isAdministrator ? ([["users", "회원 관리"]] as Array<[AdminTab, string]>) : []),
   ];
 
   return (
@@ -342,7 +344,9 @@ export default function AdminClient({
           boxSizing: "border-box",
         }}
       >
-        {adminTab === "data" ? (
+        {adminTab === "my-curricula" ? (
+          <TeacherCurriculumManager />
+        ) : adminTab === "data" ? (
           /* ── 데이터 파일 관리 탭 ── */
           <div style={{ flex: 1, background: "#fff", borderRadius: 20, border: "1px solid #EFEAF8", boxShadow: "0 8px 24px rgba(90,63,214,.06)", padding: "28px 32px" }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#3D2E8A", marginBottom: 6 }}>📊 데이터 파일 관리</div>
@@ -399,7 +403,7 @@ export default function AdminClient({
             )}
           </div>
         ) : adminTab === "students" ? (
-          <StudentProgressManager concepts={concepts} />
+          <StudentProgressManager />
         ) : adminTab === "classes" ? (
           <ClassRosterManager users={users} />
         ) : adminTab === "users" ? (

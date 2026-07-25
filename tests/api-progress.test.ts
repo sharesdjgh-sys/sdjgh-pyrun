@@ -1,7 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { RequestValidationError, validateFeedback, validateRegistration } from "../lib/api-guard";
-import { authenticatedUserId, calculateProgress, effectiveConceptAccessIds, isConceptUnlocked, nextConceptId } from "../lib/progress";
+import {
+  authenticatedUserId,
+  calculateProgress,
+  effectiveConceptAccessIds,
+  effectiveConceptAccessIdsForOrders,
+  isConceptUnlocked,
+  isConceptUnlockedInOrders,
+  nextConceptId,
+  nextConceptIdInOrders,
+} from "../lib/progress";
 import { canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
 import { createStudentPracticeTemplate } from "../lib/practice-template";
@@ -115,6 +124,20 @@ test("teacher unlock overrides prerequisites without awarding completion", () =>
   assert.equal(isConceptUnlocked(7, accessIds), true);
   assert.equal(isConceptUnlocked(8, accessIds), true);
   assert.equal(isConceptUnlocked(9, accessIds), false);
+});
+
+test("teacher-defined curricula use their own unit IDs and order", () => {
+  const orders = [[101, 105, 109], [201, 207]];
+
+  assert.equal(isConceptUnlockedInOrders(101, [], orders), true);
+  assert.equal(isConceptUnlockedInOrders(105, [], orders), false);
+  assert.equal(isConceptUnlockedInOrders(105, [101], orders), true);
+  assert.equal(isConceptUnlockedInOrders(201, [], orders), true);
+  assert.equal(nextConceptIdInOrders(105, orders), 109);
+  assert.equal(nextConceptIdInOrders(109, orders), null);
+
+  const access = effectiveConceptAccessIdsForOrders([], [109], orders);
+  assert.deepEqual([...access].sort((a, b) => a - b), [101, 105, 109]);
 });
 
 test("feedback validation accepts optional practiceConceptId", () => {

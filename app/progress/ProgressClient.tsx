@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BADGE_METADATA, BADGE_METADATA_LV2, BADGE_METADATA_LV3 } from "@/lib/curriculum";
 import { COLOR_HEX } from "@/components/badges/colorMap";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
@@ -18,17 +17,21 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
 };
 
-const BADGE_LEVELS = [
-  { label: "Level 1 · 파이썬 기초", badges: BADGE_METADATA },
-  { label: "Level 2 · 파이썬 심화", badges: BADGE_METADATA_LV2 },
-  { label: "Level 3 · 데이터 분석", badges: BADGE_METADATA_LV3 },
-];
-
-interface BadgeInfo { badgeId: number; conceptId: number; nameKo: string; iconName: string; colorClass: string; earned: boolean; }
+interface BadgeInfo {
+  badgeId: number;
+  conceptId: number;
+  nameKo: string;
+  iconName: string;
+  colorClass: string;
+  conceptNameKo: string;
+  level: number;
+  earned: boolean;
+}
 interface FeedbackItem { id: number; aiFeedback: string; isSuccess: boolean; createdAt: string; codeSnippet: string; }
 
 export default function ProgressClient() {
   const [earnedConceptIds, setEarnedConceptIds] = useState<Set<number>>(new Set());
+  const [badges, setBadges] = useState<BadgeInfo[]>([]);
   const [feedbackHistory, setFeedbackHistory] = useState<FeedbackItem[]>([]);
   const [progressPercent, setProgressPercent] = useState(0);
   const [clearedCount, setClearedCount] = useState(0);
@@ -45,12 +48,13 @@ export default function ProgressClient() {
     };
     Promise.all([getJson("/api/badges"), getJson("/api/progress")]).then(([badgeData, progressData]) => {
       const earned = (badgeData.earned || []) as BadgeInfo[];
+      setBadges(earned);
       setEarnedConceptIds(new Set(earned.filter((b) => b.earned).map((b) => b.conceptId)));
       setFeedbackHistory(progressData.feedbackHistory || []);
       setProgressPercent(progressData.progressPercent || 0);
       setClearedCount((progressData.clearedConceptIds || []).length);
       setPracticedCount((progressData.practicedConceptIds || []).length);
-      setTotalConcepts(progressData.totalConcepts || BADGE_LEVELS.reduce((n, lv) => n + lv.badges.length, 0));
+      setTotalConcepts(progressData.totalConcepts || earned.length);
       setLoading(false);
     }).catch((loadError) => {
       setError(loadError instanceof Error ? loadError.message : "학습 기록을 불러오지 못했습니다.");
@@ -74,6 +78,12 @@ export default function ProgressClient() {
     background: "#fff", borderRadius: 24, border: "1px solid #EFEAF8",
     boxShadow: "0 12px 30px rgba(90,63,214,.07)", padding: "26px 28px",
   };
+  const badgeLevels = [...new Set(badges.map((badge) => badge.level))]
+    .sort((a, b) => a - b)
+    .map((level) => ({
+      label: `Level ${level}`,
+      badges: badges.filter((badge) => badge.level === level),
+    }));
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)" }}>
@@ -123,7 +133,7 @@ export default function ProgressClient() {
             <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747", whiteSpace: "nowrap" }}>획득한 뱃지</div>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: "#7B5CF0", background: "#F2ECFD", padding: "4px 10px", borderRadius: 99, whiteSpace: "nowrap" }}>{clearedCount} / {totalConcepts}</span>
           </div>
-          {BADGE_LEVELS.map((level) => {
+          {badgeLevels.map((level) => {
             const levelEarned = level.badges.filter((b) => earnedConceptIds.has(b.conceptId)).length;
             return (
               <div key={level.label} style={{ marginBottom: 22 }}>

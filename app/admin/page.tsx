@@ -2,8 +2,9 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db/index";
 import { concepts, users } from "@/lib/db/schema";
+import { resolveCurriculumIdForUser, sessionTenant } from "@/lib/curriculum-access";
 import { canOpenAdminPage, isAdministratorRole } from "@/lib/roles";
-import { asc } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import AdminClient from "./AdminClient";
 
 export default async function AdminPage() {
@@ -14,7 +15,17 @@ export default async function AdminPage() {
     redirect("/login");
   }
 
-  const rows = await db.select().from(concepts).orderBy(asc(concepts.orderIndex));
+  const context = sessionTenant(session);
+  if (!context) redirect("/login");
+
+  const defaultCurriculumId = await resolveCurriculumIdForUser(context);
+  const rows = defaultCurriculumId
+    ? await db
+        .select()
+        .from(concepts)
+        .where(and(eq(concepts.curriculumId, defaultCurriculumId), eq(concepts.isActive, true)))
+        .orderBy(asc(concepts.level), asc(concepts.orderIndex))
+    : [];
   const userRows = isAdministratorRole(role)
     ? await db
         .select({
@@ -24,6 +35,7 @@ export default async function AdminPage() {
           displayName: users.displayName,
         })
         .from(users)
+        .where(eq(users.schoolId, context.schoolId))
         .orderBy(asc(users.id))
     : [];
 
