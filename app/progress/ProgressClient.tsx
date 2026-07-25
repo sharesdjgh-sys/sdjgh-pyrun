@@ -8,6 +8,7 @@ import {
   List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Lock, Bot,
   Binary, FileText, ListChecks, Parentheses, BookOpen, Layers, Copy, Repeat, RefreshCcw,
   Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
+  Star,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -26,11 +27,14 @@ interface BadgeInfo {
   conceptNameKo: string;
   level: number;
   earned: boolean;
+  clearedAt: string | null;
 }
 interface FeedbackItem { id: number; aiFeedback: string; isSuccess: boolean; createdAt: string; codeSnippet: string; }
 
 export default function ProgressClient() {
   const [earnedConceptIds, setEarnedConceptIds] = useState<Set<number>>(new Set());
+  const [practicedConceptIds, setPracticedConceptIds] = useState<Set<number>>(new Set());
+  const [visibleBadgeTooltip, setVisibleBadgeTooltip] = useState<number | null>(null);
   const [badges, setBadges] = useState<BadgeInfo[]>([]);
   const [feedbackHistory, setFeedbackHistory] = useState<FeedbackItem[]>([]);
   const [progressPercent, setProgressPercent] = useState(0);
@@ -54,6 +58,7 @@ export default function ProgressClient() {
       setProgressPercent(progressData.progressPercent || 0);
       setClearedCount((progressData.clearedConceptIds || []).length);
       setPracticedCount((progressData.practicedConceptIds || []).length);
+      setPracticedConceptIds(new Set(progressData.practicedConceptIds || []));
       setTotalConcepts(progressData.totalConcepts || earned.length);
       setLoading(false);
     }).catch((loadError) => {
@@ -144,15 +149,112 @@ export default function ProgressClient() {
                 <div className="progress-badge-grid">
                   {level.badges.map((badge) => {
                     const earned = earnedConceptIds.has(badge.conceptId);
+                    const practiced = practicedConceptIds.has(badge.conceptId);
                     const Icon = ICON_MAP[badge.iconName] || Terminal;
                     const hex = COLOR_HEX[badge.colorClass] || "#7B5CF0";
+                    const earnedDate = badge.clearedAt
+                      ? new Date(badge.clearedAt).toLocaleDateString("ko-KR", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "";
                     return (
-                      <div key={badge.conceptId} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
-                        <div style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 18, ...(earned ? { background: "#fff", border: `2.5px solid ${hex}40`, boxShadow: `0 6px 16px ${hex}2e` } : { background: "#F4F1FA", border: "2.5px dashed #E2DCF2" }) }}>
-                          {earned ? <Icon size={26} color={hex} /> : <Lock size={20} color="#C9C1DE" />}
+                      <div key={badge.conceptId} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, minWidth: 0 }}>
+                        <div
+                          className={earned ? "progress-badge-earned" : undefined}
+                          tabIndex={0}
+                          aria-label={earned
+                            ? `${badge.nameKo}, ${earnedDate || "획득 완료"}`
+                            : `${badge.nameKo}, 획득 조건: ${badge.conceptNameKo} 문제 해결`}
+                          onMouseEnter={() => setVisibleBadgeTooltip(badge.conceptId)}
+                          onMouseLeave={() => setVisibleBadgeTooltip(null)}
+                          onFocus={() => setVisibleBadgeTooltip(badge.conceptId)}
+                          onBlur={() => setVisibleBadgeTooltip(null)}
+                          style={{
+                            position: "relative",
+                            width: "100%",
+                            aspectRatio: "1",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: 18,
+                            outline: "none",
+                            cursor: "help",
+                            ...(earned
+                              ? {
+                                  background: `radial-gradient(circle at 38% 30%,#fff 0%,${hex}12 62%,${hex}22 100%)`,
+                                  border: `2.5px solid ${hex}8A`,
+                                  boxShadow: `inset 0 0 0 4px #fff, inset 0 0 0 5.5px ${hex}35, 0 7px 17px ${hex}32`,
+                                }
+                              : {
+                                  background: `${hex}0D`,
+                                  border: `2px dashed ${hex}45`,
+                                  boxShadow: `inset 0 1px 0 rgba(255,255,255,.75)`,
+                                }),
+                          }}
+                        >
+                          {earned ? (
+                            <>
+                              <Star
+                                size={14}
+                                fill="#FFC23C"
+                                color="#E9A91D"
+                                strokeWidth={1.6}
+                                style={{ position: "absolute", top: 7, right: 7, filter: "drop-shadow(0 2px 2px rgba(210,143,9,.22))" }}
+                              />
+                              <div style={{ width: 48, height: 48, display: "grid", placeItems: "center", borderRadius: "50%", background: `${hex}14`, boxShadow: `inset 0 2px 3px rgba(255,255,255,.9), 0 4px 8px ${hex}24` }}>
+                                <Icon size={27} color={hex} strokeWidth={2.15} style={{ filter: `drop-shadow(0 3px 2px ${hex}35)`, transform: "translateY(-1px)" }} />
+                              </div>
+                              <span className="progress-badge-shine" aria-hidden="true" />
+                            </>
+                          ) : (
+                            <>
+                              <Icon
+                                size={29}
+                                color={hex}
+                                strokeWidth={2}
+                                style={{ opacity: 0.28, filter: "saturate(.18)" }}
+                              />
+                              <span style={{ position: "absolute", right: 6, bottom: 6, width: 19, height: 19, display: "grid", placeItems: "center", borderRadius: "50%", background: "#fff", border: `1px solid ${hex}35`, boxShadow: "0 2px 6px rgba(73,60,110,.13)" }}>
+                                <Lock size={10.5} color="#9C92B8" strokeWidth={2.3} />
+                              </span>
+                            </>
+                          )}
+                          {visibleBadgeTooltip === badge.conceptId && (
+                            <div
+                              role="tooltip"
+                              style={{
+                                position: "absolute",
+                                left: "50%",
+                                bottom: "calc(100% + 10px)",
+                                zIndex: 10,
+                                width: 178,
+                                transform: "translateX(-50%)",
+                                padding: "9px 11px",
+                                borderRadius: 10,
+                                background: "#332B4D",
+                                color: "#fff",
+                                boxShadow: "0 8px 20px rgba(44,39,71,.22)",
+                                fontSize: 11,
+                                fontWeight: 600,
+                                lineHeight: 1.45,
+                                textAlign: "center",
+                                pointerEvents: "none",
+                              }}
+                            >
+                              {earned
+                                ? `${earnedDate || "획득 완료"}에 획득했어요`
+                                : `획득 조건: ${badge.conceptNameKo} 문제를 해결하세요`}
+                              <span style={{ position: "absolute", left: "50%", top: "100%", width: 0, height: 0, transform: "translateX(-50%)", borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #332B4D" }} />
+                            </div>
+                          )}
                         </div>
-                        <span style={{ fontSize: 10.5, fontWeight: 600, color: earned ? "#544D70" : "#BDB6D4", textAlign: "center", lineHeight: 1.2 }}>
+                        <span style={{ fontSize: 10.5, fontWeight: earned ? 800 : 650, color: earned ? "#544D70" : "#8F87A8", textAlign: "center", lineHeight: 1.2 }}>
                           {badge.nameKo}
+                        </span>
+                        <span style={{ minHeight: 14, marginTop: -3, fontSize: 9.5, fontWeight: 650, color: earned ? hex : practiced ? "#8B6EE9" : "#AAA2BD", textAlign: "center", lineHeight: 1.2 }}>
+                          {earned ? earnedDate : practiced ? "연습 중" : "도전 전"}
                         </span>
                       </div>
                     );

@@ -165,6 +165,42 @@ html, body {
   gap: 12px;
 }
 
+.progress-badge-earned {
+  animation: badgeEarnedPop 0.55s cubic-bezier(.2,.9,.25,1) both;
+}
+
+.progress-badge-shine {
+  position: absolute;
+  inset: 3px;
+  overflow: hidden;
+  border-radius: 14px;
+  pointer-events: none;
+}
+
+.progress-badge-shine::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -55%;
+  width: 34%;
+  height: 160%;
+  transform: rotate(20deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+  animation: badgeShine 1.05s 0.18s ease-out both;
+}
+
+@keyframes badgeEarnedPop {
+  0% { transform: scale(.88); filter: brightness(1.15); }
+  65% { transform: scale(1.035); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes badgeShine {
+  from { left: -55%; opacity: 0; }
+  18% { opacity: 1; }
+  to { left: 125%; opacity: 0; }
+}
+
 .status-page {
   min-height: 100vh;
   display: grid;
