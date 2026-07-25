@@ -94,7 +94,10 @@ export async function GET() {
       db
         .select({ userId: userConceptPractices.userId, conceptId: userConceptPractices.conceptId })
         .from(userConceptPractices)
-        .where(inArray(userConceptPractices.userId, studentIds)),
+        .where(and(
+          inArray(userConceptPractices.userId, studentIds),
+          eq(userConceptPractices.practiceSource, "selected")
+        )),
       db
         .select({ userId: userConceptUnlocks.userId, conceptId: userConceptUnlocks.conceptId })
         .from(userConceptUnlocks)

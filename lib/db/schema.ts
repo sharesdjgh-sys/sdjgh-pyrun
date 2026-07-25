@@ -148,6 +148,7 @@ export const userConceptPractices = pgTable(
     userId: integer("user_id").notNull().references(() => users.id),
     conceptId: integer("concept_id").notNull().references(() => concepts.id),
     practicedAt: timestamp("practiced_at").defaultNow(),
+    practiceSource: varchar("practice_source", { length: 20 }).notNull().default("detected"),
   },
   (table) => ({
     userConceptPracticeUnique: uniqueIndex("user_concept_practice_unique").on(table.userId, table.conceptId),

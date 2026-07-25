@@ -52,6 +52,7 @@ export async function GET() {
     .innerJoin(concepts, eq(userConceptPractices.conceptId, concepts.id))
     .where(and(
       eq(userConceptPractices.userId, userId),
+      eq(userConceptPractices.practiceSource, "selected"),
       eq(concepts.curriculumId, curriculumId),
       eq(concepts.isActive, true)
     ));

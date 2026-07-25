@@ -65,9 +65,10 @@ export async function POST(req: NextRequest) {
     let feedback: string | null = null;
     let solved = false;
     const newlyEarnedConceptIds: number[] = [];
+    let clearedIds: number[] = [];
+    let canAccessPractice = false;
 
-    if (practiceConceptId !== null && isSuccess && parseResult.syntaxValid) {
-      let clearedIds: number[] = [];
+    if (practiceConceptId !== null && practiceUnit) {
       let manuallyUnlockedIds: number[] = [];
       if (isStudent) {
         const [clears, manualUnlocks] = await Promise.all([
@@ -85,43 +86,43 @@ export async function POST(req: NextRequest) {
       }
 
       const accessIds = effectiveConceptAccessIdsForOrders(clearedIds, manuallyUnlockedIds, orders);
-
-      // 학생에게만 순차 잠금을 적용한다. 교사와 관리자는 모든 문제를 자유롭게 확인할 수 있다.
-      if (
+      canAccessPractice =
         !isStudent ||
-        practiceUnit?.sourceConceptId === 0 ||
-        isConceptUnlockedInOrders(practiceConceptId, accessIds, orders)
-      ) {
-        const [concept] = await db
-          .select({ nameKo: concepts.nameKo, practiceCode: concepts.practiceCode })
-          .from(concepts)
-          .where(and(
-            eq(concepts.id, practiceConceptId),
-            curriculumId ? eq(concepts.curriculumId, curriculumId) : eq(concepts.curriculumId, -1),
-            eq(concepts.isActive, true)
-          ));
+        practiceUnit.sourceConceptId === 0 ||
+        isConceptUnlockedInOrders(practiceConceptId, accessIds, orders);
+    }
 
-        if (concept?.practiceCode) {
-          const verdict = await judgePractice({
-            conceptName: concept.nameKo,
-            problem: createStudentPracticeTemplate(concept.practiceCode),
-            code,
-            stdout: stdout || "",
-          });
+    // 학생에게만 순차 잠금을 적용한다. 교사와 관리자는 모든 문제를 자유롭게 확인할 수 있다.
+    if (practiceConceptId !== null && canAccessPractice && isSuccess && parseResult.syntaxValid) {
+      const [concept] = await db
+        .select({ nameKo: concepts.nameKo, practiceCode: concepts.practiceCode })
+        .from(concepts)
+        .where(and(
+          eq(concepts.id, practiceConceptId),
+          curriculumId ? eq(concepts.curriculumId, curriculumId) : eq(concepts.curriculumId, -1),
+          eq(concepts.isActive, true)
+        ));
 
-          if (verdict) {
-            feedback = verdict.feedback;
-            solved = verdict.solved;
-          }
+      if (concept?.practiceCode) {
+        const verdict = await judgePractice({
+          conceptName: concept.nameKo,
+          problem: createStudentPracticeTemplate(concept.practiceCode),
+          code,
+          stdout: stdout || "",
+        });
 
-          // 뱃지(개념 클리어 기록)는 학생 계정에만 지급한다.
-          if (isStudent && solved && !clearedIds.includes(practiceConceptId)) {
-            await db
-              .insert(userConceptClears)
-              .values({ userId, conceptId: practiceConceptId })
-              .onConflictDoNothing();
-            newlyEarnedConceptIds.push(practiceConceptId);
-          }
+        if (verdict) {
+          feedback = verdict.feedback;
+          solved = verdict.solved;
+        }
+
+        // 뱃지(개념 클리어 기록)는 학생 계정에만 지급한다.
+        if (isStudent && solved && !clearedIds.includes(practiceConceptId)) {
+          await db
+            .insert(userConceptClears)
+            .values({ userId, conceptId: practiceConceptId })
+            .onConflictDoNothing();
+          newlyEarnedConceptIds.push(practiceConceptId);
         }
       }
     }
@@ -137,14 +138,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Browser-reported successes are also recorded as practice evidence.
-    if (isSuccess && parseResult.syntaxValid) {
-      for (const conceptId of mappedDetectedConceptIds) {
-        await db
-          .insert(userConceptPractices)
-          .values({ userId, conceptId })
-          .onConflictDoNothing();
-      }
+    // 실제로 "문제 풀기"에서 선택해 실행한 단원만 연습 기록으로 인정한다.
+    if (practiceConceptId !== null && canAccessPractice) {
+      await db
+        .insert(userConceptPractices)
+        .values({ userId, conceptId: practiceConceptId, practiceSource: "selected" })
+        .onConflictDoUpdate({
+          target: [userConceptPractices.userId, userConceptPractices.conceptId],
+          set: { practiceSource: "selected", practicedAt: new Date() },
+        });
     }
 
     // Save feedback history
@@ -161,7 +163,7 @@ export async function POST(req: NextRequest) {
       feedback,
       // 축하 오버레이는 conceptId 기준으로 뱃지 메타데이터를 찾는다.
       newlyEarnedBadgeIds: newlyEarnedConceptIds,
-      practicedConceptIds: isSuccess && parseResult.syntaxValid ? mappedDetectedConceptIds : [],
+      practicedConceptIds: practiceConceptId !== null && canAccessPractice ? [practiceConceptId] : [],
       completionStatus: solved ? "cleared" : "practice",
     });
   } catch (error) {
