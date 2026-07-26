@@ -5,12 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { COLOR_HEX } from "@/components/badges/colorMap";
 import { getBadgeImagePath } from "@/lib/badge-images";
+import { getStudentCallName } from "@/lib/student-name";
+import { curriculumDisplayOrder } from "@/lib/curriculum-model";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
   List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Lock, Bot,
   Binary, FileText, ListChecks, Parentheses, BookOpen, Layers, Copy, Repeat, RefreshCcw,
   Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
-  Star,
+  Star, CheckCircle2, ChevronRight, Circle, Crown, LockKeyhole, Map, Target, Trophy, Zap,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -29,20 +31,33 @@ interface BadgeInfo {
   colorClass: string;
   conceptNameKo: string;
   level: number;
+  groupName: string;
+  orderIndex: number;
   earned: boolean;
   clearedAt: string | null;
 }
 interface FeedbackItem { id: number; aiFeedback: string; isSuccess: boolean; createdAt: string; codeSnippet: string; }
 
-export default function ProgressClient() {
+interface ProgressClientProps {
+  userName: string;
+}
+
+const LEVEL_RANK_NAMES: Record<number, string> = {
+  1: "파이썬 탐험가",
+  2: "코딩 챌린저",
+  3: "데이터 분석가",
+};
+
+export default function ProgressClient({ userName }: ProgressClientProps) {
   const [earnedConceptIds, setEarnedConceptIds] = useState<Set<number>>(new Set());
   const [practicedConceptIds, setPracticedConceptIds] = useState<Set<number>>(new Set());
+  const [manuallyUnlockedConceptIds, setManuallyUnlockedConceptIds] = useState<Set<number>>(new Set());
   const [visibleBadgeTooltip, setVisibleBadgeTooltip] = useState<number | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState(1);
   const [badges, setBadges] = useState<BadgeInfo[]>([]);
   const [feedbackHistory, setFeedbackHistory] = useState<FeedbackItem[]>([]);
   const [progressPercent, setProgressPercent] = useState(0);
   const [clearedCount, setClearedCount] = useState(0);
-  const [practicedCount, setPracticedCount] = useState(0);
   const [totalConcepts, setTotalConcepts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,11 +72,15 @@ export default function ProgressClient() {
       const earned = (badgeData.earned || []) as BadgeInfo[];
       setBadges(earned);
       setEarnedConceptIds(new Set(earned.filter((b) => b.earned).map((b) => b.conceptId)));
+      const unfinishedLevel = [...new Set(earned.map((badge) => badge.level))]
+        .sort((left, right) => left - right)
+        .find((level) => earned.some((badge) => badge.level === level && badge.sourceConceptId !== 0 && !badge.earned));
+      setSelectedLevel(unfinishedLevel ?? earned.at(-1)?.level ?? 1);
       setFeedbackHistory(progressData.feedbackHistory || []);
       setProgressPercent(progressData.progressPercent || 0);
       setClearedCount((progressData.clearedConceptIds || []).length);
-      setPracticedCount((progressData.practicedConceptIds || []).length);
       setPracticedConceptIds(new Set(progressData.practicedConceptIds || []));
+      setManuallyUnlockedConceptIds(new Set(progressData.manuallyUnlockedConceptIds || []));
       setTotalConcepts(progressData.totalConcepts || earned.length);
       setLoading(false);
     }).catch((loadError) => {
@@ -89,9 +108,38 @@ export default function ProgressClient() {
   const badgeLevels = [...new Set(badges.map((badge) => badge.level))]
     .sort((a, b) => a - b)
     .map((level) => ({
+      level,
       label: `Level ${level}`,
-      badges: badges.filter((badge) => badge.level === level),
+      badges: curriculumDisplayOrder(badges.filter((badge) => badge.level === level)),
     }));
+  const currentLevelGroup = badgeLevels.find((group) =>
+    group.badges.some((badge) => badge.sourceConceptId !== 0 && !earnedConceptIds.has(badge.conceptId))
+  ) ?? badgeLevels.at(-1);
+  const currentLevel = currentLevelGroup?.level ?? 1;
+  const currentLevelBadges = currentLevelGroup?.badges ?? [];
+  const currentLevelEarned = currentLevelBadges.filter((badge) => earnedConceptIds.has(badge.conceptId)).length;
+  const currentLevelPracticeOnly = currentLevelBadges.filter((badge) =>
+    practicedConceptIds.has(badge.conceptId) && !earnedConceptIds.has(badge.conceptId)
+  ).length;
+  const levelXp = currentLevelEarned * 100 + currentLevelPracticeOnly * 20;
+  const levelMaxXp = Math.max(currentLevelBadges.length * 100, 100);
+  const levelXpPercent = Math.min(100, Math.round((levelXp / levelMaxXp) * 100));
+  const practiceOnlyCount = badges.filter((badge) =>
+    practicedConceptIds.has(badge.conceptId) && !earnedConceptIds.has(badge.conceptId)
+  ).length;
+  const nextBadge = badgeLevels
+    .flatMap((group) => group.badges)
+    .find((badge) => badge.sourceConceptId !== 0 && !earnedConceptIds.has(badge.conceptId));
+  const nextBadgeImage = getBadgeImagePath(nextBadge?.sourceConceptId);
+  const nextBadgePracticed = nextBadge ? practicedConceptIds.has(nextBadge.conceptId) : false;
+  const selectedLevelGroup = badgeLevels.find((group) => group.level === selectedLevel) ?? currentLevelGroup;
+  const selectedLevelBadges = selectedLevelGroup?.badges ?? [];
+  const recentAchievements = badges
+    .filter((badge) => badge.earned && badge.clearedAt)
+    .sort((left, right) => new Date(right.clearedAt!).getTime() - new Date(left.clearedAt!).getTime())
+    .slice(0, 5);
+  const playerName = getStudentCallName(userName);
+  const currentRankName = LEVEL_RANK_NAMES[currentLevel] ?? `Level ${currentLevel} 탐험가`;
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)" }}>
@@ -111,46 +159,165 @@ export default function ProgressClient() {
         <div style={{ marginLeft: 18, fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747", whiteSpace: "nowrap" }}>성장 기록</div>
       </div>
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "30px 22px 60px", display: "flex", flexDirection: "column", gap: 22 }}>
+      <main className="progress-game-shell">
+        <section className="player-status-card" aria-labelledby="player-status-title">
+          <div className="player-profile-row">
+            <div className="player-avatar">
+              <Image src="/pyrun_studio-favicon.png" alt="" width={76} height={66} priority style={{ objectFit: "contain" }} />
+              <span className="player-level-chip">LV.{currentLevel}</span>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="player-eyebrow">PYRUN PLAYER PROFILE</div>
+              <h1 id="player-status-title" className="player-name">{playerName}의 코딩 프로필</h1>
+              <div className="player-rank"><Crown size={15} fill="#FFD86B" /> Level {currentLevel} · {currentRankName}</div>
+            </div>
+            <div className="player-total-progress">
+              <strong>{progressPercent}%</strong>
+              <span>전체 모험 진행률</span>
+            </div>
+          </div>
 
-        {/* Progress card */}
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 13, background: "linear-gradient(140deg,#8B6CFF,#7B5CF0)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 14px rgba(123,92,240,.32)", flexShrink: 0 }}>
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
-              </svg>
+          <div className="player-xp-block">
+            <div className="player-xp-label">
+              <span><Zap size={14} fill="#FFE173" /> LEVEL {currentLevel} XP</span>
+              <strong>{levelXp} / {levelMaxXp} XP</strong>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747" }}>학습 진행률</div>
-              <div style={{ fontSize: 13.5, color: "#8B83A8" }}>문제 해결 {clearedCount}개 / {totalConcepts}개 · 연습 {practicedCount}개</div>
+            <div className="player-xp-track">
+              <div className="player-xp-fill" style={{ width: `${levelXpPercent}%` }} />
             </div>
-            <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 34, color: "#7B5CF0" }}>{progressPercent}%</div>
+            <div className="player-xp-help">문제 최초 도전 20 XP · 문제 해결 100 XP · 반복 실행은 중복 반영되지 않아</div>
           </div>
-          <div style={{ height: 18, borderRadius: 99, background: "#F0EBFA", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${progressPercent}%`, borderRadius: 99, background: "linear-gradient(90deg,#7B5CF0,#FF8FB8,#FFC23C)", backgroundSize: "240px 100%", animation: "barShimmer 2.2s linear infinite", boxShadow: "0 2px 8px rgba(123,92,240,.4)", transition: "width 0.5s ease" }} />
+
+          <div className="player-stat-grid">
+            {[
+              { label: "완료한 퀘스트", value: clearedCount, icon: CheckCircle2 },
+              { label: "연습 중", value: practiceOnlyCount, icon: Target },
+              { label: "획득한 뱃지", value: clearedCount, icon: Trophy },
+              { label: "남은 퀘스트", value: Math.max(totalConcepts - clearedCount, 0), icon: Map },
+            ].map(({ label, value, icon: StatIcon }) => (
+              <div className="player-stat" key={label}>
+                <StatIcon size={17} />
+                <strong>{value}</strong>
+                <span>{label}</span>
+              </div>
+            ))}
           </div>
+        </section>
+
+        <div className="progress-dashboard-grid">
+          <section className="next-reward-card" aria-labelledby="next-reward-title">
+            <div className="progress-section-kicker"><Target size={15} /> NEXT REWARD</div>
+            {nextBadge ? (
+              <>
+                <div className="next-reward-visual">
+                  <div className="next-reward-glow" />
+                  {nextBadgeImage ? (
+                    <Image
+                      src={nextBadgeImage}
+                      alt={`${nextBadge.nameKo} 뱃지`}
+                      width={190}
+                      height={190}
+                      sizes="190px"
+                      style={{ position: "relative", objectFit: "contain", filter: "drop-shadow(0 14px 14px rgba(42,24,102,.2))" }}
+                    />
+                  ) : (
+                    <Award size={74} color="#7B5CF0" />
+                  )}
+                </div>
+                <div className={`next-reward-status ${nextBadgePracticed ? "is-practicing" : ""}`}>
+                  {nextBadgePracticed ? "현재 연습 중" : "지금 도전 가능"}
+                </div>
+                <h2 id="next-reward-title">{nextBadge.nameKo}</h2>
+                <p>{nextBadge.conceptNameKo} 문제를 해결하면 이 뱃지를 획득할 수 있어.</p>
+                <div className="next-reward-meter">
+                  <span style={{ width: nextBadgePracticed ? "55%" : "12%" }} />
+                </div>
+                <div className="next-reward-hint">
+                  {nextBadgePracticed ? "조금만 더! 문제를 해결하면 바로 획득해." : "문제 하나를 해결하고 새로운 뱃지를 획득해보자."}
+                </div>
+                <Link href="/learn" className="progress-action-button">
+                  {nextBadgePracticed ? "계속 도전하기" : "퀘스트 시작하기"}
+                  <ChevronRight size={18} />
+                </Link>
+              </>
+            ) : (
+              <div className="all-clear-state">
+                <Trophy size={72} color="#F0B429" />
+                <h2 id="next-reward-title">모든 뱃지를 획득했어!</h2>
+                <p>현재 커리큘럼의 모든 퀘스트를 완료했어.</p>
+              </div>
+            )}
+          </section>
+
+          <section style={cardStyle} aria-labelledby="quest-map-title">
+            <div className="progress-card-heading">
+              <div>
+                <div className="progress-section-kicker"><Map size={15} /> QUEST MAP</div>
+                <h2 id="quest-map-title">Level {currentLevel} 퀘스트</h2>
+              </div>
+              <span>{currentLevelEarned} / {currentLevelBadges.length}</span>
+            </div>
+            <div className="quest-map-list">
+              {currentLevelBadges.map((badge, index) => {
+                const earned = earnedConceptIds.has(badge.conceptId);
+                const practiced = practicedConceptIds.has(badge.conceptId) && !earned;
+                const requiredBadges = currentLevelBadges.filter((item) => item.sourceConceptId !== 0);
+                const requiredIndex = requiredBadges.findIndex((item) => item.conceptId === badge.conceptId);
+                const priorCleared = requiredIndex <= 0 || requiredBadges
+                  .slice(0, requiredIndex)
+                  .every((item) => earnedConceptIds.has(item.conceptId));
+                const available = badge.sourceConceptId === 0 || priorCleared || manuallyUnlockedConceptIds.has(badge.conceptId);
+                const status = earned ? "완료" : practiced ? "연습 중" : available ? "다음 도전" : "잠김";
+                const StatusIcon = earned ? CheckCircle2 : practiced || available ? Circle : LockKeyhole;
+                return (
+                  <div className={`quest-map-row ${earned ? "is-cleared" : practiced ? "is-practicing" : available ? "is-available" : "is-locked"}`} key={badge.conceptId}>
+                    <div className="quest-map-node">
+                      <StatusIcon size={17} />
+                      {index < currentLevelBadges.length - 1 && <span />}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <strong>{badge.conceptNameKo}</strong>
+                      <small>{badge.nameKo}</small>
+                    </div>
+                    <em>{status}</em>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </div>
 
         {/* Badges card */}
         <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 20 }}>
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="#FFC23C" stroke="#FFC23C" strokeWidth="1.5" strokeLinejoin="round" style={{ animation: "starSpin 14s linear infinite", flexShrink: 0 }}>
-              <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 21.5 12 17.5 5.5 21.5 7 14.5 2 9.5 9 9" />
-            </svg>
-            <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747", whiteSpace: "nowrap" }}>획득한 뱃지</div>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#7B5CF0", background: "#F2ECFD", padding: "4px 10px", borderRadius: 99, whiteSpace: "nowrap" }}>{clearedCount} / {totalConcepts}</span>
+          <div className="badge-collection-heading">
+            <div>
+              <div className="progress-section-kicker" style={{ color: "#A06A00" }}><Trophy size={15} /> BADGE COLLECTION</div>
+              <h2>뱃지 컬렉션</h2>
+              <p>획득한 뱃지와 앞으로 얻을 보상을 한눈에 확인해봐.</p>
+            </div>
+            <span>{clearedCount} / {totalConcepts} 수집</span>
           </div>
-          {badgeLevels.map((level) => {
-            const levelEarned = level.badges.filter((b) => earnedConceptIds.has(b.conceptId)).length;
-            return (
-              <div key={level.label} style={{ marginBottom: 22 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#544D70" }}>{level.label}</span>
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "#9C92BE", background: "#F6F3FC", padding: "3px 9px", borderRadius: 99 }}>{levelEarned} / {level.badges.length}</span>
-                </div>
-                <div className="progress-badge-grid">
-                  {level.badges.map((badge) => {
+          <div className="badge-level-tabs" role="tablist" aria-label="뱃지 레벨 선택">
+            {badgeLevels.map((group) => {
+              const earnedInLevel = group.badges.filter((badge) => earnedConceptIds.has(badge.conceptId)).length;
+              return (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={selectedLevel === group.level}
+                  data-level={group.level}
+                  className={selectedLevel === group.level ? "is-active" : ""}
+                  onClick={() => setSelectedLevel(group.level)}
+                  key={group.level}
+                >
+                  <strong>{group.label}</strong>
+                  <span>{earnedInLevel}/{group.badges.length}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="progress-badge-grid">
+                  {selectedLevelBadges.map((badge) => {
                     const earned = earnedConceptIds.has(badge.conceptId);
                     const practiced = practicedConceptIds.has(badge.conceptId);
                     const Icon = ICON_MAP[badge.iconName] || Terminal;
@@ -283,49 +450,73 @@ export default function ProgressClient() {
                       </div>
                     );
                   })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Feedback history card */}
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 18 }}>
-            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#7B5CF0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747" }}>AI 피드백 기록</div>
           </div>
-
-          {feedbackHistory.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "32px 0", color: "#BDB6D4", fontSize: 14 }}>
-              아직 코드를 실행한 기록이 없어요. 학습 화면에서 코드를 실행해보세요.
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {feedbackHistory.map((item) => (
-                <div key={item.id} style={{ border: "1px solid #F0EBFA", borderRadius: 16, padding: "15px 17px", background: "#FCFBFF" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: item.isSuccess ? "#0FA37C" : "#E23E70", background: item.isSuccess ? "#E3FBF1" : "#FFE8EF", padding: "4px 10px", borderRadius: 99 }}>
-                      {item.isSuccess ? "성공" : "오류"}
-                    </span>
-                    <span style={{ fontSize: 12, color: "#B6AED0" }}>
-                      {new Date(item.createdAt).toLocaleDateString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                  {item.codeSnippet && (
-                    <div style={{ fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace", fontSize: 12.5, color: "#6B6586", background: "#F3EFFB", borderRadius: 9, padding: "8px 11px", marginBottom: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {item.codeSnippet}{item.codeSnippet.length >= 100 ? "..." : ""}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 13.5, lineHeight: 1.55, color: "#3A3458" }}>{item.aiFeedback}</div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-      </div>
+
+        <div className="progress-history-grid">
+          <section style={cardStyle} aria-labelledby="recent-achievements-title">
+            <div className="progress-card-heading">
+              <div>
+                <div className="progress-section-kicker" style={{ color: "#A06A00" }}><Trophy size={15} /> RECENT ACHIEVEMENTS</div>
+                <h2 id="recent-achievements-title">최근 업적</h2>
+              </div>
+            </div>
+            {recentAchievements.length === 0 ? (
+              <div className="progress-empty-state">
+                <Trophy size={38} />
+                <p>첫 번째 문제를 해결하면<br />여기에 업적이 기록돼.</p>
+              </div>
+            ) : (
+              <div className="achievement-timeline">
+                {recentAchievements.map((badge) => {
+                  const imagePath = getBadgeImagePath(badge.sourceConceptId);
+                  return (
+                    <div className="achievement-row" key={badge.conceptId}>
+                      <div className="achievement-icon">
+                        {imagePath ? <Image src={imagePath} alt="" fill sizes="48px" style={{ objectFit: "contain" }} /> : <Trophy size={22} />}
+                      </div>
+                      <div>
+                        <strong>{badge.nameKo} 획득</strong>
+                        <span>{badge.conceptNameKo} 퀘스트를 완료했어</span>
+                      </div>
+                      <time>{new Date(badge.clearedAt!).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}</time>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section style={cardStyle} aria-labelledby="feedback-history-title">
+            <div className="progress-card-heading">
+              <div>
+                <div className="progress-section-kicker"><Zap size={15} /> LEARNING LOG</div>
+                <h2 id="feedback-history-title">최근 학습 기록</h2>
+              </div>
+              <span>최근 {Math.min(feedbackHistory.length, 6)}개</span>
+            </div>
+            {feedbackHistory.length === 0 ? (
+              <div className="progress-empty-state">
+                <Zap size={38} />
+                <p>아직 실행 기록이 없어.<br />코드를 실행하면 기록이 남아.</p>
+              </div>
+            ) : (
+              <div className="learning-log-list">
+                {feedbackHistory.slice(0, 6).map((item) => (
+                  <details key={item.id}>
+                    <summary>
+                      <span className={item.isSuccess ? "is-success" : "is-error"}>{item.isSuccess ? "성공" : "오류"}</span>
+                      <strong>{item.codeSnippet || "코드 실행"}</strong>
+                      <time>{new Date(item.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}</time>
+                    </summary>
+                    <div>{item.aiFeedback}</div>
+                  </details>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
     </div>
   );
 }

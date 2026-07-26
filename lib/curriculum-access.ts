@@ -137,6 +137,7 @@ export function curriculumOrders(
     id: number;
     sourceConceptId?: number | null;
     level: number;
+    groupName?: string | null;
     orderIndex: number;
   }>,
 ): number[][] {

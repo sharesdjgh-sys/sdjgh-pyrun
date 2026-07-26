@@ -27,6 +27,7 @@ export async function GET() {
       colorClass: badges.colorClass,
       conceptNameKo: concepts.nameKo,
       level: concepts.level,
+      groupName: concepts.groupName,
       orderIndex: concepts.orderIndex,
     })
     .from(badges)

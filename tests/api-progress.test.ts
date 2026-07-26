@@ -167,6 +167,20 @@ test("robot intro does not block the first required curriculum lesson", () => {
   assert.equal(isConceptUnlockedInOrders(102, [], clonedOrders), true);
 });
 
+test("dynamic curriculum unlocking follows displayed group order", () => {
+  const orders = curriculumLevelOrders([
+    { id: 1, sourceConceptId: 1, level: 1, groupName: "자료형", orderIndex: 1 },
+    { id: 2, sourceConceptId: 2, level: 1, groupName: "자료형", orderIndex: 2 },
+    { id: 3, sourceConceptId: 3, level: 1, groupName: "연산자", orderIndex: 3 },
+    { id: 7, sourceConceptId: 7, level: 1, groupName: "자료형", orderIndex: 7 },
+    { id: 8, sourceConceptId: 8, level: 1, groupName: "자료형", orderIndex: 8 },
+  ]);
+
+  assert.deepEqual(orders, [[1, 2, 7, 8, 3]]);
+  assert.equal(isConceptUnlockedInOrders(3, [1, 2], orders), false);
+  assert.equal(isConceptUnlockedInOrders(3, [1, 2, 7, 8], orders), true);
+});
+
 test("feedback validation accepts optional practiceConceptId", () => {
   const base = { code: "print(1)", stdout: "", stderr: "", isSuccess: true };
   assert.equal(validateFeedback(base).practiceConceptId, null);
