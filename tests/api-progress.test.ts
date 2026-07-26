@@ -24,6 +24,7 @@ import { parseSchoolStudentNumber } from "../lib/student-number";
 import { createStudentPracticeTemplate } from "../lib/practice-template";
 import { getStudentAddress, getStudentCallName, getStudentVocative } from "../lib/student-name";
 import { getBadgeImagePath } from "../lib/badge-images";
+import { learningAttemptStatus } from "../lib/learning-history";
 
 test("authentication helper rejects missing and malformed sessions", () => {
   assert.equal(authenticatedUserId(null), null);
@@ -190,6 +191,15 @@ test("feedback validation accepts optional practiceConceptId", () => {
   assert.throws(() => validateFeedback({ ...base, practiceConceptId: -1 }), RequestValidationError);
   assert.throws(() => validateFeedback({ ...base, practiceConceptId: 1.5 }), RequestValidationError);
   assert.throws(() => validateFeedback({ ...base, practiceConceptId: "3" }), RequestValidationError);
+});
+
+test("learning history separates execution success from answer correctness", () => {
+  assert.equal(learningAttemptStatus({ isSuccess: true, practiceConceptId: 3, isSolved: true }), "solved");
+  assert.equal(learningAttemptStatus({ isSuccess: true, practiceConceptId: 3, isSolved: false }), "incorrect");
+  assert.equal(learningAttemptStatus({ isSuccess: false, practiceConceptId: 3, isSolved: false }), "incorrect");
+  assert.equal(learningAttemptStatus({ isSuccess: true, practiceConceptId: 3, isSolved: null }), "pending");
+  assert.equal(learningAttemptStatus({ isSuccess: true, practiceConceptId: null, isSolved: null }), "free");
+  assert.equal(learningAttemptStatus({ isSuccess: false, practiceConceptId: null, isSolved: null }), "runtime_error");
 });
 
 test("extra practice generation requires a valid concept ID", () => {

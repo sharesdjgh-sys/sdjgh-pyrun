@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     // 연습문제 풀이인 경우: 문제 지문은 클라이언트를 믿지 않고 DB에서 직접 읽어 Gemini로 채점한다.
     let feedback: string | null = null;
-    let solved = false;
+    let solved: boolean | null = null;
     const newlyEarnedConceptIds: number[] = [];
     let clearedIds: number[] = [];
     let canAccessPractice = false;
@@ -90,6 +90,10 @@ export async function POST(req: NextRequest) {
         !isStudent ||
         practiceUnit.sourceConceptId === 0 ||
         isConceptUnlockedInOrders(practiceConceptId, accessIds, orders);
+
+      if (canAccessPractice && (!isSuccess || !parseResult.syntaxValid)) {
+        solved = false;
+      }
     }
 
     // 학생에게만 순차 잠금을 적용한다. 교사와 관리자는 모든 문제를 자유롭게 확인할 수 있다.
@@ -117,7 +121,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 뱃지(개념 클리어 기록)는 학생 계정에만 지급한다.
-        if (isStudent && solved && !clearedIds.includes(practiceConceptId)) {
+        if (isStudent && solved === true && !clearedIds.includes(practiceConceptId)) {
           await db
             .insert(userConceptClears)
             .values({ userId, conceptId: practiceConceptId })
@@ -153,10 +157,12 @@ export async function POST(req: NextRequest) {
     await db.insert(feedbackHistory).values({
       userId,
       conceptIds: mappedDetectedConceptIds,
+      practiceConceptId: practiceConceptId !== null && canAccessPractice ? practiceConceptId : null,
       codeSubmitted: code || "",
       outputText: stdout || null,
       aiFeedback: feedback,
       isSuccess,
+      isSolved: solved,
     });
 
     return NextResponse.json({
@@ -164,7 +170,7 @@ export async function POST(req: NextRequest) {
       // 축하 오버레이는 conceptId 기준으로 뱃지 메타데이터를 찾는다.
       newlyEarnedBadgeIds: newlyEarnedConceptIds,
       practicedConceptIds: practiceConceptId !== null && canAccessPractice ? [practiceConceptId] : [],
-      completionStatus: solved ? "cleared" : "practice",
+      completionStatus: solved === true ? "cleared" : solved === false ? "incorrect" : "unjudged",
     });
   } catch (error) {
     if (error instanceof RequestValidationError) {

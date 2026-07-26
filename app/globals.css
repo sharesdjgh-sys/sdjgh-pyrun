@@ -974,17 +974,17 @@ html, body {
 }
 
 .badge-level-tabs button[data-level="1"] {
-  --level-color: #704FDF;
-  --level-color-light: #9B7CF7;
-  --level-tint: #EEE9FF;
-  --level-shadow: rgba(112,79,223,.25);
-}
-
-.badge-level-tabs button[data-level="2"] {
   --level-color: #087F8C;
   --level-color-light: #22B8B1;
   --level-tint: #E2F8F6;
   --level-shadow: rgba(8,127,140,.25);
+}
+
+.badge-level-tabs button[data-level="2"] {
+  --level-color: #704FDF;
+  --level-color-light: #9B7CF7;
+  --level-tint: #EEE9FF;
+  --level-shadow: rgba(112,79,223,.25);
 }
 
 .badge-level-tabs button[data-level="3"] {
@@ -1023,7 +1023,7 @@ html, body {
 }
 
 .progress-history-grid {
-  grid-template-columns: repeat(2,minmax(0,1fr));
+  grid-template-columns: 1fr;
 }
 
 .progress-empty-state {
@@ -1043,8 +1043,7 @@ html, body {
   line-height: 1.55;
 }
 
-.achievement-timeline,
-.learning-log-list {
+.achievement-timeline {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1084,64 +1083,281 @@ html, body {
   font-size: 10px;
 }
 
-.learning-log-list details {
-  overflow: hidden;
-  border: 1px solid #EFEAF7;
-  border-radius: 12px;
-  background: #FCFBFE;
+.learning-journal-card {
+  min-width: 0;
 }
 
-.learning-log-list summary {
-  display: grid;
-  grid-template-columns: auto minmax(0,1fr) auto;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 12px;
-  cursor: pointer;
-  list-style: none;
-}
-
-.learning-log-list summary::-webkit-details-marker {
-  display: none;
-}
-
-.learning-log-list summary > span {
-  padding: 3px 7px;
-  border-radius: 99px;
-  font-size: 9px;
-  font-weight: 850;
-}
-
-.learning-log-list summary > span.is-success {
-  color: #087D60;
-  background: #DFF8EF;
-}
-
-.learning-log-list summary > span.is-error {
-  color: #B72E58;
-  background: #FFE4ED;
-}
-
-.learning-log-list summary strong {
-  overflow: hidden;
-  color: #5A526F;
-  font-family: var(--font-jetbrains), monospace;
-  font-size: 10.5px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.learning-log-list summary time {
-  color: #AAA1BB;
-  font-size: 9.5px;
-}
-
-.learning-log-list details > div {
-  padding: 0 13px 12px;
-  color: #6F6685;
-  font-size: 11.5px;
+.learning-journal-description {
+  margin: 5px 0 0;
+  color: #8B83A8;
+  font-size: 12px;
   line-height: 1.55;
+}
+
+.learning-journal-stats {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.learning-journal-stats > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid #EAE4F5;
+  border-radius: 14px;
+  color: #7658D5;
+  background: linear-gradient(135deg,#FBFAFF,#F5F1FD);
+}
+
+.learning-journal-stats span {
+  color: #776F8E;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.learning-journal-stats strong {
+  color: #433A60;
+  font-size: 14px;
+}
+
+.learning-journal-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-left: 18px;
+}
+
+.learning-journal-list::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 5px;
+  width: 2px;
+  border-radius: 99px;
+  background: linear-gradient(#8B6CF1,#D8CFF0);
+}
+
+.learning-journal-entry {
+  --journal-accent: #7252D9;
+  --journal-tint: #F1ECFF;
+  position: relative;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #E9E3F3;
+  border-radius: 18px;
+  background: #FEFDFF;
+  box-shadow: 0 7px 18px rgba(71,50,126,.055);
+}
+
+.learning-journal-entry::before {
+  content: "";
+  position: absolute;
+  top: 23px;
+  left: -18px;
+  width: 10px;
+  height: 10px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--journal-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb,var(--journal-accent) 30%,transparent);
+}
+
+.learning-journal-entry.is-solved {
+  --journal-accent: #0B9A75;
+  --journal-tint: #E7F9F3;
+}
+
+.learning-journal-entry.is-incorrect,
+.learning-journal-entry.is-runtime_error {
+  --journal-accent: #C33C68;
+  --journal-tint: #FFF0F5;
+}
+
+.learning-journal-entry.is-pending {
+  --journal-accent: #B57900;
+  --journal-tint: #FFF6D9;
+}
+
+.learning-journal-entry.is-free {
+  --journal-accent: #5C6FD6;
+  --journal-tint: #EDF0FF;
+}
+
+.learning-journal-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.learning-journal-status,
+.learning-journal-entry-header time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.learning-journal-status {
+  padding: 6px 10px;
+  border-radius: 99px;
+  color: var(--journal-accent);
+  background: var(--journal-tint);
+}
+
+.learning-journal-status strong {
+  font-size: 11px;
+}
+
+.learning-journal-entry-header time {
+  color: #938AA8;
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+.learning-concept-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 15px 0 12px;
+}
+
+.learning-concept-row > span {
+  flex: none;
+  padding-top: 4px;
+  color: #7C748F;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.learning-concept-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.learning-concept-row em {
+  padding: 4px 8px;
+  border: 1px solid #DED3F7;
+  border-radius: 99px;
+  color: #6F50C9;
+  background: #F5F1FE;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.learning-concept-row em.is-free-coding {
+  border-color: #DDD8E6;
+  color: #827A93;
+  background: #F7F5F9;
+}
+
+.learning-journal-code-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.35fr) minmax(220px,.65fr);
+  gap: 10px;
+}
+
+.learning-journal-code-grid section {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #E4DEEE;
+  border-radius: 13px;
+  background: #29243C;
+}
+
+.learning-journal-code-grid h3 {
+  min-height: 36px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  color: #DAD2EE;
+  background: #332D48;
+  font-size: 10.5px;
+}
+
+.learning-journal-code-grid pre {
+  min-height: 92px;
+  max-height: 230px;
+  margin: 0;
+  overflow: auto;
+  padding: 13px;
+  color: #EDE8F7;
+  font: 11.5px/1.65 var(--font-jetbrains), monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+}
+
+.learning-journal-code-grid pre.is-empty {
+  color: #A89FB9;
+  font-style: italic;
+}
+
+.learning-journal-feedback {
+  margin-top: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid #E4DAFA;
+  border-radius: 13px;
+  color: #7554D6;
+  background: linear-gradient(135deg,#F8F5FF,#F2EDFF);
+}
+
+.learning-journal-feedback > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.learning-journal-feedback strong {
+  display: block;
+  color: #564374;
+  font-size: 11px;
+}
+
+.learning-journal-feedback p {
+  margin: 4px 0 0;
+  color: #665C7D;
+  font-size: 11.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.learning-journal-more {
+  min-height: 42px;
+  margin: 16px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 18px;
+  border: 1px solid #DCD3EE;
+  border-radius: 12px;
+  color: #68568D;
+  background: #FAF8FD;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+
+.learning-journal-more:hover {
+  border-color: #BDADE0;
+  background: #F4F0FB;
+  transform: translateY(-1px);
 }
 
 .progress-badge-earned {
@@ -1236,6 +1452,9 @@ a:focus-visible {
   .progress-history-grid {
     grid-template-columns: 1fr;
   }
+  .learning-journal-code-grid {
+    grid-template-columns: 1fr;
+  }
   .progress-badge-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
@@ -1300,6 +1519,20 @@ a:focus-visible {
   .badge-collection-heading > span {
     display: inline-flex;
     margin-top: 10px;
+  }
+  .learning-journal-stats {
+    grid-template-columns: 1fr;
+  }
+  .learning-journal-entry {
+    padding: 15px;
+  }
+  .learning-journal-entry-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .learning-concept-row {
+    flex-direction: column;
+    gap: 6px;
   }
   .achievement-row {
     grid-template-columns: 42px minmax(0,1fr);

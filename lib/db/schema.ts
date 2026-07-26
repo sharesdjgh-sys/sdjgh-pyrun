@@ -215,15 +215,23 @@ export const dataFiles = pgTable(
   })
 );
 
-export const feedbackHistory = pgTable("feedback_history", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id),
-  conceptIds: integer("concept_ids").array().notNull().default([]),
-  codeSubmitted: text("code_submitted").notNull(),
-  outputText: text("output_text"),
-  aiFeedback: text("ai_feedback").notNull(),
-  isSuccess: boolean("is_success").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export const feedbackHistory = pgTable(
+  "feedback_history",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    conceptIds: integer("concept_ids").array().notNull().default([]),
+    practiceConceptId: integer("practice_concept_id").references(() => concepts.id, { onDelete: "set null" }),
+    codeSubmitted: text("code_submitted").notNull(),
+    outputText: text("output_text"),
+    aiFeedback: text("ai_feedback").notNull(),
+    isSuccess: boolean("is_success").notNull(),
+    isSolved: boolean("is_solved"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    userCreatedIndex: index("feedback_history_user_created_index").on(table.userId, table.createdAt),
+  })
+);

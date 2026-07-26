@@ -7,12 +7,14 @@ import { COLOR_HEX } from "@/components/badges/colorMap";
 import { getBadgeImagePath } from "@/lib/badge-images";
 import { getStudentCallName } from "@/lib/student-name";
 import { curriculumDisplayOrder } from "@/lib/curriculum-model";
+import { learningAttemptStatus } from "@/lib/learning-history";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
   List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Lock, Bot,
   Binary, FileText, ListChecks, Parentheses, BookOpen, Layers, Copy, Repeat, RefreshCcw,
   Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
-  Star, CheckCircle2, ChevronRight, Circle, Crown, LockKeyhole, Map, Target, Trophy, Zap,
+  Star, CheckCircle2, ChevronRight, Circle, Clock3, Code2, Crown, LockKeyhole, Map as MapIcon, MessageCircle,
+  PlayCircle, Target, Trophy, Zap,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -36,7 +38,18 @@ interface BadgeInfo {
   earned: boolean;
   clearedAt: string | null;
 }
-interface FeedbackItem { id: number; aiFeedback: string; isSuccess: boolean; createdAt: string; codeSnippet: string; }
+interface FeedbackItem {
+  id: number;
+  conceptIds: number[];
+  codeSubmitted: string;
+  codeSnippet: string;
+  outputText: string | null;
+  aiFeedback: string;
+  isSuccess: boolean;
+  practiceConceptId: number | null;
+  isSolved: boolean | null;
+  createdAt: string;
+}
 
 interface ProgressClientProps {
   userName: string;
@@ -54,6 +67,7 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
   const [manuallyUnlockedConceptIds, setManuallyUnlockedConceptIds] = useState<Set<number>>(new Set());
   const [visibleBadgeTooltip, setVisibleBadgeTooltip] = useState<number | null>(null);
   const [selectedLevel, setSelectedLevel] = useState(1);
+  const [visibleLogCount, setVisibleLogCount] = useState(5);
   const [badges, setBadges] = useState<BadgeInfo[]>([]);
   const [feedbackHistory, setFeedbackHistory] = useState<FeedbackItem[]>([]);
   const [progressPercent, setProgressPercent] = useState(0);
@@ -140,6 +154,15 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
     .slice(0, 5);
   const playerName = getStudentCallName(userName);
   const currentRankName = LEVEL_RANK_NAMES[currentLevel] ?? `Level ${currentLevel} 탐험가`;
+  const badgeByConceptId = new Map(badges.map((badge) => [badge.conceptId, badge]));
+  const solvedAttemptCount = feedbackHistory.filter((item) => learningAttemptStatus(item) === "solved").length;
+  const incorrectAttemptCount = feedbackHistory.filter((item) => learningAttemptStatus(item) === "incorrect").length;
+  const practicedHistoryConceptCount = new Set(feedbackHistory.flatMap((item) =>
+    item.practiceConceptId === null
+      ? item.conceptIds
+      : [item.practiceConceptId, ...item.conceptIds]
+  )).size;
+  const visibleLearningLogs = feedbackHistory.slice(0, visibleLogCount);
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)" }}>
@@ -193,7 +216,7 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
               { label: "완료한 퀘스트", value: clearedCount, icon: CheckCircle2 },
               { label: "연습 중", value: practiceOnlyCount, icon: Target },
               { label: "획득한 뱃지", value: clearedCount, icon: Trophy },
-              { label: "남은 퀘스트", value: Math.max(totalConcepts - clearedCount, 0), icon: Map },
+              { label: "남은 퀘스트", value: Math.max(totalConcepts - clearedCount, 0), icon: MapIcon },
             ].map(({ label, value, icon: StatIcon }) => (
               <div className="player-stat" key={label}>
                 <StatIcon size={17} />
@@ -252,7 +275,7 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
           <section style={cardStyle} aria-labelledby="quest-map-title">
             <div className="progress-card-heading">
               <div>
-                <div className="progress-section-kicker"><Map size={15} /> QUEST MAP</div>
+                <div className="progress-section-kicker"><MapIcon size={15} /> QUEST MAP</div>
                 <h2 id="quest-map-title">Level {currentLevel} 퀘스트</h2>
               </div>
               <span>{currentLevelEarned} / {currentLevelBadges.length}</span>
@@ -487,13 +510,16 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
             )}
           </section>
 
-          <section style={cardStyle} aria-labelledby="feedback-history-title">
+          <section className="learning-journal-card" style={cardStyle} aria-labelledby="feedback-history-title">
             <div className="progress-card-heading">
               <div>
-                <div className="progress-section-kicker"><Zap size={15} /> LEARNING LOG</div>
+                <div className="progress-section-kicker"><BookOpen size={15} /> LEARNING JOURNAL</div>
                 <h2 id="feedback-history-title">최근 학습 기록</h2>
+                <p className="learning-journal-description">
+                  어떤 개념을 연습했고, 코드를 어떻게 작성했는지 차근차근 돌아볼 수 있어.
+                </p>
               </div>
-              <span>최근 {Math.min(feedbackHistory.length, 6)}개</span>
+              <span>최근 {feedbackHistory.length}회 기록</span>
             </div>
             {feedbackHistory.length === 0 ? (
               <div className="progress-empty-state">
@@ -501,18 +527,119 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
                 <p>아직 실행 기록이 없어.<br />코드를 실행하면 기록이 남아.</p>
               </div>
             ) : (
-              <div className="learning-log-list">
-                {feedbackHistory.slice(0, 6).map((item) => (
-                  <details key={item.id}>
-                    <summary>
-                      <span className={item.isSuccess ? "is-success" : "is-error"}>{item.isSuccess ? "성공" : "오류"}</span>
-                      <strong>{item.codeSnippet || "코드 실행"}</strong>
-                      <time>{new Date(item.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}</time>
-                    </summary>
-                    <div>{item.aiFeedback}</div>
-                  </details>
-                ))}
-              </div>
+              <>
+                <div className="learning-journal-stats" aria-label="학습 기록 요약">
+                  <div>
+                    <Trophy size={18} />
+                    <span>정답 해결</span>
+                    <strong>{solvedAttemptCount}회</strong>
+                  </div>
+                  <div>
+                    <AlertCircle size={18} />
+                    <span>다시 볼 오답</span>
+                    <strong>{incorrectAttemptCount}회</strong>
+                  </div>
+                  <div>
+                    <Target size={18} />
+                    <span>연습한 개념</span>
+                    <strong>{practicedHistoryConceptCount}개</strong>
+                  </div>
+                </div>
+
+                <div className="learning-journal-list">
+                  {visibleLearningLogs.map((item) => {
+                    const status = learningAttemptStatus(item);
+                    const StatusIcon = status === "solved"
+                      ? Trophy
+                      : status === "incorrect" || status === "runtime_error"
+                        ? AlertCircle
+                        : status === "pending"
+                          ? Clock3
+                          : Code2;
+                    const statusLabel = status === "solved"
+                      ? "정답 해결"
+                      : status === "incorrect"
+                        ? "다시 볼 오답"
+                        : status === "pending"
+                          ? "채점 확인 필요"
+                          : status === "runtime_error"
+                            ? "실행 오류"
+                            : "자유 코딩";
+                    const historyConceptIds = item.practiceConceptId === null
+                      ? item.conceptIds
+                      : [item.practiceConceptId, ...item.conceptIds.filter((id) => id !== item.practiceConceptId)];
+                    const learnedConcepts = historyConceptIds
+                      .map((conceptId) => badgeByConceptId.get(conceptId))
+                      .filter((badge): badge is BadgeInfo => Boolean(badge));
+                    const createdAt = new Date(item.createdAt);
+                    return (
+                      <article
+                        className={`learning-journal-entry is-${status}`}
+                        key={item.id}
+                      >
+                        <header className="learning-journal-entry-header">
+                          <div className="learning-journal-status">
+                            <StatusIcon size={17} />
+                            <strong>{statusLabel}</strong>
+                          </div>
+                          <time dateTime={item.createdAt}>
+                            <Clock3 size={14} />
+                            {createdAt.toLocaleDateString("ko-KR", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              weekday: "short",
+                            })}
+                            {" "}
+                            {createdAt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                          </time>
+                        </header>
+
+                        <div className="learning-concept-row">
+                          <span>이번에 연습한 개념</span>
+                          <div>
+                            {learnedConcepts.length > 0 ? learnedConcepts.map((badge) => (
+                              <em key={badge.conceptId}>{badge.conceptNameKo}</em>
+                            )) : <em className="is-free-coding">자유 코딩</em>}
+                          </div>
+                        </div>
+
+                        <div className="learning-journal-code-grid">
+                          <section>
+                            <h3><Code2 size={15} /> 내가 작성한 코드</h3>
+                            <pre><code>{item.codeSubmitted || "# 작성한 코드가 없어"}</code></pre>
+                          </section>
+                          <section>
+                            <h3><PlayCircle size={15} /> 실행 결과</h3>
+                            <pre className={item.outputText ? undefined : "is-empty"}>
+                              {item.outputText || (item.isSuccess ? "출력된 내용이 없어" : "실행 중 오류가 발생했어")}
+                            </pre>
+                          </section>
+                        </div>
+
+                        <div className="learning-journal-feedback">
+                          <MessageCircle size={18} />
+                          <div>
+                            <strong>파이런 학습 파트너의 피드백</strong>
+                            <p>{item.aiFeedback}</p>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                {visibleLogCount < feedbackHistory.length && (
+                  <button
+                    type="button"
+                    className="learning-journal-more"
+                    onClick={() => setVisibleLogCount((count) => count + 5)}
+                  >
+                    이전 학습 기록 더 보기
+                    <ChevronRight size={17} />
+                  </button>
+                )}
+              </>
             )}
           </section>
         </div>
