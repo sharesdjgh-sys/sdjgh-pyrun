@@ -18,7 +18,7 @@ import {
   nextConceptId,
   nextConceptIdInOrders,
 } from "../lib/progress";
-import { curriculumLevelOrders } from "../lib/curriculum-model";
+import { curriculumLevelOrders, groupCurriculumUnits } from "../lib/curriculum-model";
 import { canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
 import {
@@ -33,6 +33,7 @@ import { getStudentAddress, getStudentCallName, getStudentVocative } from "../li
 import { getBadgeImagePath } from "../lib/badge-images";
 import { learningAttemptStatus } from "../lib/learning-history";
 import { CONCEPT_EXAMPLES } from "../lib/curriculum";
+import { highestEarnedBadgesByLevel } from "../lib/badge-ranks";
 
 test("authentication helper rejects missing and malformed sessions", () => {
   assert.equal(authenticatedUserId(null), null);
@@ -301,4 +302,35 @@ test("badge images map source concept IDs to public assets", () => {
   assert.equal(getBadgeImagePath(40), "/badges/concept-40.png");
   assert.equal(getBadgeImagePath(41), null);
   assert.equal(getBadgeImagePath(null), null);
+});
+
+test("learn header shows the highest earned badge from each level", () => {
+  const units = [
+    { id: 1, sourceConceptId: 1, level: 1, groupName: "기초", orderIndex: 1, nameKo: "출력", badgeNameKo: "출력 마스터", iconName: "Terminal", colorClass: "green" },
+    { id: 2, sourceConceptId: 2, level: 1, groupName: "기초", orderIndex: 2, nameKo: "변수", badgeNameKo: "변수 마스터", iconName: "Variable", colorClass: "blue" },
+    { id: 20, sourceConceptId: 20, level: 2, groupName: "심화", orderIndex: 1, nameKo: "심화", badgeNameKo: "심화 마스터", iconName: "Braces", colorClass: "purple" },
+  ];
+  const ranks = highestEarnedBadgesByLevel(units, new Set([1, 2]));
+
+  assert.equal(ranks[0].badge?.id, 2);
+  assert.equal(ranks[1].badge, null);
+  assert.equal(ranks[2].badge, null);
+});
+
+test("learn unit groups use the same colors as growth record levels", () => {
+  const units = [1, 2, 3].map((level) => ({
+    id: level,
+    sourceConceptId: level,
+    level,
+    groupName: `Level ${level}`,
+    orderIndex: level,
+    nameKo: `단원 ${level}`,
+    badgeNameKo: `뱃지 ${level}`,
+    iconName: "Award",
+    colorClass: "purple",
+  }));
+
+  assert.equal(groupCurriculumUnits(units, 1)[0].color, "#087F8C");
+  assert.equal(groupCurriculumUnits(units, 2)[0].color, "#704FDF");
+  assert.equal(groupCurriculumUnits(units, 3)[0].color, "#B86500");
 });

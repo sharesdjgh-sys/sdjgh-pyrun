@@ -419,6 +419,75 @@ html, body {
   background: rgba(255,255,255,.07);
 }
 
+.learn-header-ranks {
+  margin-left: 3px;
+  padding-left: 9px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-left: 1px solid #DDD4F0;
+}
+
+.learn-header-rank {
+  --rank-color: #7B5CF0;
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb,var(--rank-color) 38%,#fff);
+  border-radius: 11px;
+  color: var(--rank-color);
+  background: color-mix(in srgb,var(--rank-color) 9%,#fff);
+}
+
+.learn-header-rank.level-1 {
+  --rank-color: #0A938B;
+}
+
+.learn-header-rank.level-2 {
+  --rank-color: #7654DC;
+}
+
+.learn-header-rank.level-3 {
+  --rank-color: #C17A08;
+}
+
+.learn-header-rank.is-earned {
+  border-color: color-mix(in srgb,var(--rank-color) 50%,#fff);
+  background: radial-gradient(circle at 45% 35%,#fff,color-mix(in srgb,var(--rank-color) 14%,#fff));
+  box-shadow: 0 3px 8px color-mix(in srgb,var(--rank-color) 18%,transparent);
+}
+
+.learn-header-rank.is-earned img {
+  width: 31px;
+  height: 31px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 3px rgba(48,31,91,.16));
+}
+
+.learn-header-rank.is-locked {
+  opacity: .48;
+}
+
+.learn-header-rank > span {
+  position: absolute;
+  right: -2px;
+  bottom: -3px;
+  min-width: 15px;
+  padding: 1px 3px;
+  border: 1px solid color-mix(in srgb,var(--rank-color) 36%,#fff);
+  border-radius: 99px;
+  color: #fff;
+  background: var(--rank-color);
+  box-shadow: 0 2px 4px rgba(44,31,77,.16);
+  font-size: 7px;
+  font-weight: 950;
+  line-height: 1.2;
+  text-align: center;
+}
+
 @media (max-height: 760px) {
   .reward-panel {
     padding: 20px 28px 18px !important;
@@ -2165,6 +2234,19 @@ a:focus-visible {
     right: 38px;
     transform: scale(.88);
     transform-origin: right top;
+  }
+  .learn-header-ranks {
+    gap: 2px;
+    padding-left: 6px;
+  }
+  .learn-header-rank {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+  .learn-header-rank.is-earned img {
+    width: 27px;
+    height: 27px;
   }
   .progress-badge-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }

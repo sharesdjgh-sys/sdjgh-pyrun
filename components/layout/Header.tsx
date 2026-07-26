@@ -3,9 +3,21 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
+import { Lock } from "lucide-react";
 import { canOpenAdminPage, isAdministratorRole, isStudentRole } from "@/lib/roles";
+import { getBadgeImagePath } from "@/lib/badge-images";
+import { highestEarnedBadgesByLevel } from "@/lib/badge-ranks";
+import type { LearningUnitMeta } from "@/lib/curriculum-model";
 
-export default function Header() {
+interface HeaderProps {
+  curriculumUnits?: LearningUnitMeta[];
+  earnedConceptIds?: ReadonlySet<number>;
+}
+
+export default function Header({
+  curriculumUnits = [],
+  earnedConceptIds = new Set<number>(),
+}: HeaderProps) {
   const { data: session } = useSession();
   const name = session?.user?.name || "학생";
   const initial = name.slice(0, 1);
@@ -14,8 +26,12 @@ export default function Header() {
   const role = sessionUser?.role;
   const canManage = canOpenAdminPage(role);
   const isAdmin = isAdministratorRole(role);
+  const isStudent = isStudentRole(role);
+  const levelRanks = isStudent
+    ? highestEarnedBadgesByLevel(curriculumUnits, earnedConceptIds)
+    : [];
   const identityText = username
-    ? isStudentRole(role) ? `아이디: ${username}` : `@${username}`
+    ? isStudent ? `아이디: ${username}` : `@${username}`
     : null;
 
   return (
@@ -57,6 +73,29 @@ export default function Header() {
               </span>
             )}
           </div>
+          {isStudent && levelRanks.length > 0 && (
+            <div className="learn-header-ranks" aria-label="레벨별 최고 뱃지">
+              {levelRanks.map(({ level, badge }) => {
+                const imagePath = getBadgeImagePath(badge?.sourceConceptId);
+                return (
+                  <div
+                    className={`learn-header-rank level-${level} ${badge ? "is-earned" : "is-locked"}`}
+                    title={badge
+                      ? `Level ${level} 최고 뱃지 · ${badge.badgeNameKo}`
+                      : `Level ${level} · 아직 획득한 뱃지가 없어요`}
+                    key={level}
+                  >
+                    {badge && imagePath ? (
+                      <Image src={imagePath} alt="" width={34} height={34} sizes="34px" />
+                    ) : (
+                      <Lock size={11} />
+                    )}
+                    <span>L{level}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Admin link — teacher/admin only */}

@@ -87,6 +87,6 @@ export function groupCurriculumUnits(units: LearningUnitMeta[], level: number) {
     label,
     ids: items.sort((a, b) => a.orderIndex - b.orderIndex).map((item) => item.id),
     icon: level === 3 ? "BarChart2" : level === 2 ? "Braces" : "Layers",
-    color: level === 3 ? "#18C99A" : level === 2 ? "#7B5CF0" : "#7B5CF0",
+    color: level === 3 ? "#B86500" : level === 2 ? "#704FDF" : "#087F8C",
   }));
 }

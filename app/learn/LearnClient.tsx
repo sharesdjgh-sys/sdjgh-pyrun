@@ -25,6 +25,18 @@ const GROUP_ICON_MAP: Record<string, React.ElementType> = {
 
 type AppMode = "lv1" | "lv2" | "lv3" | "mechdog";
 
+const MODE_THEME: Record<AppMode, {
+  primary: string;
+  light: string;
+  tint: string;
+  shadow: string;
+}> = {
+  lv1: { primary: "#087F8C", light: "#22B8B1", tint: "#E2F8F6", shadow: "rgba(8,127,140,.22)" },
+  lv2: { primary: "#704FDF", light: "#9B7CF7", tint: "#EEE9FF", shadow: "rgba(112,79,223,.22)" },
+  lv3: { primary: "#B86500", light: "#F4A62A", tint: "#FFF1D5", shadow: "rgba(184,101,0,.22)" },
+  mechdog: { primary: "#C97B30", light: "#F0A050", tint: "#FFF4E6", shadow: "rgba(201,123,48,.22)" },
+};
+
 interface MechdogExample {
   id: string;
   category: string;
@@ -409,6 +421,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   const fontSizeStr = `${fontSize}pt`;
 
   const [mode, setMode] = useState<AppMode>("lv1");
+  const modeTheme = MODE_THEME[mode];
   const [selectedMechdogId, setSelectedMechdogId] = useState(MECDOG_EXAMPLES[0].id);
   const [selectedLv3ConceptId, setSelectedLv3ConceptId] = useState(31);
 
@@ -795,7 +808,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
         background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)",
       }}
     >
-      <Header />
+      <Header curriculumUnits={curriculumView.units} earnedConceptIds={clearedConceptIds} />
 
       {pyError && (
         <section className="runtime-error-panel" role="alert" aria-live="assertive">
@@ -846,14 +859,10 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                 style={{
                   width: "100%",
                   padding: "6px 28px 6px 10px",
-                  border: "1.5px solid #E0D8F8",
+                  border: `1.5px solid ${modeTheme.primary}45`,
                   borderRadius: 10,
-                  background: mode === "mechdog"
-                    ? "linear-gradient(135deg,#FFF4E6,#FFE8CC)"
-                    : mode === "lv3"
-                    ? "linear-gradient(135deg,#E8F5E9,#D0F0DD)"
-                    : "linear-gradient(135deg,#F8F5FF,#F0EAFF)",
-                  color: mode === "mechdog" ? "#C97B30" : mode === "lv3" ? "#18C99A" : "#7B5CF0",
+                  background: `linear-gradient(135deg,#fff,${modeTheme.tint})`,
+                  color: modeTheme.primary,
                   fontSize: 12.5,
                   fontWeight: 700,
                   fontFamily: "inherit",
@@ -864,10 +873,10 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                   transition: "all .15s",
                 }}
               >
-                <option value="lv1">📚 Lv.1 기초</option>
-                <option value="lv2">🚀 Lv.2 심화</option>
-                <option value="lv3">📊 Lv.3 데이터 분석</option>
-                <option value="mechdog">🐾 mechdog 시뮬</option>
+                <option value="lv1">Level 1 · 기초</option>
+                <option value="lv2">Level 2 · 심화</option>
+                <option value="lv3">Level 3 · 데이터 분석</option>
+                <option value="mechdog">mechdog 시뮬레이션</option>
               </select>
               <span
                 style={{
@@ -876,7 +885,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                   top: "50%",
                   transform: "translateY(-50%)",
                   pointerEvents: "none",
-                  color: mode === "mechdog" ? "#C97B30" : "#9B7FFF",
+                  color: modeTheme.primary,
                   fontSize: 10,
                 }}
               >
@@ -916,17 +925,17 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                           padding: "7px 10px", borderRadius: 10, border: "none",
                           cursor: unlocked ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 13,
                           fontWeight: selected ? 700 : 500,
-                          background: selected ? "linear-gradient(135deg,#34D9A6,#18C99A)" : "transparent",
+                          background: selected ? `linear-gradient(135deg,${modeTheme.light},${modeTheme.primary})` : "transparent",
                           color: selected ? "#fff" : unlocked ? "#7A6FA0" : "#C9C1DE",
                           marginBottom: 1, transition: "all .13s",
-                          boxShadow: selected ? "0 3px 8px rgba(24,201,154,.22)" : "none",
+                          boxShadow: selected ? `0 3px 8px ${modeTheme.shadow}` : "none",
                         }}
-                        onMouseEnter={(e) => { if (!selected && unlocked) e.currentTarget.style.background = "#E8F5E9"; }}
+                        onMouseEnter={(e) => { if (!selected && unlocked) e.currentTarget.style.background = modeTheme.tint; }}
                         onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
                       >
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge.nameKo}</span>
                         {cleared ? (
-                          <Check size={13} color={selected ? "#fff" : "#18C99A"} strokeWidth={3} style={{ flexShrink: 0 }} />
+                          <Check size={13} color={selected ? "#fff" : modeTheme.primary} strokeWidth={3} style={{ flexShrink: 0 }} />
                         ) : !unlocked ? (
                           <Lock size={12} color="#C9C1DE" style={{ flexShrink: 0 }} />
                         ) : null}
@@ -963,11 +972,11 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                             fontFamily: "inherit",
                             fontSize: 13,
                             fontWeight: selected ? 700 : 500,
-                            background: selected ? "linear-gradient(135deg,#F0A050,#C97B30)" : "transparent",
+                            background: selected ? `linear-gradient(135deg,${modeTheme.light},${modeTheme.primary})` : "transparent",
                             color: selected ? "#fff" : "#7A6FA0",
                             marginBottom: 1,
                             transition: "all .13s",
-                            boxShadow: selected ? "0 3px 8px rgba(201,123,48,.22)" : "none",
+                            boxShadow: selected ? `0 3px 8px ${modeTheme.shadow}` : "none",
                           }}
                           onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = "#FFF4E6"; }}
                           onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
@@ -1031,18 +1040,18 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                           fontFamily: "inherit",
                           fontSize: 13,
                           fontWeight: selected ? 700 : 500,
-                          background: selected ? "linear-gradient(135deg,#9B7FFF,#7B5CF0)" : "transparent",
+                          background: selected ? `linear-gradient(135deg,${modeTheme.light},${modeTheme.primary})` : "transparent",
                           color: selected ? "#fff" : unlocked ? "#7A6FA0" : "#C9C1DE",
                           marginBottom: 1,
                           transition: "all .13s",
-                          boxShadow: selected ? "0 3px 8px rgba(123,92,240,.22)" : "none",
+                          boxShadow: selected ? `0 3px 8px ${modeTheme.shadow}` : "none",
                         }}
-                        onMouseEnter={(e) => { if (!selected && unlocked) e.currentTarget.style.background = "#F3EFFE"; }}
+                        onMouseEnter={(e) => { if (!selected && unlocked) e.currentTarget.style.background = modeTheme.tint; }}
                         onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = "transparent"; }}
                       >
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
                         {cleared ? (
-                          <Check size={13} color={selected ? "#fff" : "#18C99A"} strokeWidth={3} style={{ flexShrink: 0 }} />
+                          <Check size={13} color={selected ? "#fff" : modeTheme.primary} strokeWidth={3} style={{ flexShrink: 0 }} />
                         ) : !unlocked ? (
                           <Lock size={12} color="#C9C1DE" style={{ flexShrink: 0 }} />
                         ) : null}
@@ -1084,13 +1093,13 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                 textAlign: "left",
               }}
             >
-              <span style={{ fontSize: 14, fontWeight: 800, color: mode === "mechdog" ? "#C97B30" : mode === "lv3" ? "#18C99A" : "#7B5CF0" }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: modeTheme.primary }}>
                 {mode === "mechdog" ? "🐾" : mode === "lv3" ? "📊" : "📖"} {displayConcept?.nameKo}
               </span>
               <span
                 style={{
                   fontSize: 11, fontWeight: 600,
-                  color: mode === "mechdog" ? "#C97B30" : mode === "lv3" ? "#18C99A" : "#9B7FFF",
+                  color: modeTheme.primary,
                   background: mode === "mechdog" ? "#FFF4E6" : mode === "lv3" ? "#E8F5E9" : "#F2ECFD",
                   padding: "2px 8px", borderRadius: 99,
                 }}
