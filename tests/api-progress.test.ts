@@ -21,10 +21,18 @@ import {
 import { curriculumLevelOrders } from "../lib/curriculum-model";
 import { canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
-import { createStudentPracticeTemplate } from "../lib/practice-template";
+import {
+  createStudentPracticeTemplate,
+  createExtraPracticeStarter,
+  extractExpectedOutput,
+  isExactExpectedOutput,
+  matchesExpectedOutput,
+  normalizePracticeOutputFrame,
+} from "../lib/practice-template";
 import { getStudentAddress, getStudentCallName, getStudentVocative } from "../lib/student-name";
 import { getBadgeImagePath } from "../lib/badge-images";
 import { learningAttemptStatus } from "../lib/learning-history";
+import { CONCEPT_EXAMPLES } from "../lib/curriculum";
 
 test("authentication helper rejects missing and malformed sessions", () => {
   assert.equal(authenticatedUserId(null), null);
@@ -83,6 +91,58 @@ df = load_data('titanic')
 # 평균을 구하세요.
 print(df['Age'].___())`;
   assert.equal(createStudentPracticeTemplate(blankPractice), blankPractice);
+});
+
+test("practice templates expose and validate exact expected output", () => {
+  const practice = `# 문제: 원의 넓이를 출력하세요.
+##############
+# 출력 결과:
+# 원의 넓이: 78.54
+##############
+
+print("원의 넓이:", 78.54)`;
+  const starter = createStudentPracticeTemplate(practice);
+
+  assert.match(starter, /# \[출력 결과\]/);
+  assert.match(starter, /# 원의 넓이: 78\.54/);
+  assert.match(starter, /#-----------------------------------------\n# \[출력 결과\]\n# 원의 넓이: 78\.54\n#-----------------------------------------/);
+  assert.equal(extractExpectedOutput(practice), "원의 넓이: 78.54");
+  assert.equal(matchesExpectedOutput("원의 넓이: 78.54", "원의 넓이: 78.54\n"), true);
+  assert.equal(matchesExpectedOutput("원의 넓이: 78.54", "원의 넓이: 78.5398\n"), false);
+  assert.equal(
+    matchesExpectedOutput(
+      "첫 3글자: 파이썬\n마지막 3글자: 미있다\n첫 글자: 파\n글자 수: 9",
+      "첫 3글자: 파이썬\n마지막 3글자: 미있다\n첫 글자: 파\n글자 수:  9\n"
+    ),
+    true
+  );
+  assert.equal(isExactExpectedOutput("원의 넓이: 78.54"), true);
+  assert.equal(isExactExpectedOutput("로또 번호: [실행할 때마다 달라지는 값]"), false);
+  assert.match(normalizePracticeOutputFrame(practice), /# \[출력 결과\]/);
+});
+
+test("every level 1 practice problem shows a framed output example", () => {
+  for (let conceptId = 1; conceptId <= 16; conceptId += 1) {
+    const practiceCode = CONCEPT_EXAMPLES[conceptId].practiceCode;
+    const starter = createStudentPracticeTemplate(practiceCode);
+    assert.match(starter, /#-----------------------------------------\n# \[출력 결과\]\n[\s\S]+?\n#-----------------------------------------/);
+    assert.ok(extractExpectedOutput(practiceCode), `concept ${conceptId} expected output`);
+  }
+});
+
+test("AI extra practice starter includes a clear expected output block", () => {
+  const starter = createExtraPracticeStarter({
+    title: "두 수의 합",
+    description: "a와 b를 더해 출력하세요.",
+    requirements: ["a = 4로 설정", "b = 7로 설정"],
+    expectedOutput: ["두 수의 합: 11"],
+  });
+
+  assert.match(
+    starter,
+    /#-----------------------------------------\n# \[출력 결과\]\n# 두 수의 합: 11\n#-----------------------------------------/
+  );
+  assert.match(starter, /# 아래에 직접 코드를 작성하세요\./);
 });
 
 test("progress calculation is bounded and uses dynamic totals", () => {

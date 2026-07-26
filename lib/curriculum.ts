@@ -128,11 +128,12 @@ robot.say("print 완전 정복!")
 robot.emotion("happy")`,
     explanation: "print()는 괄호 안의 값을 화면에 출력합니다. 쉼표(,)로 여러 값을, *(곱셈)으로 반복을 출력할 수 있어요.",
     practiceCode: `# 문제: 아래 출력 결과가 정확히 나오도록 코드를 완성하세요.
-#
+##############
 # 출력 결과:
-#   안녕안녕안녕
-#   사과바나나
-#   3 * 4 = 12
+# 안녕안녕안녕
+# 사과바나나
+# 3 * 4 = 12
+##############
 
 import robot
 
@@ -175,14 +176,18 @@ robot.emotion("happy")`,
     explanation: "변수는 값을 저장하는 이름표입니다. =으로 값을 할당하고, f-string(f\"...\")으로 변수 값을 문자열 안에 넣을 수 있어요.",
     practiceCode: `# 문제: 변수를 만들어 나를 소개하는 코드를 완성하세요.
 # 조건:
-#   1. subject 변수에 좋아하는 과목 이름(문자열)을 저장하세요
-#   2. grade 변수에 학년(숫자)을 저장하세요
+#   1. subject = "정보"로 저장하세요
+#   2. grade = 1로 저장하세요
 #   3. f-string으로 "나는 _학년이고, _ 과목을 좋아해!" 형태로 출력하세요
+##############
+# 출력 결과:
+# 나는 1학년이고, 정보 과목을 좋아해!
+##############
 
 import robot
 
-subject = "정보"   # 원하는 과목으로 바꿔보세요
-grade = 1          # 학년으로 바꿔보세요
+subject = "정보"
+grade = 1
 
 print(f"나는 {grade}학년이고, {subject} 과목을 좋아해!")
 
@@ -216,6 +221,11 @@ robot.emotion("happy")`,
 #   - 넓이(area) = width * height
 #   - 둘레(perimeter) = (width + height) * 2
 #   - 넓이와 둘레를 print()로 출력하고, 로봇을 넓이만큼 이동시키세요
+##############
+# 출력 결과:
+# 넓이: 15
+# 둘레: 16
+##############
 
 import robot
 
@@ -261,6 +271,12 @@ robot.emotion("happy")`,
 #   - score = 75, target = 80 으로 설정하세요
 #   - score >= target 결과를 result 변수에 저장하세요
 #   - True이면 로봇이 기뻐하고, False이면 슬퍼하게 하세요
+##############
+# 출력 결과:
+# 80점 이상?: False
+# score == target: False
+# score != target: True
+##############
 
 import robot
 
@@ -311,6 +327,13 @@ robot.emotion("happy")`,
 #   - 아이템을 먹어 hp가 20 증가 (hp += 20)
 #   - 배율 아이템으로 hp가 2배 (hp *= 2)
 #   - 각 단계마다 hp를 출력하고, 최종 hp를 로봇이 말하게 하세요
+##############
+# 출력 결과:
+# 시작 HP: 100
+# 피해 후 HP: 70
+# 회복 후 HP: 90
+# 배율 후 HP: 180
+##############
 
 import robot
 
@@ -364,6 +387,12 @@ robot.emotion("happy")`,
 #   - is_raining = False (비가 오면 True)
 #   - 주말이고(and) 비가 오지 않을(not) 때만 놀이터 입장 가능
 #   - can_enter 변수에 입장 가능 여부를 저장하세요
+##############
+# 출력 결과:
+# 주말: True
+# 비 여부: False
+# 입장 가능?: True
+##############
 
 import robot
 
@@ -419,6 +448,11 @@ robot.emotion("happy")`,
 #   - 넓이 = math.pi * radius ** 2
 #   - 둘레 = 2 * math.pi * radius
 #   - round()로 소수점 2자리까지 반올림해서 출력하세요
+##############
+# 출력 결과:
+# 원의 넓이: 78.54
+# 원의 둘레: 31.42
+##############
 
 import robot
 import math
@@ -430,7 +464,6 @@ perimeter = 2 * math.pi * radius
 
 print("원의 넓이:", round(area, 2))
 print("원의 둘레:", round(perimeter, 2))
-print("파이 값:", math.pi)
 
 robot.move(radius)
 robot.say(f"반지름 {radius}인 원!")`,
@@ -482,6 +515,13 @@ robot.say(f"첫 글자는 {text1[0]}!")`,
 #   - 첫 3글자만 출력하세요 (슬라이싱 [0:3])
 #   - 마지막 3글자만 출력하세요 (슬라이싱 [-3:])
 #   - f-string으로 "첫 글자: _" 형태로 출력하세요
+##############
+# 출력 결과:
+# 첫 3글자: 파이썬
+# 마지막 3글자: 미있다
+# 첫 글자: 파
+# 글자 수: 9
+##############
 
 import robot
 
@@ -530,6 +570,14 @@ robot.emotion("happy")`,
 #   - scores = [88, 95, 72, 91]
 #   - for문으로 순회하며 로봇이 매번 이름과 점수를 말하게 하세요
 #   - 90점 이상이면 로봇이 bounce, 아니면 move(1)
+##############
+# 출력 결과:
+# 민준: 88점
+# 서연: 95점
+# 지호: 72점
+# 하은: 91점
+# 최고 점수: 95
+##############
 
 import robot
 
@@ -581,6 +629,13 @@ robot.emotion("happy")`,
 #   - can_attack = is_alive and has_weapon
 #   - 각 변수의 자료형을 type()으로 출력하세요
 #   - can_attack 결과에 따라 로봇이 다르게 반응하게 하세요
+##############
+# 출력 결과:
+# is_alive 자료형: <class 'bool'>
+# 생존: True
+# 무기 소지: False
+# 공격 가능?: False
+##############
 
 import robot
 
@@ -639,28 +694,37 @@ robot.emotion("sad" if score < 3 else "happy")`,
 #   - "yellow": 준비 감정 표현 후 "준비!" 출력
 #   - "green": 앞으로 2칸 이동 후 "출발!" 출력
 #   - 다른 색: "모르는 색이야!" 출력
-# color 값을 바꿔가며 테스트해보세요!
+#   - color = "green"으로 설정하세요
+##############
+# 출력 결과:
+# 현재 신호: green
+# 출발!
+##############
 
 import robot
 
-color = "green"   # "red", "yellow", "green" 으로 바꿔보세요
+color = "green"
 
 print("현재 신호:", color)
 
 if color == "red":
+    print("정지!")
     robot.emotion("sad")
     robot.shake()
     robot.say("정지!")
 elif color == "yellow":
+    print("준비!")
     robot.emotion("surprised")
     robot.bounce(2)
     robot.say("준비!")
 elif color == "green":
+    print("출발!")
     robot.emotion("happy")
     robot.move(2)
     robot.draw("circle")
     robot.say("출발!")
 else:
+    print("모르는 색이야!")
     robot.shake()
     robot.say("모르는 색이야!")`,
   },
@@ -684,9 +748,21 @@ robot.bounce(2)`,
     explanation: "for문은 반복 횟수가 정해진 반복에 씁니다. range(시작, 끝, 간격)으로 반복 범위를 설정해요.",
     practiceCode: `# 문제: for문으로 구구단 한 단을 출력하세요.
 # 조건:
-#   - dan = 3 으로 설정 (원하는 단으로 바꿔도 됩니다)
+#   - dan = 3 으로 설정
 #   - range(1, 10)으로 1~9까지 반복
 #   - "3 x 1 = 3" 형태로 출력 + 로봇이 매번 결과를 말하게 하세요
+##############
+# 출력 결과:
+# 3 x 1 = 3
+# 3 x 2 = 6
+# 3 x 3 = 9
+# 3 x 4 = 12
+# 3 x 5 = 15
+# 3 x 6 = 18
+# 3 x 7 = 21
+# 3 x 8 = 24
+# 3 x 9 = 27
+##############
 
 import robot
 
@@ -727,6 +803,11 @@ robot.emotion("surprised")`,
 #   - total = 0, num = 1 로 시작
 #   - total <= 50 인 동안 num을 더하고, num은 1씩 증가
 #   - 매 반복마다 로봇이 현재 합계를 말하게 하세요
+##############
+# 출력 결과:
+# 누적 합: 55
+# 마지막 숫자: 10
+##############
 
 import robot
 
@@ -799,6 +880,11 @@ robot.emotion("happy")`,
 #   - add(a, b): a + b를 반환
 #   - average(a, b): (a + b) / 2를 반환
 #   - add(7, 3)과 average(7, 3)을 호출해 결과를 출력하세요
+##############
+# 출력 결과:
+# 7 + 3 = 10
+# (7 + 3) / 2 = 5.0
+##############
 
 import robot
 
@@ -883,6 +969,10 @@ robot.say(f"{warrior1.name}과 {archer1.name} 등장!")`,
 #   - introduce(self): "이름: _, 학년: _, 점수: _" 형태로 출력
 #   - is_pass(self): score >= 60이면 True 반환
 #   - Student("홍길동", 1, 85)로 인스턴스 생성 후 테스트하세요
+##############
+# 출력 결과:
+# 이름: 홍길동, 학년: 1, 점수: 85
+##############
 
 import robot
 
@@ -965,6 +1055,11 @@ robot.dance()`,
 #   - sorted()로 오름차순 정렬하세요
 #   - math.factorial(6)도 출력해보세요 (6! = 720)
 #   - 로봇이 결과를 말하게 하세요
+##############
+# 출력 결과:
+# 로또 번호: [실행할 때마다 달라지는 1~45 사이 숫자 6개]
+# 6! = 720
+##############
 
 import robot
 import random

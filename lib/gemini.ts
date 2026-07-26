@@ -85,6 +85,7 @@ export interface ExtraPracticeProblem {
   title: string;
   description: string;
   requirements: string[];
+  expectedOutput: string[];
 }
 
 function cleanProblemText(value: unknown, maxLength: number) {
@@ -106,8 +107,10 @@ export async function generateExtraPracticeProblem(
 학생이 배운 개념을 한 번 더 연습할 수 있는 새 문제를 만드세요.
 정답, 정답 코드, 의사 코드, 구체적인 풀이 순서는 절대 제공하지 마세요.
 문제는 현재 단원 수준에서 10분 안에 풀 수 있어야 하며, 모호하지 않은 조건 2~4개를 포함해야 합니다.
+학생이 결과를 정확히 확인할 수 있도록 고정된 입력값을 사용하고 실제 출력 결과를 1~10줄로 제시하세요.
+랜덤처럼 결과가 달라질 수밖에 없다면 해당 부분은 "[실행할 때마다 달라지는 값]"으로 표시하세요.
 참고 문제와 소재나 값이 겹치지 않게 새롭게 출제하세요.`,
-    generationConfig: { responseMimeType: "application/json" },
+    generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
   });
 
   const prompt = `다음 단원의 추가 연습문제 하나를 출제하세요.
@@ -124,7 +127,7 @@ ${params.referencePractice.slice(0, 4_000) || "(기존 문제 없음)"}
 ---
 
 다음 JSON 형식으로만 답하세요:
-{"title":"짧은 문제 제목","description":"학생이 해야 할 일 한두 문장","requirements":["명확한 조건 1","명확한 조건 2"]}`;
+{"title":"짧은 문제 제목","description":"학생이 해야 할 일 한두 문장","requirements":["명확한 조건 1","명확한 조건 2"],"expectedOutput":["실제로 출력되어야 하는 첫 번째 줄","두 번째 줄"]}`;
 
   const result = await model.generateContent(prompt);
   const parsed = JSON.parse(result.response.text()) as Record<string, unknown>;
@@ -136,11 +139,17 @@ ${params.referencePractice.slice(0, 4_000) || "(기존 문제 없음)"}
         .filter(Boolean)
         .slice(0, 4)
     : [];
+  const expectedOutput = Array.isArray(parsed.expectedOutput)
+    ? parsed.expectedOutput
+        .map((item) => cleanProblemText(item, 180))
+        .filter(Boolean)
+        .slice(0, 10)
+    : [];
 
-  if (!title || !description || requirements.length < 2) {
+  if (!title || !description || requirements.length < 2 || expectedOutput.length < 1) {
     throw new Error("Invalid extra practice response");
   }
-  return { title, description, requirements };
+  return { title, description, requirements, expectedOutput };
 }
 
 // 연습문제 채점. Gemini 호출/파싱에 실패하면 null을 반환해 판정을 보류한다(뱃지 미지급).
@@ -148,7 +157,7 @@ export async function judgePractice(params: PracticeJudgeParams): Promise<Practi
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     systemInstruction: SYSTEM_PROMPT,
-    generationConfig: { responseMimeType: "application/json" },
+    generationConfig: { responseMimeType: "application/json", temperature: 0 },
   });
 
   const prompt = `학생이 "${params.conceptName}" 개념의 연습문제를 풀었습니다. 문제의 요구조건을 모두 충족했는지 채점해주세요.
@@ -169,13 +178,15 @@ ${params.code.slice(0, 8_000)}
 ${params.stdout.slice(0, 4_000) || "(출력 없음)"}
 ---
 
-채점 기준 (학생을 격려하는 관대한 채점입니다):
-- 문제가 요구한 핵심 개념(예: * 반복, + 연결, 변수, f-string, 조건문, 반복문 등)을 학생이 실제로 사용했으면 합격입니다.
-- 공백, 띄어쓰기, 줄바꿈, 문구 표현의 사소한 차이는 절대 감점하지 마세요. 기대 출력과 완전히 똑같지 않아도 됩니다.
-- 변수 이름이나 값, 출력 내용을 학생이 자유롭게 바꾼 것은 전혀 문제가 되지 않습니다.
+채점 기준 (필수 조건을 모두 확인하는 정확한 채점입니다):
+- 문제의 모든 조건을 하나씩 확인하고, 단 하나라도 빠졌거나 잘못되면 반드시 불합격입니다.
+- 계산 문제는 공식, 입력값, 계산 결과가 모두 정확해야 합니다.
+- 소수점 자릿수, 반올림, 필수 출력 항목도 문제 조건입니다. 요구된 형식을 지키지 않았다면 불합격입니다.
+- 출력 결과가 맞더라도 정답 값을 문자열로 직접 출력하는 등 문제에서 요구한 핵심 코드와 계산 과정을 사용하지 않았다면 불합격입니다.
+- 변수 이름처럼 문제에서 자유롭게 정할 수 있는 부분과 단순한 앞뒤 공백만 허용하세요.
 - robot.say(), robot.emotion() 같은 robot API 호출과 주석은 문제 템플릿에 원래 포함된 것이므로 채점과 무관합니다.
-- 불합격은 다음 경우에만: 요구한 핵심 개념을 아예 사용하지 않았거나, 문제와 전혀 무관한 코드를 제출한 경우.
-- 애매하면 합격으로 판정하세요.
+- 피드백에서 필수 조건의 수정이나 보완을 권해야 한다면 solved는 반드시 false입니다.
+- 판단 근거가 부족하거나 애매하면 합격시키지 말고 solved를 false로 판정하세요.
 
 다음 JSON 형식으로만 답하세요:
 {"solved": true 또는 false, "feedback": "합격이면 칭찬 1~2문장, 불합격이면 무엇이 부족한지 힌트 1~2문장 (정답 코드는 알려주지 말 것)"}`;

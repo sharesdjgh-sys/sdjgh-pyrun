@@ -5,12 +5,13 @@ import {
   CONCEPT_EXAMPLES_LV2,
   CONCEPT_EXAMPLES_LV3,
 } from "../lib/curriculum";
+import { createStudentPracticeTemplate } from "../lib/practice-template";
 
 test("print practice output matches Python string operations", () => {
   const code = CONCEPT_EXAMPLES[1].practiceCode;
+  const starter = createStudentPracticeTemplate(code);
 
-  assert.match(code, /#   안녕안녕안녕/);
-  assert.match(code, /#   사과바나나/);
+  assert.match(starter, /#-----------------------------------------\n# \[출력 결과\]\n# 안녕안녕안녕\n# 사과바나나/);
   assert.match(code, /print\("안녕" \* 3\)/);
   assert.match(code, /print\("사과" \+ "바나나"\)/);
   assert.doesNotMatch(code, /사과 \+ 바나나/);

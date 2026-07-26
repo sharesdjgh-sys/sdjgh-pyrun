@@ -143,8 +143,8 @@ export default function BadgeCelebration({
         style={{
           position: "relative",
           width: "min(450px, calc(100vw - 34px))",
-          maxHeight: "calc(100vh - 34px)",
-          overflowY: "auto",
+          maxHeight: "calc(100vh - 24px)",
+          overflow: "hidden",
           border: "1px solid rgba(255,232,157,.48)",
           borderRadius: 30,
           padding: "30px 34px 28px",
@@ -174,7 +174,7 @@ export default function BadgeCelebration({
         <h2 id="badge-celebration-title" className="reward-title">
           새 뱃지 획득
         </h2>
-        <div style={{ marginTop: 5, color: "#BEB4DA", fontSize: 13.5, letterSpacing: "-.01em" }}>
+        <div className="reward-subtitle" style={{ marginTop: 5, color: "#BEB4DA", fontSize: 13.5, letterSpacing: "-.01em" }}>
           새로운 코딩 등급을 달성했어
         </div>
 
@@ -211,27 +211,27 @@ export default function BadgeCelebration({
 
         {firstBadge && (
           <>
-            <div style={{ color: "#AFA4CE", fontSize: 11, fontWeight: 800, letterSpacing: ".16em" }}>
+            <div className="reward-rank-label" style={{ color: "#AFA4CE", fontSize: 11, fontWeight: 800, letterSpacing: ".16em" }}>
               NEW RANK
             </div>
-            <div style={{ marginTop: 3, fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 28, color: "#FFF4C8", textShadow: `0 0 18px ${hex}99` }}>
+            <div className="reward-rank-name" style={{ marginTop: 3, fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 28, color: "#FFF4C8", textShadow: `0 0 18px ${hex}99` }}>
               {firstBadge.badgeNameKo}
             </div>
-            <div style={{ marginTop: 5, color: "#D2C9E8", fontSize: 13.5 }}>
+            <div className="reward-concept-name" style={{ marginTop: 5, color: "#D2C9E8", fontSize: 13.5 }}>
               {firstBadge.nameKo} 개념 마스터
             </div>
           </>
         )}
 
         {feedback && (
-          <div style={{ marginTop: 20, display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, lineHeight: 1.58, color: "#E3DDF2", background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: "12px 14px", textAlign: "left" }}>
+          <div className="reward-feedback" style={{ marginTop: 20, display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, lineHeight: 1.58, color: "#E3DDF2", background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: "12px 14px", textAlign: "left" }}>
             <Sparkles size={16} color="#FFD86B" style={{ flex: "none", marginTop: 2 }} />
             <span>{feedback}</span>
           </div>
         )}
 
         {nextBadge && (
-          <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 12.5, fontWeight: 750, color: "#FFE7A0", background: "rgba(255,210,81,.09)", border: "1px solid rgba(255,218,105,.22)", padding: "9px 13px", borderRadius: 12 }}>
+          <div className="reward-next-unlock" style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 12.5, fontWeight: 750, color: "#FFE7A0", background: "rgba(255,210,81,.09)", border: "1px solid rgba(255,218,105,.22)", padding: "9px 13px", borderRadius: 12 }}>
             <LockOpen size={14} />
             다음 단계 해금 · {nextBadge.nameKo}
           </div>

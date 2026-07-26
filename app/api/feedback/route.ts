@@ -8,7 +8,12 @@ import { effectiveConceptAccessIdsForOrders, isConceptUnlockedInOrders } from "@
 import { parsePython } from "@/lib/python-parser";
 import { rateLimit, RequestValidationError, validateFeedback } from "@/lib/api-guard";
 import { isStudentRole } from "@/lib/roles";
-import { createStudentPracticeTemplate } from "@/lib/practice-template";
+import {
+  createStudentPracticeTemplate,
+  extractExpectedOutput,
+  isExactExpectedOutput,
+  matchesExpectedOutput,
+} from "@/lib/practice-template";
 import {
   curriculumOrders,
   getCurriculumUnits,
@@ -108,16 +113,28 @@ export async function POST(req: NextRequest) {
         ));
 
       if (concept?.practiceCode) {
-        const verdict = await judgePractice({
-          conceptName: concept.nameKo,
-          problem: createStudentPracticeTemplate(concept.practiceCode),
-          code,
-          stdout: stdout || "",
-        });
+        const studentProblem = createStudentPracticeTemplate(concept.practiceCode);
+        const expectedOutput = extractExpectedOutput(concept.practiceCode);
 
-        if (verdict) {
-          feedback = verdict.feedback;
-          solved = verdict.solved;
+        if (
+          expectedOutput &&
+          isExactExpectedOutput(expectedOutput) &&
+          !matchesExpectedOutput(expectedOutput, stdout || "")
+        ) {
+          solved = false;
+          feedback = "코드는 실행됐지만 출력 결과가 문제의 예시와 달라. `[출력 결과]`의 각 줄과 비교해서 빠진 내용이나 값이 다른 부분을 다시 확인해보자!";
+        } else {
+          const verdict = await judgePractice({
+            conceptName: concept.nameKo,
+            problem: studentProblem,
+            code,
+            stdout: stdout || "",
+          });
+
+          if (verdict) {
+            feedback = verdict.feedback;
+            solved = verdict.solved;
+          }
         }
 
         // 뱃지(개념 클리어 기록)는 학생 계정에만 지급한다.

@@ -11,24 +11,7 @@ import {
   sessionTenant,
 } from "@/lib/curriculum-access";
 import { generateExtraPracticeProblem } from "@/lib/gemini";
-
-function toStarterCode(problem: {
-  title: string;
-  description: string;
-  requirements: string[];
-}) {
-  const lines = [
-    `# AI 추가 문제: ${problem.title}`,
-    "#",
-    `# ${problem.description}`,
-    "#",
-    "# 조건",
-    ...problem.requirements.map((requirement, index) => `# ${index + 1}. ${requirement}`),
-    "",
-    "# 아래에 직접 코드를 작성하세요.",
-  ];
-  return lines.join("\n");
-}
+import { createExtraPracticeStarter } from "@/lib/practice-template";
 
 export async function POST(req: NextRequest) {
   const context = sessionTenant(await auth());
@@ -61,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       title: problem.title,
-      starterCode: toStarterCode(problem),
+      starterCode: createExtraPracticeStarter(problem),
     });
   } catch (error) {
     if (error instanceof RequestValidationError) {
