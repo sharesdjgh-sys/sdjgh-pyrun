@@ -21,6 +21,7 @@ export async function GET() {
     .select({
       badgeId: badges.id,
       conceptId: badges.conceptId,
+      sourceConceptId: concepts.sourceConceptId,
       nameKo: badges.nameKo,
       iconName: badges.iconName,
       colorClass: badges.colorClass,

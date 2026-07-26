@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { COLOR_HEX } from "@/components/badges/colorMap";
+import { getBadgeImagePath } from "@/lib/badge-images";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
   List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Lock, Bot,
@@ -21,6 +23,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
 interface BadgeInfo {
   badgeId: number;
   conceptId: number;
+  sourceConceptId: number | null;
   nameKo: string;
   iconName: string;
   colorClass: string;
@@ -151,6 +154,7 @@ export default function ProgressClient() {
                     const earned = earnedConceptIds.has(badge.conceptId);
                     const practiced = practicedConceptIds.has(badge.conceptId);
                     const Icon = ICON_MAP[badge.iconName] || Terminal;
+                    const badgeImagePath = getBadgeImagePath(badge.sourceConceptId);
                     const hex = COLOR_HEX[badge.colorClass] || "#7B5CF0";
                     const earnedDate = badge.clearedAt
                       ? new Date(badge.clearedAt).toLocaleDateString("ko-KR", {
@@ -194,7 +198,32 @@ export default function ProgressClient() {
                                 }),
                           }}
                         >
-                          {earned ? (
+                          {badgeImagePath ? (
+                            <>
+                              <Image
+                                src={badgeImagePath}
+                                alt=""
+                                fill
+                                sizes="(max-width: 520px) 45vw, 160px"
+                                style={{
+                                  zIndex: 1,
+                                  objectFit: "contain",
+                                  padding: 3,
+                                  opacity: earned ? 1 : 0.3,
+                                  filter: earned
+                                    ? `drop-shadow(0 5px 5px ${hex}2E)`
+                                    : "grayscale(.5) saturate(.18)",
+                                }}
+                              />
+                              {earned ? (
+                                <span className="progress-badge-shine" aria-hidden="true" />
+                              ) : (
+                                <span style={{ position: "absolute", zIndex: 2, right: 6, bottom: 6, width: 19, height: 19, display: "grid", placeItems: "center", borderRadius: "50%", background: "#fff", border: `1px solid ${hex}35`, boxShadow: "0 2px 6px rgba(73,60,110,.13)" }}>
+                                  <Lock size={10.5} color="#9C92B8" strokeWidth={2.3} />
+                                </span>
+                              )}
+                            </>
+                          ) : earned ? (
                             <>
                               <Star
                                 size={14}
@@ -210,12 +239,7 @@ export default function ProgressClient() {
                             </>
                           ) : (
                             <>
-                              <Icon
-                                size={29}
-                                color={hex}
-                                strokeWidth={2}
-                                style={{ opacity: 0.28, filter: "saturate(.18)" }}
-                              />
+                              <Icon size={29} color={hex} strokeWidth={2} style={{ opacity: 0.28, filter: "saturate(.18)" }} />
                               <span style={{ position: "absolute", right: 6, bottom: 6, width: 19, height: 19, display: "grid", placeItems: "center", borderRadius: "50%", background: "#fff", border: `1px solid ${hex}35`, boxShadow: "0 2px 6px rgba(73,60,110,.13)" }}>
                                 <Lock size={10.5} color="#9C92B8" strokeWidth={2.3} />
                               </span>

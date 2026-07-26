@@ -1,15 +1,18 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
   List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Bot,
   Binary, FileText, ListChecks, Parentheses, BookOpen, Layers, Copy, Repeat, RefreshCcw,
   Braces, Network, ShieldAlert, Library, Search, BarChart2, TrendingUp, AlertCircle, Filter, Cpu, Award,
+  ChevronRight, LockOpen, Sparkles, X,
 } from "lucide-react";
 import type { LearningUnitMeta } from "@/lib/curriculum-model";
 import { nextConceptIdInOrders } from "@/lib/progress";
 import { COLOR_HEX } from "./colorMap";
+import { getBadgeImagePath } from "@/lib/badge-images";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
@@ -36,25 +39,55 @@ export default function BadgeCelebration({
   onNext,
 }: BadgeCelebrationProps) {
   const confettiRef = useRef<{ style: Record<string, string> }[] | null>(null);
+  const sparkleRef = useRef<{ style: Record<string, string> }[] | null>(null);
 
   if (!confettiRef.current) {
-    const cc = ["#7B5CF0", "#FF5C8A", "#18C99A", "#FFC23C", "#4F8EF7", "#FF7A59"];
-    confettiRef.current = Array.from({ length: 70 }, () => {
-      const sz = 7 + Math.random() * 9;
+    const cc = ["#FFE58A", "#FFC23C", "#A98BFF", "#FF77AC", "#62E7C1", "#7FB2FF"];
+    confettiRef.current = Array.from({ length: 84 }, () => {
+      const sz = 4 + Math.random() * 8;
       return {
         style: {
           position: "absolute",
-          top: (-10 - Math.random() * 20) + "px",
+          top: (-20 - Math.random() * 30) + "px",
           left: Math.random() * 100 + "%",
           width: sz + "px",
-          height: sz + "px",
+          height: (sz * (Math.random() > 0.55 ? 1 : 0.42)) + "px",
           background: cc[Math.floor(Math.random() * cc.length)],
-          borderRadius: Math.random() > 0.5 ? "50%" : "3px",
-          animation: `confettiFall ${(2 + Math.random() * 1.8).toFixed(2)}s ${(Math.random() * 0.6).toFixed(2)}s linear forwards`,
+          borderRadius: Math.random() > 0.7 ? "50%" : "2px",
+          boxShadow: "0 0 8px rgba(255,255,255,.35)",
+          animation: `confettiFall ${(2.8 + Math.random() * 2.2).toFixed(2)}s ${(Math.random() * 0.9).toFixed(2)}s cubic-bezier(.2,.55,.35,1) forwards`,
         },
       };
     });
   }
+
+  if (!sparkleRef.current) {
+    sparkleRef.current = Array.from({ length: 30 }, () => {
+      const size = 2 + Math.random() * 5;
+      return {
+        style: {
+          position: "absolute",
+          left: (8 + Math.random() * 84) + "%",
+          top: (10 + Math.random() * 78) + "%",
+          width: size + "px",
+          height: size + "px",
+          borderRadius: "50%",
+          background: Math.random() > 0.45 ? "#FFE89A" : "#C8B8FF",
+          boxShadow: "0 0 10px currentColor",
+          animation: `rewardParticle ${(1.7 + Math.random() * 2.3).toFixed(2)}s ${(Math.random() * 1.4).toFixed(2)}s ease-in-out infinite`,
+        },
+      };
+    });
+  }
+
+  useEffect(() => {
+    if (badgeIds.length === 0) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [badgeIds.length, onClose]);
 
   if (badgeIds.length === 0) return null;
 
@@ -64,6 +97,7 @@ export default function BadgeCelebration({
 
   const firstBadge = badgeMeta[0];
   const Icon = firstBadge ? (ICON_MAP[firstBadge.iconName] || Terminal) : Terminal;
+  const badgeImagePath = getBadgeImagePath(firstBadge?.sourceConceptId);
   const hex = firstBadge ? (COLOR_HEX[firstBadge.colorClass] || "#18C99A") : "#18C99A";
 
   const nextId = firstBadge
@@ -75,82 +109,164 @@ export default function BadgeCelebration({
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(44,39,71,.45)", backdropFilter: "blur(5px)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="badge-celebration-title"
+      className="reward-overlay"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 150,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        padding: 20,
+        background: `radial-gradient(circle at 50% 42%,${hex}42 0%,rgba(38,24,83,.82) 30%,rgba(13,10,35,.96) 72%)`,
+        backdropFilter: "blur(12px)",
+      }}
       onClick={onClose}
     >
-      {/* Confetti */}
-      <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+      <div className="reward-vignette" aria-hidden="true" />
+      <div className="reward-rays" aria-hidden="true" />
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true">
+        {sparkleRef.current.map((particle, index) => (
+          <span key={`sparkle-${index}`} style={particle.style as React.CSSProperties} />
+        ))}
         {confettiRef.current.map((c, i) => (
           <div key={i} style={c.style as React.CSSProperties} />
         ))}
       </div>
 
       <div
-        style={{ position: "relative", background: "#fff", borderRadius: 30, padding: "38px 40px", textAlign: "center", boxShadow: "0 30px 70px rgba(44,39,71,.35)", animation: "popIn .4s ease", maxWidth: 340 }}
+        className="reward-panel"
+        style={{
+          position: "relative",
+          width: "min(450px, calc(100vw - 34px))",
+          maxHeight: "calc(100vh - 34px)",
+          overflowY: "auto",
+          border: "1px solid rgba(255,232,157,.48)",
+          borderRadius: 30,
+          padding: "30px 34px 28px",
+          textAlign: "center",
+          color: "#fff",
+          background: "linear-gradient(155deg,rgba(42,30,91,.96),rgba(21,17,55,.98) 62%,rgba(34,22,73,.98))",
+          boxShadow: `0 0 0 1px rgba(255,255,255,.06),0 0 55px ${hex}52,0 38px 90px rgba(0,0,0,.62)`,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <svg viewBox="0 0 24 24" width="40" height="40" fill="#FFC23C" stroke="#FFC23C" strokeWidth="1.2" strokeLinejoin="round" style={{ animation: "starSpin 8s linear infinite" }}>
-          <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 21.5 12 17.5 5.5 21.5 7 14.5 2 9.5 9 9" />
-        </svg>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="뱃지 획득 창 닫기"
+          style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, display: "grid", placeItems: "center", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, background: "rgba(255,255,255,.06)", color: "#BFB6DD", cursor: "pointer" }}
+        >
+          <X size={16} />
+        </button>
 
-        <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 24, marginTop: 8, color: "#2C2747" }}>새 뱃지 획득!</div>
-        <div style={{ fontSize: 14, color: "#8B83A8", marginTop: 4, marginBottom: 22 }}>
-          {firstBadge ? `${firstBadge.nameKo} 개념을 마스터했어요` : "첫 개념을 성공했어요"}
+        <div className="reward-kicker">
+          <span />
+          <Sparkles size={13} color="#FFE084" />
+          ACHIEVEMENT UNLOCKED
+          <span />
         </div>
 
-        <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 84, height: 84, borderRadius: 24, background: `${hex}1A`, border: `3px solid ${hex}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 10px 24px ${hex}4d`, animation: "floatChip 2.2s ease-in-out infinite" }}>
-            <Icon size={38} color={hex} />
-          </div>
-          {firstBadge && (
-            <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: hex }}>
-              {firstBadge.badgeNameKo}
+        <h2 id="badge-celebration-title" className="reward-title">
+          새 뱃지 획득
+        </h2>
+        <div style={{ marginTop: 5, color: "#BEB4DA", fontSize: 13.5, letterSpacing: "-.01em" }}>
+          새로운 코딩 등급을 달성했어
+        </div>
+
+        <div className="reward-emblem-stage" style={{ margin: "22px auto 13px" }}>
+          <div className="reward-halo reward-halo-outer" style={{ borderColor: `${hex}88` }} />
+          <div className="reward-halo reward-halo-inner" style={{ borderColor: "rgba(255,220,111,.66)" }} />
+          <div className="reward-emblem-glow" style={{ background: hex, boxShadow: `0 0 70px 24px ${hex}66` }} />
+          {badgeImagePath ? (
+            <div className="reward-badge-image-shell">
+              <Image
+                src={badgeImagePath}
+                alt={firstBadge ? `${firstBadge.badgeNameKo} 뱃지` : "획득한 뱃지"}
+                fill
+                sizes="170px"
+                priority
+                style={{ objectFit: "contain", filter: "drop-shadow(0 16px 14px rgba(0,0,0,.42))" }}
+              />
+              <span className="reward-emblem-sweep" />
+            </div>
+          ) : (
+            <div
+              className="reward-emblem-frame"
+              style={{ background: `linear-gradient(145deg,#FFF0A8 0%,#D99D25 28%,${hex} 60%,#FFF4BB 100%)` }}
+            >
+              <div className="reward-emblem-core" style={{ background: `radial-gradient(circle at 38% 28%,${hex} 0%,#2B1B5C 68%,#171132 100%)` }}>
+                <Icon size={52} color="#fff" strokeWidth={1.85} style={{ filter: "drop-shadow(0 5px 5px rgba(0,0,0,.36))" }} />
+                <span className="reward-emblem-sweep" />
+              </div>
             </div>
           )}
+          <Sparkles className="reward-emblem-star reward-emblem-star-left" size={20} color="#FFE898" />
+          <Sparkles className="reward-emblem-star reward-emblem-star-right" size={16} color="#fff" />
         </div>
 
+        {firstBadge && (
+          <>
+            <div style={{ color: "#AFA4CE", fontSize: 11, fontWeight: 800, letterSpacing: ".16em" }}>
+              NEW RANK
+            </div>
+            <div style={{ marginTop: 3, fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 28, color: "#FFF4C8", textShadow: `0 0 18px ${hex}99` }}>
+              {firstBadge.badgeNameKo}
+            </div>
+            <div style={{ marginTop: 5, color: "#D2C9E8", fontSize: 13.5 }}>
+              {firstBadge.nameKo} 개념 마스터
+            </div>
+          </>
+        )}
+
         {feedback && (
-          <div style={{ marginTop: 18, fontSize: 13.5, lineHeight: 1.6, color: "#544D70", background: "#FCFAFF", border: "1px solid #F0EBFA", borderRadius: 14, padding: "12px 15px", textAlign: "left" }}>
-            🤖 {feedback}
+          <div style={{ marginTop: 20, display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, lineHeight: 1.58, color: "#E3DDF2", background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: "12px 14px", textAlign: "left" }}>
+            <Sparkles size={16} color="#FFD86B" style={{ flex: "none", marginTop: 2 }} />
+            <span>{feedback}</span>
           </div>
         )}
 
         {nextBadge && (
-          <div style={{ marginTop: 14, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#7B5CF0", background: "#F2ECFD", padding: "7px 14px", borderRadius: 99 }}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" />
-            </svg>
-            다음 단계 잠금 해제: {nextBadge.nameKo}
+          <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 12.5, fontWeight: 750, color: "#FFE7A0", background: "rgba(255,210,81,.09)", border: "1px solid rgba(255,218,105,.22)", padding: "9px 13px", borderRadius: 12 }}>
+            <LockOpen size={14} />
+            다음 단계 해금 · {nextBadge.nameKo}
           </div>
         )}
 
         {nextBadge && onNext ? (
           <>
             <button
+              type="button"
               onClick={() => onNext(nextBadge.id)}
-              style={{ marginTop: 18, width: "100%", padding: 14, border: "none", borderRadius: 16, background: "linear-gradient(180deg,#8B6CFF,#7B5CF0)", color: "#fff", fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 16, cursor: "pointer", boxShadow: "0 5px 0 #5B3FD6", transition: "transform .12s" }}
-              onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(3px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 0 #5B3FD6"; }}
-              onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = ""; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 5px 0 #5B3FD6"; }}
+              autoFocus
+              className="reward-primary-button"
+              style={{ marginTop: 18 }}
             >
-              다음 단계 공부하기 →
+              다음 단계 도전하기
+              <ChevronRight size={18} strokeWidth={2.6} />
             </button>
             <button
+              type="button"
               onClick={onClose}
-              style={{ marginTop: 10, width: "100%", padding: 11, border: "none", borderRadius: 14, background: "transparent", color: "#8B83A8", fontFamily: "inherit", fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F6F3FC"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+              className="reward-secondary-button"
             >
               조금 더 연습하기
             </button>
           </>
         ) : (
           <button
+            type="button"
             onClick={onClose}
-            style={{ marginTop: 18, width: "100%", padding: 14, border: "none", borderRadius: 16, background: "linear-gradient(180deg,#FFC23C,#F5A623)", color: "#fff", fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 16, cursor: "pointer", boxShadow: "0 5px 0 #D98E12", transition: "transform .12s" }}
-            onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(3px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 0 #D98E12"; }}
-            onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = ""; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 5px 0 #D98E12"; }}
+            autoFocus
+            className="reward-primary-button"
+            style={{ marginTop: 18 }}
           >
-            레벨 완주! 정말 대단해요 🎉
+            레벨 완주 확인
+            <Sparkles size={17} />
           </button>
         )}
       </div>

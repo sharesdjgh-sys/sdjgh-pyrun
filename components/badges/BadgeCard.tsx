@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
   List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Lock,
 } from "lucide-react";
+import { getBadgeImagePath } from "@/lib/badge-images";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
@@ -32,13 +34,15 @@ const COLOR_HEX: Record<string, string> = {
 interface BadgeCardProps {
   nameKo: string;
   iconName: string;
+  sourceConceptId?: number | null;
   colorClass: string;
   earned: boolean;
   size?: "sm" | "md";
 }
 
-export default function BadgeCard({ nameKo, iconName, colorClass, earned, size = "md" }: BadgeCardProps) {
+export default function BadgeCard({ nameKo, iconName, sourceConceptId, colorClass, earned, size = "md" }: BadgeCardProps) {
   const Icon = ICON_MAP[iconName] || Terminal;
+  const badgeImagePath = getBadgeImagePath(sourceConceptId);
   const hex = COLOR_HEX[colorClass] || "#7B5CF0";
   const isSm = size === "sm";
 
@@ -76,8 +80,28 @@ export default function BadgeCard({ nameKo, iconName, colorClass, earned, size =
 
   return (
     <div style={containerStyle}>
-      <div style={iconBoxStyle}>
-        {earned ? (
+      <div style={{ ...iconBoxStyle, position: "relative", overflow: "hidden" }}>
+        {badgeImagePath ? (
+          <>
+            <Image
+              src={badgeImagePath}
+              alt=""
+              fill
+              sizes={isSm ? "48px" : "96px"}
+              style={{
+                objectFit: "contain",
+                padding: isSm ? 2 : 4,
+                opacity: earned ? 1 : 0.28,
+                filter: earned ? "none" : "grayscale(.55) saturate(.18)",
+              }}
+            />
+            {!earned && (
+              <span style={{ position: "absolute", right: 4, bottom: 4, width: isSm ? 16 : 20, height: isSm ? 16 : 20, display: "grid", placeItems: "center", borderRadius: "50%", background: "#fff", boxShadow: "0 2px 5px rgba(44,39,71,.14)" }}>
+                <Lock size={isSm ? 9 : 11} color="#9C92B8" />
+              </span>
+            )}
+          </>
+        ) : earned ? (
           <Icon size={isSm ? 16 : 26} color={hex} />
         ) : (
           <Lock size={isSm ? 13 : 20} color="#C9C1DE" />

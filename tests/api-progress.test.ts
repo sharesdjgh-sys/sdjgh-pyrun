@@ -23,6 +23,7 @@ import { canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
 import { createStudentPracticeTemplate } from "../lib/practice-template";
 import { getStudentAddress, getStudentCallName, getStudentVocative } from "../lib/student-name";
+import { getBadgeImagePath } from "../lib/badge-images";
 
 test("authentication helper rejects missing and malformed sessions", () => {
   assert.equal(authenticatedUserId(null), null);
@@ -209,4 +210,11 @@ test("student names use a friendly teacher-style address", () => {
   assert.equal(getStudentVocative("이도윤"), "도윤아");
   assert.equal(getStudentVocative("김민서"), "민서야");
   assert.equal(getStudentVocative("학생"), "학생");
+});
+
+test("badge images map source concept IDs to public assets", () => {
+  assert.equal(getBadgeImagePath(0), "/badges/concept-0.png");
+  assert.equal(getBadgeImagePath(40), "/badges/concept-40.png");
+  assert.equal(getBadgeImagePath(41), null);
+  assert.equal(getBadgeImagePath(null), null);
 });
