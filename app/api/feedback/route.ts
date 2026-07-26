@@ -148,6 +148,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 문제 풀이 기록은 학생에게 모호한 "채점 대기" 상태를 남기지 않는다.
+    // AI 판정이 일시적으로 실패해도 미해결 기록으로 저장해 복습할 수 있게 한다.
+    if (practiceConceptId !== null && canAccessPractice && solved === null) {
+      solved = false;
+    }
+
     // 채점 대상이 아니거나 Gemini 채점이 실패한 경우 일반 피드백 생성
     if (feedback === null) {
       feedback = await generateFeedback({

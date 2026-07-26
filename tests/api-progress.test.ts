@@ -35,7 +35,7 @@ import {
 } from "../lib/practice-template";
 import { getStudentAddress, getStudentCallName, getStudentVocative } from "../lib/student-name";
 import { getBadgeImagePath } from "../lib/badge-images";
-import { learningAttemptStatus } from "../lib/learning-history";
+import { learningAttemptStatus, learningReviewHref } from "../lib/learning-history";
 import { CONCEPT_EXAMPLES } from "../lib/curriculum";
 import { highestEarnedBadgesByLevel } from "../lib/badge-ranks";
 
@@ -262,9 +262,14 @@ test("learning history separates execution success from answer correctness", () 
   assert.equal(learningAttemptStatus({ isSuccess: true, practiceConceptId: 3, isSolved: true }), "solved");
   assert.equal(learningAttemptStatus({ isSuccess: true, practiceConceptId: 3, isSolved: false }), "incorrect");
   assert.equal(learningAttemptStatus({ isSuccess: false, practiceConceptId: 3, isSolved: false }), "incorrect");
-  assert.equal(learningAttemptStatus({ isSuccess: true, practiceConceptId: 3, isSolved: null }), "pending");
+  assert.equal(learningAttemptStatus({ isSuccess: true, practiceConceptId: 3, isSolved: null }), "incorrect");
   assert.equal(learningAttemptStatus({ isSuccess: true, practiceConceptId: null, isSolved: null }), "free");
   assert.equal(learningAttemptStatus({ isSuccess: false, practiceConceptId: null, isSolved: null }), "runtime_error");
+});
+
+test("learning history creates a direct review link for a practice problem", () => {
+  assert.equal(learningReviewHref(18), "/learn?reviewConceptId=18");
+  assert.equal(learningReviewHref(Number.NaN), "/learn");
 });
 
 test("extra practice generation requires a valid concept ID", () => {

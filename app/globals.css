@@ -1441,11 +1441,6 @@ html, body {
   --journal-tint: #FFF0F5;
 }
 
-.learning-journal-entry.is-pending {
-  --journal-accent: #B57900;
-  --journal-tint: #FFF6D9;
-}
-
 .learning-journal-entry.is-free {
   --journal-accent: #5C6FD6;
   --journal-tint: #EDF0FF;
@@ -1881,6 +1876,18 @@ html, body {
   font-size: 11px;
   font-weight: 850;
   cursor: pointer;
+  box-shadow: 0 5px 12px rgba(164,114,0,.18);
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.history-review-banner button:hover {
+  background: #8F6200;
+  box-shadow: 0 8px 17px rgba(164,114,0,.25);
+  transform: translateY(-2px);
+}
+
+.history-review-banner button:active {
+  transform: translateY(0) scale(.98);
 }
 
 .history-content {
@@ -1890,6 +1897,14 @@ html, body {
   border-radius: 25px;
   background: rgba(255,255,255,.92);
   box-shadow: 0 12px 30px rgba(72,50,126,.07);
+  scroll-margin-top: 82px;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.history-content.is-review-focus {
+  border-color: #E3B0C0;
+  box-shadow: 0 0 0 4px rgba(195,60,104,.1), 0 18px 40px rgba(117,48,81,.12);
+  animation: history-review-focus .8s ease;
 }
 
 .history-content-heading {
@@ -1988,13 +2003,6 @@ html, body {
   --filter-shadow: rgba(53,102,200,.22);
 }
 
-.history-filter-tabs button[data-filter="pending"] {
-  --filter-color: #A56B00;
-  --filter-light: #E8A62B;
-  --filter-tint: #FFF2D8;
-  --filter-shadow: rgba(165,107,0,.22);
-}
-
 .history-filter-tabs button:hover:not(.is-active) {
   border-color: color-mix(in srgb,var(--filter-color) 25%,transparent);
   transform: translateY(-1px);
@@ -2042,6 +2050,17 @@ html, body {
 
 .history-entry {
   padding: 0;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.history-entry:hover {
+  border-color: color-mix(in srgb,var(--journal-accent) 25%,#E9E3F3);
+  box-shadow: 0 11px 24px rgba(71,50,126,.09);
+  transform: translateY(-1px);
+}
+
+.history-entry[open] {
+  border-color: color-mix(in srgb,var(--journal-accent) 28%,#E9E3F3);
 }
 
 .history-entry > summary {
@@ -2129,6 +2148,53 @@ html, body {
 
 .history-entry-detail .learning-concept-row {
   margin-top: 13px;
+}
+
+.history-entry-actions {
+  margin-top: 11px;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.history-entry-actions button,
+.history-entry-actions a {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #DED6EC;
+  border-radius: 10px;
+  color: #675C7C;
+  background: #fff;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 850;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+.history-entry-actions button:hover,
+.history-entry-actions a:hover {
+  border-color: #BDADE0;
+  background: #F8F5FD;
+  transform: translateY(-1px);
+}
+
+.history-entry-actions a.is-primary {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg,#8B6CE8,#6847CE);
+  box-shadow: 0 5px 12px rgba(104,71,206,.2);
+}
+
+@keyframes history-review-focus {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-3px); }
 }
 
 .history-empty {

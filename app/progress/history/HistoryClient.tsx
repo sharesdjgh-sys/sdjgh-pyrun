@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -8,8 +8,9 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
-  Clock3,
+  Check,
   Code2,
+  Copy,
   Flame,
   Lightbulb,
   MessageCircle,
@@ -20,7 +21,11 @@ import {
   Trophy,
 } from "lucide-react";
 import { getStudentCallName } from "@/lib/student-name";
-import { learningAttemptStatus, type LearningAttemptStatus } from "@/lib/learning-history";
+import {
+  learningAttemptStatus,
+  learningReviewHref,
+  type LearningAttemptStatus,
+} from "@/lib/learning-history";
 
 interface BadgeInfo {
   conceptId: number;
@@ -40,7 +45,7 @@ interface FeedbackItem {
   createdAt: string;
 }
 
-type HistoryFilter = "review" | "all" | "solved" | "free" | "pending";
+type HistoryFilter = "review" | "all" | "solved" | "free";
 
 const STATUS_META: Record<LearningAttemptStatus, {
   label: string;
@@ -48,8 +53,7 @@ const STATUS_META: Record<LearningAttemptStatus, {
   icon: React.ElementType;
 }> = {
   solved: { label: "정답 해결", description: "문제의 조건을 모두 충족했어", icon: Trophy },
-  incorrect: { label: "다시 볼 오답", description: "실행됐지만 문제의 조건이 부족했어", icon: AlertCircle },
-  pending: { label: "채점 확인 필요", description: "AI 판정을 완료하지 못한 기록이야", icon: Clock3 },
+  incorrect: { label: "다시 볼 오답", description: "아직 정답으로 확인되지 않은 기록이야", icon: AlertCircle },
   free: { label: "자유 코딩", description: "스스로 작성하고 실행한 코드야", icon: Code2 },
   runtime_error: { label: "실행 오류", description: "오류를 고치며 성장할 수 있는 기록이야", icon: RotateCcw },
 };
@@ -59,8 +63,11 @@ export default function HistoryClient({ userName }: { userName: string }) {
   const [history, setHistory] = useState<FeedbackItem[]>([]);
   const [filter, setFilter] = useState<HistoryFilter>("all");
   const [visibleCount, setVisibleCount] = useState(8);
+  const [copiedHistoryId, setCopiedHistoryId] = useState<number | null>(null);
+  const [reviewFocus, setReviewFocus] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const historyContentRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const getJson = async (url: string) => {
@@ -97,7 +104,6 @@ export default function HistoryClient({ userName }: { userName: string }) {
     const counts: Record<LearningAttemptStatus, number> = {
       solved: 0,
       incorrect: 0,
-      pending: 0,
       free: 0,
       runtime_error: 0,
     };
@@ -131,6 +137,34 @@ export default function HistoryClient({ userName }: { userName: string }) {
     setVisibleCount(8);
   };
 
+  const handleReviewQuest = () => {
+    selectFilter("review");
+    setReviewFocus(false);
+    window.requestAnimationFrame(() => {
+      historyContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setReviewFocus(true);
+      window.setTimeout(() => setReviewFocus(false), 900);
+    });
+  };
+
+  const copySubmittedCode = async (item: FeedbackItem) => {
+    try {
+      await navigator.clipboard.writeText(item.codeSubmitted);
+      setCopiedHistoryId(item.id);
+      window.setTimeout(() => setCopiedHistoryId(null), 1600);
+    } catch {
+      setCopiedHistoryId(null);
+    }
+  };
+
+  const saveReviewAttempt = (item: FeedbackItem) => {
+    if (item.practiceConceptId === null) return;
+    sessionStorage.setItem("pyrun-review-attempt", JSON.stringify({
+      conceptId: item.practiceConceptId,
+      code: item.codeSubmitted,
+    }));
+  };
+
   if (loading) {
     return (
       <main className="history-loading">
@@ -151,10 +185,9 @@ export default function HistoryClient({ userName }: { userName: string }) {
 
   const filters: Array<{ id: HistoryFilter; label: string; count: number; icon: React.ElementType }> = [
     { id: "review", label: "다시 볼 기록", count: reviewCount, icon: RotateCcw },
-    { id: "all", label: "전체 기록", count: history.length, icon: BookOpen },
-    { id: "solved", label: "정답 해결", count: statusCounts.solved, icon: Trophy },
     { id: "free", label: "자유 코딩", count: statusCounts.free, icon: Code2 },
-    { id: "pending", label: "채점 대기", count: statusCounts.pending, icon: Clock3 },
+    { id: "solved", label: "정답 해결", count: statusCounts.solved, icon: Trophy },
+    { id: "all", label: "전체 기록", count: history.length, icon: BookOpen },
   ];
 
   return (
@@ -192,13 +225,17 @@ export default function HistoryClient({ userName }: { userName: string }) {
               <strong>다시 살펴볼 코드가 {reviewCount}개 있어</strong>
               <p>피드백을 읽고 코드를 한 번 더 고쳐보면 내 실력이 돼.</p>
             </div>
-            <button type="button" onClick={() => selectFilter("review")}>
+            <button type="button" onClick={handleReviewQuest}>
               오답 복습하기 <ChevronRight size={17} />
             </button>
           </section>
         )}
 
-        <section className="history-content" aria-labelledby="history-list-title">
+        <section
+          ref={historyContentRef}
+          className={`history-content ${reviewFocus ? "is-review-focus" : ""}`}
+          aria-labelledby="history-list-title"
+        >
           <div className="history-content-heading">
             <div>
               <div className="history-section-kicker"><Target size={15} /> LEARNING TIMELINE</div>
@@ -299,6 +336,24 @@ export default function HistoryClient({ userName }: { userName: string }) {
                           <strong>파이런 학습 파트너의 피드백</strong>
                           <p>{item.aiFeedback}</p>
                         </div>
+                      </div>
+
+                      <div className="history-entry-actions">
+                        <button type="button" onClick={() => copySubmittedCode(item)}>
+                          {copiedHistoryId === item.id ? <Check size={15} /> : <Copy size={15} />}
+                          {copiedHistoryId === item.id ? "복사했어!" : "내 코드 복사"}
+                        </button>
+                        {item.practiceConceptId !== null && (
+                          <Link
+                            href={learningReviewHref(item.practiceConceptId)}
+                            className="is-primary"
+                            onClick={() => saveReviewAttempt(item)}
+                          >
+                            <RotateCcw size={15} />
+                            {status === "solved" ? "한 번 더 풀기" : "이 코드 이어서 고치기"}
+                            <ChevronRight size={15} />
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </details>

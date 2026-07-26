@@ -455,6 +455,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
 
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runningRef = useRef(false);
+  const reviewDeepLinkLoadedRef = useRef(false);
   // 로봇 애니메이션이 아직 재생 중인지. AI 채점 응답이 애니메이션보다 늦게 오는 경우가 많아,
   // 응답 시점에 애니메이션이 이미 끝났으면 피드백/뱃지를 바로 표시해야 한다.
   const animationDoneRef = useRef(true);
@@ -551,6 +552,54 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     if (example?.exampleCode) setCode(example.exampleCode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
+
+  useEffect(() => {
+    if (reviewDeepLinkLoadedRef.current || typeof window === "undefined") return;
+
+    const conceptId = Number(new URLSearchParams(window.location.search).get("reviewConceptId"));
+    const unit = curriculumView.units.find((item) => item.id === conceptId);
+    if (!Number.isInteger(conceptId) || !unit || !curriculum[conceptId]) {
+      reviewDeepLinkLoadedRef.current = true;
+      return;
+    }
+
+    const targetMode: AppMode = unit.level === 3 ? "lv3" : unit.level === 2 ? "lv2" : "lv1";
+    if (mode !== targetMode) {
+      setMode(targetMode);
+      return;
+    }
+
+    let savedCode = "";
+    try {
+      const savedAttempt = JSON.parse(sessionStorage.getItem("pyrun-review-attempt") || "null") as {
+        conceptId?: number;
+        code?: string;
+      } | null;
+      if (savedAttempt?.conceptId === conceptId && typeof savedAttempt.code === "string") {
+        savedCode = savedAttempt.code;
+      }
+    } catch {
+      savedCode = "";
+    }
+
+    if (targetMode === "lv3") {
+      setSelectedLv3ConceptId(conceptId);
+    } else {
+      setSelectedConceptId(conceptId);
+    }
+    setCode(savedCode || curriculum[conceptId].practiceCode);
+    setPracticeConceptId(conceptId);
+    setOutput("");
+    setExecError("");
+    setHasRun(false);
+    setShowOutput(false);
+    showSpeechBubble(
+      `${unit.nameKo} 문제에서 작성했던 코드를 불러왔어. 피드백을 떠올리면서 한 줄씩 고쳐보자!`,
+      9000
+    );
+    sessionStorage.removeItem("pyrun-review-attempt");
+    reviewDeepLinkLoadedRef.current = true;
+  }, [curriculum, curriculumView.units, mode, showSpeechBubble]);
 
   const handleRun = useCallback(async () => {
     if (runningRef.current || pyLoading) return;

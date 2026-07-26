@@ -1,7 +1,6 @@
 export type LearningAttemptStatus =
   | "solved"
   | "incorrect"
-  | "pending"
   | "free"
   | "runtime_error";
 
@@ -14,8 +13,13 @@ export interface LearningAttemptResult {
 export function learningAttemptStatus(attempt: LearningAttemptResult): LearningAttemptStatus {
   if (attempt.practiceConceptId !== null && attempt.practiceConceptId !== undefined) {
     if (attempt.isSolved === true) return "solved";
-    if (attempt.isSolved === false) return "incorrect";
-    return "pending";
+    return "incorrect";
   }
   return attempt.isSuccess ? "free" : "runtime_error";
+}
+
+export function learningReviewHref(conceptId: number): string {
+  return Number.isInteger(conceptId) && conceptId >= 0
+    ? `/learn?reviewConceptId=${conceptId}`
+    : "/learn";
 }
