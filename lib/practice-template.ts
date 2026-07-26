@@ -42,7 +42,7 @@ export function matchesExpectedOutput(expectedOutput: string, actualOutput: stri
 }
 
 export function isExactExpectedOutput(expectedOutput: string): boolean {
-  return !/\[(?:실행할 때마다|입력에 따라)[^\]]*\]/.test(expectedOutput);
+  return !/\[(?:실행할 때마다|입력에 따라|데이터(?:와 라이브러리 버전)?에 따라)[^\]]*\]/.test(expectedOutput);
 }
 
 export function createExtraPracticeStarter(problem: {

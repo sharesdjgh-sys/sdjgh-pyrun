@@ -1136,6 +1136,16 @@ robot.emotion("happy")`,
 
 import robot
 
+#-----------------------------------------
+# [출력 결과]
+# a 자료형: <class 'int'>
+# b 자료형: <class 'int'>
+# c 자료형: <class 'float'>
+# 10 // 3 = 3
+# 10 % 3 = 1
+# 10 ** 2.5 = 316.22776601683796
+#-----------------------------------------
+
 a = 10
 b = 3
 c = 2.5
@@ -1210,6 +1220,13 @@ robot.say("문자열 메서드 완성!")`,
 
 import robot
 
+#-----------------------------------------
+# [출력 결과]
+# 대문자: LIFE IS TOO SHORT, YOU NEED PYTHON
+# 치환: life is too short, you need 파이썬
+# 단어 수: 7
+#-----------------------------------------
+
 sentence = "life is too short, you need python"
 
 print("대문자:", sentence.upper())
@@ -1276,6 +1293,13 @@ robot.say("리스트 메서드 완성!")`,
 
 import robot
 
+#-----------------------------------------
+# [출력 결과]
+# 제거된 점수: 70
+# 최종 점수: [78, 85, 88, 92, 95]
+# 최고점: 95
+#-----------------------------------------
+
 scores = [85, 92, 78, 95, 88]
 
 scores.append(70)
@@ -1327,6 +1351,13 @@ robot.emotion("happy")`,
 #   - calc(x, y) 결과를 출력하고 로봇이 합을 말하게 하세요
 
 import robot
+
+#-----------------------------------------
+# [출력 결과]
+# x: 3 y: 5
+# x + y: 8
+# 합: 8 곱: 15
+#-----------------------------------------
 
 coords = (3, 5)
 x, y = coords
@@ -1381,6 +1412,15 @@ robot.say("딕셔너리 완성!")`,
 #   - 로봇이 평균 점수를 말하게 하세요
 
 import robot
+
+#-----------------------------------------
+# [출력 결과]
+# name: 김철수
+# korean: 88
+# math: 92
+# english: 85
+# avg: 88.33333333333333
+#-----------------------------------------
 
 student = {
     'name': '김철수',
@@ -1439,6 +1479,13 @@ robot.say("집합 연산 완성!")`,
 #   - 로봇이 공통 취미 개수를 말하게 하세요
 
 import robot
+
+#-----------------------------------------
+# [출력 결과]
+# 공통 취미: [실행할 때마다 순서가 달라질 수 있는 게임, 축구 집합]
+# 전체 취미: [실행할 때마다 순서가 달라질 수 있는 6개 취미 집합]
+# A반만: [실행할 때마다 순서가 달라질 수 있는 독서, 요리 집합]
+#-----------------------------------------
 
 class_a = {"독서", "게임", "축구", "요리"}
 class_b = {"게임", "음악", "축구", "그림"}
@@ -1502,6 +1549,13 @@ robot.say("대입 vs 복사 확인!")`,
 #   - 두 경우가 어떻게 다른지 확인하세요
 
 import robot
+
+#-----------------------------------------
+# [출력 결과]
+# 대입 후 original: [10, 20, 30, 40]
+# 복사 후 original: [10, 20, 30]
+# 복사본: [10, 20, 30, 50]
+#-----------------------------------------
 
 original = [10, 20, 30]
 
@@ -1574,6 +1628,13 @@ robot.emotion("happy" if score >= 60 else "sad")`,
 
 import robot
 
+#-----------------------------------------
+# [출력 결과]
+# 망고 있나? False
+# 바나나: 있어요!
+# 25도: 쾌적
+#-----------------------------------------
+
 fruits = ["사과", "바나나", "포도", "딸기"]
 
 print("망고 있나?", "망고" in fruits)
@@ -1645,6 +1706,12 @@ robot.say("for 심화 완성!")`,
 
 import robot
 
+#-----------------------------------------
+# [출력 결과]
+# 3의 배수: [3, 6, 9, 12, 15, 18]
+# 2배: [6, 12, 18, 24, 30, 36]
+#-----------------------------------------
+
 multiples_of_3 = [n for n in range(1, 21) if n % 3 == 0]
 print("3의 배수:", multiples_of_3)
 
@@ -1700,6 +1767,16 @@ robot.say("while 심화 완성!")`,
 #   - 마지막에 합계를 출력하고 dance
 
 import robot
+
+#-----------------------------------------
+# [출력 결과]
+# +1 (합계:1)
+# +2 (합계:3)
+# +3 (합계:6)
+# +4 (합계:10)
+# 5의 배수 5 발견! 중단
+# 합계: 10
+#-----------------------------------------
 
 i = 0
 total = 0
@@ -1781,6 +1858,13 @@ robot.say("함수 심화 완성!")`,
 #   - 전역 변수 level = 1을 만들고 level_up() 함수로 1씩 증가시키세요
 
 import robot
+
+#-----------------------------------------
+# [출력 결과]
+# 평균: 87.5
+# 큰 수: 7
+# 레벨: 4
+#-----------------------------------------
 
 def average(*args):
     return sum(args) / len(args)
@@ -1870,6 +1954,12 @@ robot.say("클래스 심화 완성!")`,
 #   - Dog("바둑이"), Cat("나비") 인스턴스 생성 후 speak() 호출
 
 import robot
+
+#-----------------------------------------
+# [출력 결과]
+# 바둑이: 멍멍!
+# 나비: 야옹!
+#-----------------------------------------
 
 class Animal:
     def __init__(self, name, sound):
@@ -1966,6 +2056,15 @@ robot.say("예외 처리 완성!")`,
 
 import robot
 
+#-----------------------------------------
+# [출력 결과]
+# 10 / 2 = 5.0
+# safe_divide 실행 완료
+# 10 / 0: 0으로 나눌 수 없음
+# safe_divide 실행 완료
+# 인덱스 오류: list index out of range
+#-----------------------------------------
+
 def safe_divide(a, b):
     try:
         result = a / b
@@ -2046,6 +2145,20 @@ robot.dance()`,
 
 import robot
 import math
+
+#-----------------------------------------
+# [출력 결과]
+# 합격자 점수: [82, 67, 91, 76, 88]
+# 보너스 적용: [85, 70, 94, 79, 91]
+# 가: 45점 → 불합격
+# 나: 82점 → 합격
+# 다: 67점 → 합격
+# 라: 91점 → 합격
+# 마: 38점 → 불합격
+# 바: 76점 → 합격
+# 사: 88점 → 합격
+# 최대공약수: 6
+#-----------------------------------------
 
 scores = [45, 82, 67, 91, 38, 76, 88]
 names = ["가", "나", "다", "라", "마", "바", "사"]
@@ -2132,6 +2245,15 @@ print(df.describe())
 # 🎯 도전! 아래 질문에 답해보세요.
 df = load_data('titanic')
 
+#-----------------------------------------
+# [출력 결과]
+# [데이터에 따라 달라질 수 있는 출력]
+# 데이터 크기: (891, 12)
+# 결측치: Age 177개, Cabin 687개, Embarked 2개 (나머지 0개)
+# 나이 평균: 29.7
+# 나이 최대: 80.0
+#-----------------------------------------
+
 # Q1. 데이터는 총 몇 행 몇 열인가요?
 print("데이터 크기:", ___.___)
 
@@ -2177,6 +2299,13 @@ import matplotlib.pyplot as plt
 
 df = load_data('titanic')
 numeric_df = df.select_dtypes(include=['number'])
+
+#-----------------------------------------
+# [출력 결과]
+# [데이터에 따라 달라질 수 있는 출력]
+# Survived와 각 숫자 열의 상관계수
+# [그래프] Blues 색상의 상관관계 히트맵
+#-----------------------------------------
 
 # Q1. 'Survived' 자신을 제외하고 가장 연관성이 큰 변수는?
 corr = numeric_df.corr()
@@ -2238,6 +2367,12 @@ df = load_data('titanic')
 
 fig, ax = plt.subplots(figsize=(8, 5))
 
+#-----------------------------------------
+# [출력 결과]
+# [데이터에 따라 달라질 수 있는 그래프]
+# 1·2·3등급의 요금 분포가 겹쳐진 히스토그램
+#-----------------------------------------
+
 for pclass, color in zip([1, 2, 3], ['#7B5CF0', '#18C99A', '#FF5C8A']):
     df[df['Pclass'] == pclass]['Fare'].plot(
         kind='hist', bins=___, ax=ax,
@@ -2285,6 +2420,12 @@ df = load_data('titanic')
 df = df.dropna(subset=['Age', 'Fare'])
 
 # 🎯 객실 등급(Pclass)에 따라 색상을 다르게 산점도를 그려보세요
+#-----------------------------------------
+# [출력 결과]
+# [데이터에 따라 달라질 수 있는 그래프]
+# 나이와 요금의 관계를 객실 등급별 색상으로 구분한 산점도
+#-----------------------------------------
+
 color_map = {1: '#7B5CF0', 2: '#18C99A', 3: '#FF5C8A'}
 colors = df['Pclass'].map(___)
 
@@ -2349,6 +2490,16 @@ df = load_data('titanic')
 #    Winsorization(경계값으로 대체)을 적용해보세요
 
 col = df['Age'].dropna()
+
+#-----------------------------------------
+# [출력 결과]
+# [데이터에 따라 달라질 수 있는 출력]
+# 하한: -6.7, 상한: 64.8
+# 이상치 개수: 11개
+# 원본 최댓값: 80.0
+# 처리 후 최댓값: 64.8125
+#-----------------------------------------
+
 Q1 = col.quantile(___)   # 1사분위수
 Q3 = col.quantile(___)   # 3사분위수
 IQR = Q3 - Q1
@@ -2413,6 +2564,12 @@ df_clean['Embarked'] = df_clean['Embarked'].fillna(___)
 # Q3. Cabin 컬럼은 결측치가 너무 많아요. 삭제해보세요
 df_clean = df_clean.drop(columns=___)
 
+#-----------------------------------------
+# [출력 결과]
+# [데이터에 따라 달라질 수 있는 출력]
+# Cabin 열이 제거되고, 나머지 모든 열의 결측치가 0
+#-----------------------------------------
+
 print("처리 후 결측치:")
 print(df_clean.isnull().sum())
 `,
@@ -2425,14 +2582,18 @@ print(df_clean.isnull().sum())
 from sklearn.preprocessing import LabelEncoder
 
 df = load_data('titanic')
-df_enc = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df_enc = df[['Survived', 'Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']].copy()
 df_enc['Age'] = df_enc['Age'].fillna(df_enc['Age'].median())
 df_enc['Embarked'] = df_enc['Embarked'].fillna('S')
+df_enc['TravelType'] = ((df_enc['SibSp'] + df_enc['Parch']) > 0).map({
+    True: '가족 동반',
+    False: '혼자'
+})
 
-# Label Encoding (이진: male/female)
+# Label Encoding (이진: 가족 동반/혼자)
 le = LabelEncoder()
-df_enc['Sex'] = le.fit_transform(df_enc['Sex'])
-print("Sex 매핑:", dict(zip(le.classes_, le.transform(le.classes_))))
+df_enc['TravelType'] = le.fit_transform(df_enc['TravelType'])
+print("여행 유형 매핑:", dict(zip(le.classes_, le.transform(le.classes_))))
 
 # One-Hot Encoding (다중: 승선항)
 df_enc = pd.get_dummies(df_enc, columns=['Embarked'], drop_first=True, dtype=int)
@@ -2445,14 +2606,25 @@ print("\\n컬럼:", df_enc.columns.tolist())
 from sklearn.preprocessing import LabelEncoder
 
 df = load_data('titanic')
-df_enc = df.drop(columns=['PassengerId', 'Name', 'Ticket', 'Cabin'], errors='ignore')
+df_enc = df[['Survived', 'Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']].copy()
 df_enc['Age'] = df_enc['Age'].fillna(df_enc['Age'].median())
 df_enc['Embarked'] = df_enc['Embarked'].fillna('S')
+df_enc['TravelType'] = ((df_enc['SibSp'] + df_enc['Parch']) > 0).map({
+    True: '가족 동반',
+    False: '혼자'
+})
 
-# 🎯 Sex 컬럼을 Label Encoding 하세요
+#-----------------------------------------
+# [출력 결과]
+# [데이터에 따라 달라질 수 있는 출력]
+# 여행 유형 매핑: {'가족 동반': 0, '혼자': 1}
+# 인코딩 완료 컬럼: Survived, Pclass, Age, SibSp, Parch, Fare, TravelType, Embarked_Q, Embarked_S
+#-----------------------------------------
+
+# 🎯 TravelType 컬럼을 Label Encoding 하세요
 le = ___()
-df_enc['Sex'] = le.fit_transform(___)
-print("Sex 매핑:", dict(zip(le.classes_, le.transform(le.classes_))))
+df_enc['TravelType'] = le.fit_transform(___)
+print("여행 유형 매핑:", dict(zip(le.classes_, le.transform(le.classes_))))
 
 # 🎯 Embarked 컬럼을 One-Hot Encoding 하세요
 df_enc = pd.get_dummies(df_enc, columns=___, drop_first=True, dtype=int)
@@ -2519,6 +2691,13 @@ df['Embarked'] = df['Embarked'].fillna('S')
 df['Sex'] = LabelEncoder().fit_transform(df['Sex'])
 df = pd.get_dummies(df, columns=['Embarked'], drop_first=True, dtype=int)
 df = df.dropna()
+
+#-----------------------------------------
+# [출력 결과]
+# [데이터와 라이브러리 버전에 따라 달라질 수 있는 출력]
+# MAE: 약 20.81
+# R²: 약 0.3999
+#-----------------------------------------
 
 # 🎯 Survived(생존여부)를 제외한 나머지로 Fare(요금)를 예측해보세요
 X = df.drop(columns=[___, ___])   # 'Fare', 'Survived' 제거
@@ -2599,6 +2778,13 @@ df = df.dropna()
 X = df.drop(columns=['Survived'])
 y = df['Survived']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+#-----------------------------------------
+# [출력 결과]
+# [데이터와 라이브러리 버전에 따라 달라질 수 있는 출력]
+# KNN 정확도: 약 0.8156
+# 분류 리포트: precision, recall, f1-score, support
+#-----------------------------------------
 
 # 🎯 KNN 모델로 생존 여부를 예측해보세요 (n_neighbors=5)
 model = make_pipeline(
@@ -2696,6 +2882,17 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # 🎯 n_estimators 값을 바꿔가며 랜덤 포레스트 성능을 비교해보세요
 results = {}
+
+#-----------------------------------------
+# [출력 결과]
+# [데이터와 라이브러리 버전에 따라 달라질 수 있는 출력]
+# n_estimators=10: 약 0.7710
+# n_estimators=50: 약 0.8156
+# n_estimators=100: 약 0.8045
+# n_estimators=200: 약 0.8156
+# [그래프] n_estimators에 따른 정확도 변화
+#-----------------------------------------
+
 for n in [10, 50, 100, 200]:
     m = RandomForestClassifier(n_estimators=___, random_state=42)
     m.fit(X_train, y_train)

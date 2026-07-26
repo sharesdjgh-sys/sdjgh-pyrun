@@ -5,7 +5,11 @@ import {
   CONCEPT_EXAMPLES_LV2,
   CONCEPT_EXAMPLES_LV3,
 } from "../lib/curriculum";
-import { createStudentPracticeTemplate } from "../lib/practice-template";
+import {
+  createStudentPracticeTemplate,
+  extractExpectedOutput,
+  isExactExpectedOutput,
+} from "../lib/practice-template";
 
 test("print practice output matches Python string operations", () => {
   const code = CONCEPT_EXAMPLES[1].practiceCode;
@@ -58,4 +62,34 @@ test("boxplots map numeric category values through explicit hue variables", () =
   assert.match(code, /palette=\{0:/);
   assert.match(code, /hue='Pclass'/);
   assert.match(code, /palette=\{1:/);
+});
+
+test("every level 2 and level 3 practice includes a visible output guide", () => {
+  const items = [
+    ...Object.values(CONCEPT_EXAMPLES_LV2),
+    ...Object.values(CONCEPT_EXAMPLES_LV3),
+  ];
+
+  for (const item of items) {
+    const starter = createStudentPracticeTemplate(item.practiceCode);
+    assert.match(starter, /#-----------------------------------------\n# \[출력 결과\]/);
+    assert.ok(extractExpectedOutput(starter), `${item.nameEn} output guide is missing`);
+  }
+});
+
+test("data-dependent level 3 output guides do not trigger exact text matching", () => {
+  for (const item of Object.values(CONCEPT_EXAMPLES_LV3)) {
+    const expected = extractExpectedOutput(item.practiceCode);
+    if (!expected) assert.fail(`${item.nameEn} output guide is missing`);
+    assert.equal(isExactExpectedOutput(expected), false, item.nameEn);
+  }
+});
+
+test("encoding practice uses a student-friendly travel category", () => {
+  const encoding = CONCEPT_EXAMPLES_LV3[37];
+
+  assert.match(encoding.exampleCode, /TravelType/);
+  assert.match(encoding.practiceCode, /여행 유형 매핑/);
+  assert.doesNotMatch(encoding.exampleCode, /\bSex\b/);
+  assert.doesNotMatch(encoding.practiceCode, /\bSex\b/);
 });
