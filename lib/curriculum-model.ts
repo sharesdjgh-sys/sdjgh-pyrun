@@ -90,3 +90,22 @@ export function groupCurriculumUnits(units: LearningUnitMeta[], level: number) {
     color: level === 3 ? "#B86500" : level === 2 ? "#704FDF" : "#087F8C",
   }));
 }
+
+export function highestActiveCurriculumLevel(
+  units: Array<{
+    conceptId: number;
+    sourceConceptId?: number | null;
+    level: number;
+    earned: boolean;
+  }>,
+  practicedConceptIds: Set<number>,
+): number | null {
+  const activeLevels = units
+    .filter((unit) =>
+      unit.sourceConceptId !== 0 &&
+      (unit.earned || practicedConceptIds.has(unit.conceptId))
+    )
+    .map((unit) => unit.level);
+
+  return activeLevels.length > 0 ? Math.max(...activeLevels) : null;
+}

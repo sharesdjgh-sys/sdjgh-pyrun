@@ -1034,6 +1034,68 @@ html, body {
   padding: 3px 4px 3px 0;
 }
 
+.quest-map-level-tabs {
+  display: flex;
+  gap: 6px;
+  margin: -4px 0 13px;
+  padding: 4px;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: #F5F2FA;
+}
+
+.quest-map-level-tabs button {
+  --level-color: #704FDF;
+  --level-color-light: #8D6CF5;
+  --level-tint: #F0EBFF;
+  flex: 1;
+  min-width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--level-color);
+  background: var(--level-tint);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.quest-map-level-tabs button[data-level="1"] {
+  --level-color: #087F8C;
+  --level-color-light: #22B8B1;
+  --level-tint: #E2F8F6;
+}
+
+.quest-map-level-tabs button[data-level="2"] {
+  --level-color: #704FDF;
+  --level-color-light: #9B7CF7;
+  --level-tint: #EEE9FF;
+}
+
+.quest-map-level-tabs button[data-level="3"] {
+  --level-color: #B86500;
+  --level-color-light: #F4A62A;
+  --level-tint: #FFF1D5;
+}
+
+.quest-map-level-tabs button strong {
+  font-size: 11px;
+}
+
+.quest-map-level-tabs button span {
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.quest-map-level-tabs button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg,var(--level-color-light),var(--level-color));
+  box-shadow: 0 3px 9px color-mix(in srgb, var(--level-color) 24%, transparent);
+}
+
 .quest-map-row {
   min-height: 58px;
   display: flex;

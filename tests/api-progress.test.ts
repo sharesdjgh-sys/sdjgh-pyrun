@@ -18,7 +18,11 @@ import {
   nextConceptId,
   nextConceptIdInOrders,
 } from "../lib/progress";
-import { curriculumLevelOrders, groupCurriculumUnits } from "../lib/curriculum-model";
+import {
+  curriculumLevelOrders,
+  groupCurriculumUnits,
+  highestActiveCurriculumLevel,
+} from "../lib/curriculum-model";
 import { canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
 import {
@@ -333,4 +337,25 @@ test("learn unit groups use the same colors as growth record levels", () => {
   assert.equal(groupCurriculumUnits(units, 1)[0].color, "#087F8C");
   assert.equal(groupCurriculumUnits(units, 2)[0].color, "#704FDF");
   assert.equal(groupCurriculumUnits(units, 3)[0].color, "#B86500");
+});
+
+test("quest map opens the highest level with actual student activity", () => {
+  const badges = [
+    { conceptId: 0, sourceConceptId: 0, level: 1, earned: true },
+    { conceptId: 1, sourceConceptId: 1, level: 1, earned: true },
+    { conceptId: 2, sourceConceptId: 2, level: 1, earned: false },
+    { conceptId: 17, sourceConceptId: 17, level: 2, earned: false },
+    { conceptId: 18, sourceConceptId: 18, level: 2, earned: true },
+    { conceptId: 31, sourceConceptId: 31, level: 3, earned: false },
+  ];
+
+  assert.equal(highestActiveCurriculumLevel(badges, new Set([17])), 2);
+  assert.equal(highestActiveCurriculumLevel(badges, new Set([31])), 3);
+  assert.equal(
+    highestActiveCurriculumLevel(
+      badges.map((badge) => ({ ...badge, earned: badge.sourceConceptId === 0 })),
+      new Set(),
+    ),
+    null,
+  );
 });

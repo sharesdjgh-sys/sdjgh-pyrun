@@ -6,7 +6,7 @@ import Image from "next/image";
 import { COLOR_HEX } from "@/components/badges/colorMap";
 import { getBadgeImagePath } from "@/lib/badge-images";
 import { getStudentCallName } from "@/lib/student-name";
-import { curriculumDisplayOrder } from "@/lib/curriculum-model";
+import { curriculumDisplayOrder, highestActiveCurriculumLevel } from "@/lib/curriculum-model";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
   List, ToggleLeft, GitMerge, RotateCcw, RefreshCw, FunctionSquare, Boxes, Package, Lock, Bot,
@@ -53,6 +53,7 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
   const [manuallyUnlockedConceptIds, setManuallyUnlockedConceptIds] = useState<Set<number>>(new Set());
   const [visibleBadgeTooltip, setVisibleBadgeTooltip] = useState<number | null>(null);
   const [selectedLevel, setSelectedLevel] = useState(1);
+  const [questMapLevel, setQuestMapLevel] = useState(1);
   const [badges, setBadges] = useState<BadgeInfo[]>([]);
   const [progressPercent, setProgressPercent] = useState(0);
   const [clearedCount, setClearedCount] = useState(0);
@@ -68,15 +69,19 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
     };
     Promise.all([getJson("/api/badges"), getJson("/api/progress")]).then(([badgeData, progressData]) => {
       const earned = (badgeData.earned || []) as BadgeInfo[];
+      const practiced = new Set<number>(progressData.practicedConceptIds || []);
       setBadges(earned);
       setEarnedConceptIds(new Set(earned.filter((b) => b.earned).map((b) => b.conceptId)));
       const unfinishedLevel = [...new Set(earned.map((badge) => badge.level))]
         .sort((left, right) => left - right)
         .find((level) => earned.some((badge) => badge.level === level && badge.sourceConceptId !== 0 && !badge.earned));
-      setSelectedLevel(unfinishedLevel ?? earned.at(-1)?.level ?? 1);
+      const activeLevel = highestActiveCurriculumLevel(earned, practiced);
+      const initialLevel = activeLevel ?? unfinishedLevel ?? earned.at(-1)?.level ?? 1;
+      setSelectedLevel(initialLevel);
+      setQuestMapLevel(initialLevel);
       setProgressPercent(progressData.progressPercent || 0);
       setClearedCount((progressData.clearedConceptIds || []).length);
-      setPracticedConceptIds(new Set(progressData.practicedConceptIds || []));
+      setPracticedConceptIds(practiced);
       setManuallyUnlockedConceptIds(new Set(progressData.manuallyUnlockedConceptIds || []));
       setTotalConcepts(progressData.totalConcepts || earned.length);
       setLoading(false);
@@ -131,6 +136,10 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
   const nextBadgePracticed = nextBadge ? practicedConceptIds.has(nextBadge.conceptId) : false;
   const selectedLevelGroup = badgeLevels.find((group) => group.level === selectedLevel) ?? currentLevelGroup;
   const selectedLevelBadges = selectedLevelGroup?.badges ?? [];
+  const questMapLevelGroup = badgeLevels.find((group) => group.level === questMapLevel) ?? currentLevelGroup;
+  const questMapLevelNumber = questMapLevelGroup?.level ?? currentLevel;
+  const questMapBadges = questMapLevelGroup?.badges ?? [];
+  const questMapEarned = questMapBadges.filter((badge) => earnedConceptIds.has(badge.conceptId)).length;
   const recentAchievements = badges
     .filter((badge) => badge.earned && badge.clearedAt)
     .sort((left, right) => new Date(right.clearedAt!).getTime() - new Date(left.clearedAt!).getTime())
@@ -257,15 +266,34 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
             <div className="progress-card-heading">
               <div>
                 <div className="progress-section-kicker"><MapIcon size={15} /> QUEST MAP</div>
-                <h2 id="quest-map-title">Level {currentLevel} 퀘스트</h2>
+                <h2 id="quest-map-title">Level {questMapLevelNumber} 퀘스트</h2>
               </div>
-              <span>{currentLevelEarned} / {currentLevelBadges.length}</span>
+              <span>{questMapEarned} / {questMapBadges.length}</span>
+            </div>
+            <div className="quest-map-level-tabs" role="tablist" aria-label="퀘스트 맵 레벨 선택">
+              {badgeLevels.map((group) => {
+                const earnedInLevel = group.badges.filter((badge) => earnedConceptIds.has(badge.conceptId)).length;
+                return (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={questMapLevelNumber === group.level}
+                    data-level={group.level}
+                    className={questMapLevelNumber === group.level ? "is-active" : ""}
+                    onClick={() => setQuestMapLevel(group.level)}
+                    key={group.level}
+                  >
+                    <strong>Lv.{group.level}</strong>
+                    <span>{earnedInLevel}/{group.badges.length}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="quest-map-list">
-              {currentLevelBadges.map((badge, index) => {
+              {questMapBadges.map((badge, index) => {
                 const earned = earnedConceptIds.has(badge.conceptId);
                 const practiced = practicedConceptIds.has(badge.conceptId) && !earned;
-                const requiredBadges = currentLevelBadges.filter((item) => item.sourceConceptId !== 0);
+                const requiredBadges = questMapBadges.filter((item) => item.sourceConceptId !== 0);
                 const requiredIndex = requiredBadges.findIndex((item) => item.conceptId === badge.conceptId);
                 const priorCleared = requiredIndex <= 0 || requiredBadges
                   .slice(0, requiredIndex)
@@ -277,7 +305,7 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
                   <div className={`quest-map-row ${earned ? "is-cleared" : practiced ? "is-practicing" : available ? "is-available" : "is-locked"}`} key={badge.conceptId}>
                     <div className="quest-map-node">
                       <StatusIcon size={17} />
-                      {index < currentLevelBadges.length - 1 && <span />}
+                      {index < questMapBadges.length - 1 && <span />}
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <strong>{badge.conceptNameKo}</strong>
