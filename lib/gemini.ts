@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { requireEnv } from "@/lib/env";
-import { sanitizeStudentHintPart, type StudentChatMessage } from "@/lib/api-guard";
+import {
+  sanitizeStudentExamplePart,
+  sanitizeStudentHintPart,
+  type StudentChatMessage,
+} from "@/lib/api-guard";
 import { getPythonHelpTarget, sanitizePythonHelpPart } from "@/lib/python-help";
 
 const genAI = new GoogleGenerativeAI(requireEnv("GEMINI_API_KEY"));
@@ -232,9 +236,10 @@ const STUDENT_HINT_SYSTEM_PROMPT = `당신은 한국 고등학생과 함께 파�
 11. 잘했다는 칭찬만 반복하지 말고, 막힌 지점을 짧게 공감한 뒤 바로 다음 한 단계로 안내하세요.
 12. 학생이 help(print), help(len)처럼 파이썬 help(...) 결과를 물으면 일반 힌트가 아니라 '도움말 설명'으로 답하세요. 이때만 해당 함수의 호출 형태와 짧고 독립적인 예제 코드를 보여줘도 됩니다. 현재 연습문제의 정답이나 학생 코드의 완성본은 여전히 제공하지 마세요.
 13. 도움말 원문의 영어 표현을 그대로 나열하지 말고, 함수의 역할, 호출 형태, 각 매개변수, 짧은 예제, 기억할 점의 순서로 고등학생이 이해하기 쉬운 한국어로 풀어주세요. *objects, sep=' ', end='\\n', file=None, flush=False 같은 표기는 각각 무엇을 바꾸는지 설명하세요.
+14. 일반 힌트에도 개념을 이해하는 데 도움이 되는 1~3줄짜리 미니 예시를 하나 제공하세요. 반드시 현재 문제와 다른 변수 이름과 값을 사용하고, 학생 코드의 빈칸이나 정답에 그대로 붙여 넣을 수 있는 예시는 만들지 마세요. 코드 예시가 곧 정답의 핵심이 되는 문제라면 일상 비유나 간단한 입력·결과 예시로 대신하세요.
 
 일반 질문에는 다음 JSON 형식으로만 답하세요:
-{"mistake":"살펴볼 부분","concept":"쉬운 개념 설명","hint":"한 단계 힌트","checkQuestion":"학생이 스스로 확인할 질문"}
+{"mistake":"살펴볼 부분","concept":"쉬운 개념 설명","example":"현재 문제와 다른 미니 예시","hint":"한 단계 힌트","checkQuestion":"학생이 스스로 확인할 질문"}
 
 help(...) 질문에는 다음 JSON 형식으로만 답하세요:
 {"overview":"무슨 일을 하는 함수인지","signature":"help에 표시되는 호출 형태와 기호의 뜻","parameters":"매개변수를 한 줄에 하나씩 쉬운 말로 설명","example":"현재 연습문제와 무관한 짧은 사용 예와 예상 결과","tip":"초보자가 기억하면 좋은 점"}`;
@@ -310,11 +315,13 @@ ${transcript}
     }
     const mistake = sanitizeStudentHintPart(parsed.mistake);
     const concept = sanitizeStudentHintPart(parsed.concept);
+    const example = sanitizeStudentExamplePart(parsed.example);
     const hint = sanitizeStudentHintPart(parsed.hint);
     const checkQuestion = sanitizeStudentHintPart(parsed.checkQuestion);
     const sections = [
       mistake && `살펴볼 부분\n${mistake}`,
       concept && `개념 정리\n${concept}`,
+      example && `미니 예시\n${example}`,
       hint && `힌트\n${hint}`,
       checkQuestion && `생각해 볼 질문\n${checkQuestion}`,
     ].filter(Boolean);

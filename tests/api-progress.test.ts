@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   RequestValidationError,
+  sanitizeStudentExamplePart,
   sanitizeStudentHintPart,
   validateExtraPracticeRequest,
   validateFeedback,
@@ -296,6 +297,10 @@ test("student hint chat validates short conversations and removes answer code", 
   const sanitized = sanitizeStudentHintPart("개념을 먼저 확인해요.\n```python\nanswer = 42\nprint(answer)\n```\nanswer = 42");
   assert.equal(sanitized, "개념을 먼저 확인해요.");
   assert.equal(sanitizeStudentHintPart("`print(value)`를 그대로 쓰세요"), "문법 형태를 그대로 쓰세요");
+  assert.equal(
+    sanitizeStudentExamplePart("```python\nfruits = [\"사과\", \"배\"]\nfor fruit in fruits:\n    print(fruit)\n```"),
+    "fruits = [\"사과\", \"배\"]\nfor fruit in fruits:\n    print(fruit)"
+  );
 });
 
 test("Python help questions identify safe targets and preserve teaching examples", () => {

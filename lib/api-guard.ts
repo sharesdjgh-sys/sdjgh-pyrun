@@ -132,3 +132,18 @@ export function sanitizeStudentHintPart(value: unknown) {
     .trim()
     .slice(0, 700);
 }
+
+export function sanitizeStudentExamplePart(value: unknown) {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/```(?:python)?/gi, "")
+    .replace(/```/g, "")
+    .replace(/\u0000/g, "")
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim())
+    .slice(0, 4)
+    .join("\n")
+    .trim()
+    .slice(0, 500);
+}

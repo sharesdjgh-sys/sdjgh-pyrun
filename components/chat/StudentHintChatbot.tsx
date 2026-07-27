@@ -31,6 +31,13 @@ const HINT_SECTION_META = {
     background: "#F7F6FF",
     border: "#E2DFFA",
   },
+  "미니 예시": {
+    icon: Lightbulb,
+    color: "#24708F",
+    background: "#F2FAFD",
+    border: "#D3EAF3",
+    code: true,
+  },
   "힌트": {
     icon: Lightbulb,
     color: "#B56B08",
@@ -48,30 +55,35 @@ const HINT_SECTION_META = {
     color: "#5B55B8",
     background: "#F7F6FF",
     border: "#E2DFFA",
+    code: false,
   },
   "사용 방법": {
     icon: Search,
     color: "#24708F",
     background: "#F2FAFD",
     border: "#D3EAF3",
+    code: false,
   },
   "매개변수": {
     icon: CircleHelp,
     color: "#7A5B24",
     background: "#FFFAF0",
     border: "#EFE0BE",
+    code: false,
   },
   "쉬운 예제": {
     icon: Lightbulb,
     color: "#B56B08",
     background: "#FFF9EC",
     border: "#F3E2BA",
+    code: true,
   },
   "기억할 점": {
     icon: CircleHelp,
     color: "#287A68",
     background: "#F1FBF8",
     border: "#CFECE4",
+    code: false,
   },
 } as const;
 
@@ -83,7 +95,7 @@ function parseHintSections(content: string) {
 
   for (const line of content.split(/\r?\n/)) {
     const match = line.match(
-      /^(?:#{1,3}\s*)?(?:\*\*)?(살펴볼 부분|개념 정리|힌트|생각해 볼 질문|한눈에 보기|사용 방법|매개변수|쉬운 예제|기억할 점)(?:\*\*)?\s*:?\s*(.*)$/,
+      /^(?:#{1,3}\s*)?(?:\*\*)?(살펴볼 부분|개념 정리|미니 예시|힌트|생각해 볼 질문|한눈에 보기|사용 방법|매개변수|쉬운 예제|기억할 점)(?:\*\*)?\s*:?\s*(.*)$/,
     );
 
     if (match) {
@@ -148,6 +160,16 @@ function AssistantMessageContent({ content }: { content: string }) {
                 fontSize: 12.5,
                 lineHeight: 1.62,
                 whiteSpace: "pre-wrap",
+                ...("code" in meta && meta.code
+                  ? {
+                      padding: "9px 10px",
+                      borderRadius: 9,
+                      background: "rgba(255,255,255,.78)",
+                      color: "#30445A",
+                      fontFamily: "'JetBrains Mono', 'Consolas', monospace",
+                      fontSize: 12,
+                    }
+                  : {}),
               }}
             >
               {section.body}
