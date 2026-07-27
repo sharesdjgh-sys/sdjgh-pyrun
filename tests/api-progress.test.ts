@@ -8,6 +8,7 @@ import {
   validateRegistration,
   validateStudentChat,
 } from "../lib/api-guard";
+import { getPythonHelpTarget, sanitizePythonHelpPart } from "../lib/python-help";
 import {
   authenticatedUserId,
   calculateProgress,
@@ -295,6 +296,17 @@ test("student hint chat validates short conversations and removes answer code", 
   const sanitized = sanitizeStudentHintPart("개념을 먼저 확인해요.\n```python\nanswer = 42\nprint(answer)\n```\nanswer = 42");
   assert.equal(sanitized, "개념을 먼저 확인해요.");
   assert.equal(sanitizeStudentHintPart("`print(value)`를 그대로 쓰세요"), "문법 형태를 그대로 쓰세요");
+});
+
+test("Python help questions identify safe targets and preserve teaching examples", () => {
+  assert.equal(getPythonHelpTarget("help(print) 내용을 쉽게 알려줘"), "print");
+  assert.equal(getPythonHelpTarget("help(str.upper) 결과가 무슨 뜻이야?"), "str.upper");
+  assert.equal(getPythonHelpTarget("help()는 뭐야?"), "help");
+  assert.equal(getPythonHelpTarget("print 함수를 알려줘"), null);
+  assert.equal(
+    sanitizePythonHelpPart("```python\nprint('안녕', end='!')\n```"),
+    "print('안녕', end='!')"
+  );
 });
 
 test("student names use a friendly teacher-style address", () => {

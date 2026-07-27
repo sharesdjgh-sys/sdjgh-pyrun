@@ -43,6 +43,36 @@ const HINT_SECTION_META = {
     background: "#F1FBF8",
     border: "#CFECE4",
   },
+  "한눈에 보기": {
+    icon: BookOpen,
+    color: "#5B55B8",
+    background: "#F7F6FF",
+    border: "#E2DFFA",
+  },
+  "사용 방법": {
+    icon: Search,
+    color: "#24708F",
+    background: "#F2FAFD",
+    border: "#D3EAF3",
+  },
+  "매개변수": {
+    icon: CircleHelp,
+    color: "#7A5B24",
+    background: "#FFFAF0",
+    border: "#EFE0BE",
+  },
+  "쉬운 예제": {
+    icon: Lightbulb,
+    color: "#B56B08",
+    background: "#FFF9EC",
+    border: "#F3E2BA",
+  },
+  "기억할 점": {
+    icon: CircleHelp,
+    color: "#287A68",
+    background: "#F1FBF8",
+    border: "#CFECE4",
+  },
 } as const;
 
 type HintSectionTitle = keyof typeof HINT_SECTION_META;
@@ -53,7 +83,7 @@ function parseHintSections(content: string) {
 
   for (const line of content.split(/\r?\n/)) {
     const match = line.match(
-      /^(?:#{1,3}\s*)?(?:\*\*)?(살펴볼 부분|개념 정리|힌트|생각해 볼 질문)(?:\*\*)?\s*:?\s*(.*)$/,
+      /^(?:#{1,3}\s*)?(?:\*\*)?(살펴볼 부분|개념 정리|힌트|생각해 볼 질문|한눈에 보기|사용 방법|매개변수|쉬운 예제|기억할 점)(?:\*\*)?\s*:?\s*(.*)$/,
     );
 
     if (match) {
@@ -148,6 +178,7 @@ function createWelcomeMessage(studentName: string) {
 const QUICK_QUESTIONS = [
   "어디에서 실수했는지 알려줘",
   "이 개념을 쉽게 설명해줘",
+  "help(print)를 쉽게 설명해줘",
   "다음 힌트를 하나만 줘",
 ];
 
