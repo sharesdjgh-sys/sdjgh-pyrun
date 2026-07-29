@@ -16,6 +16,8 @@ import Header from "@/components/layout/Header";
 import StudentHintChatbot from "@/components/chat/StudentHintChatbot";
 import type { CurriculumItem } from "@/lib/curriculum";
 import { curriculumLevelOrders, groupCurriculumUnits, type CurriculumView } from "@/lib/curriculum-model";
+import { getBadgeImagePath } from "@/lib/badge-images";
+import { highestEarnedBadgesByLevel } from "@/lib/badge-ranks";
 import { AlertTriangle, Bot, Layers, Calculator, CheckCircle2, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Lock, Check, Sparkles } from "lucide-react";
 import Image from "next/image";
 
@@ -416,6 +418,8 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   const [clearedConceptIds, setClearedConceptIds] = useState<Set<number>>(new Set());
   const [manuallyUnlockedConceptIds, setManuallyUnlockedConceptIds] = useState<Set<number>>(new Set());
   const [conceptExpanded, setConceptExpanded] = useState(true);
+  const [conceptPanelHeight, setConceptPanelHeight] = useState<number>();
+  const conceptPanelRef = useRef<HTMLDivElement>(null);
   const [showOutput, setShowOutput] = useState(false);
   const [fontSize, setFontSize] = useState(9);
   const fontSizeStr = `${fontSize}pt`;
@@ -480,6 +484,18 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     }, 700);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const panel = conceptPanelRef.current;
+    if (!panel) return;
+
+    const syncHeight = () => setConceptPanelHeight(panel.getBoundingClientRect().height);
+    syncHeight();
+
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(panel);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -846,6 +862,9 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     : mode === "lv3"
     ? curriculum[selectedLv3ConceptId]
     : currentConcept;
+  const levelRanks = isStudent
+    ? highestEarnedBadgesByLevel(curriculumView.units, clearedConceptIds)
+    : [];
 
   return (
     <div
@@ -857,7 +876,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
         background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)",
       }}
     >
-      <Header curriculumUnits={curriculumView.units} earnedConceptIds={clearedConceptIds} />
+      <Header />
 
       {pyError && (
         <section className="runtime-error-panel" role="alert" aria-live="assertive">
@@ -1118,6 +1137,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
 
           {/* Concept explanation panel (collapsible) */}
           <div
+            ref={conceptPanelRef}
             style={{
               flex: "none",
               background: "#fff",
@@ -1582,6 +1602,46 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
 
         {/* ── RIGHT: Robot / DataViz column ── */}
         <div style={{ flex: 0.85, minWidth: 280, display: "flex", flexDirection: "column", gap: 10 }}>
+          {mode !== "lv3" && isStudent && levelRanks.length > 0 && (
+            <div
+              className={`learn-stage-ranks ${conceptExpanded ? "" : "is-compact"}`}
+              aria-label="레벨별 최고 뱃지"
+              style={conceptPanelHeight ? { height: conceptPanelHeight } : undefined}
+            >
+              <div className="learn-stage-ranks-title">
+                <span className="learn-stage-ranks-title-icon">
+                  <Sparkles size={13} />
+                </span>
+                <span>
+                  <strong>MY BEST</strong>
+                  <strong>BADGES</strong>
+                </span>
+              </div>
+              <div className="learn-stage-ranks-list">
+                {levelRanks.map(({ level, badge }) => {
+                  const imagePath = getBadgeImagePath(badge?.sourceConceptId);
+                  return (
+                    <div
+                      className={`learn-stage-rank level-${level} ${badge ? "is-earned" : "is-locked"}`}
+                      title={badge
+                        ? `Level ${level} 최고 뱃지 · ${badge.badgeNameKo}`
+                        : `Level ${level} · 아직 획득한 뱃지가 없어요`}
+                      key={level}
+                    >
+                      <div className="learn-stage-rank-image">
+                        {badge && imagePath ? (
+                          <Image src={imagePath} alt="" width={52} height={52} sizes="52px" />
+                        ) : (
+                          <Lock size={17} />
+                        )}
+                      </div>
+                      <span>LEVEL {level}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div
             style={{
               flex: 1,
