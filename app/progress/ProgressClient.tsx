@@ -129,17 +129,16 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
   const practiceOnlyCount = badges.filter((badge) =>
     practicedConceptIds.has(badge.conceptId) && !earnedConceptIds.has(badge.conceptId)
   ).length;
-  const nextBadge = badgeLevels
-    .flatMap((group) => group.badges)
-    .find((badge) => badge.sourceConceptId !== 0 && !earnedConceptIds.has(badge.conceptId));
-  const nextBadgeImage = getBadgeImagePath(nextBadge?.sourceConceptId);
-  const nextBadgePracticed = nextBadge ? practicedConceptIds.has(nextBadge.conceptId) : false;
   const selectedLevelGroup = badgeLevels.find((group) => group.level === selectedLevel) ?? currentLevelGroup;
   const selectedLevelBadges = selectedLevelGroup?.badges ?? [];
   const questMapLevelGroup = badgeLevels.find((group) => group.level === questMapLevel) ?? currentLevelGroup;
   const questMapLevelNumber = questMapLevelGroup?.level ?? currentLevel;
   const questMapBadges = questMapLevelGroup?.badges ?? [];
   const questMapEarned = questMapBadges.filter((badge) => earnedConceptIds.has(badge.conceptId)).length;
+  const nextBadge = questMapBadges
+    .find((badge) => badge.sourceConceptId !== 0 && !earnedConceptIds.has(badge.conceptId));
+  const nextBadgeImage = getBadgeImagePath(nextBadge?.sourceConceptId);
+  const nextBadgePracticed = nextBadge ? practicedConceptIds.has(nextBadge.conceptId) : false;
   const recentAchievements = badges
     .filter((badge) => badge.earned && badge.clearedAt)
     .sort((left, right) => new Date(right.clearedAt!).getTime() - new Date(left.clearedAt!).getTime())

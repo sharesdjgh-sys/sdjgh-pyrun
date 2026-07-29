@@ -16,7 +16,7 @@ import Header from "@/components/layout/Header";
 import StudentHintChatbot from "@/components/chat/StudentHintChatbot";
 import type { CurriculumItem } from "@/lib/curriculum";
 import { curriculumLevelOrders, groupCurriculumUnits, type CurriculumView } from "@/lib/curriculum-model";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Lock, Check, Sparkles } from "lucide-react";
+import { AlertTriangle, Bot, Layers, Calculator, CheckCircle2, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Lock, Check, Sparkles } from "lucide-react";
 import Image from "next/image";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
@@ -1498,9 +1498,11 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
               height: "44%",
               transform: showOutput ? "translateY(0)" : "translateY(105%)",
               transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
-              background: "#16172A",
-              borderRadius: "18px 18px 0 0",
-              boxShadow: showOutput ? "0 -8px 40px rgba(0,0,0,0.28)" : "none",
+              background: "linear-gradient(160deg,#FCFBFF 0%,#F7F3FD 100%)",
+              border: "1px solid #E5DEF2",
+              borderBottom: 0,
+              borderRadius: "22px 22px 0 0",
+              boxShadow: showOutput ? "0 -12px 36px rgba(68,47,113,.18)" : "none",
               zIndex: 50,
               display: "flex",
               flexDirection: "column",
@@ -1515,52 +1517,65 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: "10px 16px",
-                borderBottom: "1px solid #252640",
-                background: "#1E1F36",
+                padding: "12px 16px",
+                borderBottom: "1px solid #E9E3F3",
+                background: "rgba(255,255,255,.86)",
               }}
             >
               <span
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: execError ? "#FF5C8A" : "#18C99A",
-                  display: "inline-block",
-                  boxShadow: execError ? "0 0 6px #FF5C8A88" : "0 0 6px #18C99A88",
+                  width: 34,
+                  height: 34,
+                  borderRadius: 11,
+                  background: execError ? "#FFF0F5" : "#EAFBF5",
+                  color: execError ? "#D93668" : "#109975",
+                  display: "grid",
+                  placeItems: "center",
                 }}
-              />
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#6B6B99" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="4 17 10 11 4 5" />
-                <line x1="12" y1="19" x2="20" y2="19" />
-              </svg>
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: "#6B6B99", letterSpacing: 0.5, textTransform: "uppercase" }}>
-                실행 결과
+              >
+                {execError ? <AlertTriangle size={17} /> : <CheckCircle2 size={17} />}
               </span>
+              <div>
+                <strong style={{ display: "block", color: "#39324F", fontSize: 13.5 }}>실행 결과</strong>
+                <span style={{ color: execError ? "#C94770" : "#188A6D", fontSize: 11.5, fontWeight: 650 }}>
+                  {execError ? "코드를 다시 확인해 주세요" : "코드가 정상적으로 실행됐어요"}
+                </span>
+              </div>
               <button
                 onClick={() => setShowOutput(false)}
+                aria-label="실행 결과 닫기"
                 style={{
                   marginLeft: "auto",
-                  background: "transparent",
-                  border: "none",
-                  color: "#4A4A6A",
+                  width: 30,
+                  height: 30,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "#F4F1F9",
+                  border: "1px solid #E9E3F2",
+                  color: "#8A819F",
                   cursor: "pointer",
-                  fontSize: 17,
+                  fontSize: 16,
                   lineHeight: 1,
-                  padding: "2px 6px",
-                  borderRadius: 6,
-                  transition: "color .13s",
+                  padding: 0,
+                  borderRadius: 10,
+                  transition: "all .13s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#9B7FFF")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#4A4A6A")}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#7B5CF0";
+                  e.currentTarget.style.background = "#EDE6FA";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#8A819F";
+                  e.currentTarget.style.background = "#F4F1F9";
+                }}
               >
                 ✕
               </button>
             </div>
 
             {/* Output content */}
-            <div style={{ flex: 1, overflow: "auto", padding: "14px 18px" }}>
-              <OutputPanel output={output} error={execError} hasRun={hasRun} dark />
+            <div style={{ flex: 1, overflow: "auto", padding: "14px 16px 18px" }}>
+              <OutputPanel output={output} error={execError} hasRun={hasRun} />
             </div>
           </div>
         </div>
