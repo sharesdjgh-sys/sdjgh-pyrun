@@ -33,16 +33,19 @@ function fontSizeTheme(size: string) {
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onCursorChange?: (position: { line: number; column: number }) => void;
   readOnly?: boolean;
   fontSize?: string;
 }
 
-export default function CodeEditor({ value, onChange, readOnly = false, fontSize = "9pt" }: CodeEditorProps) {
+export default function CodeEditor({ value, onChange, onCursorChange, readOnly = false, fontSize = "9pt" }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const onCursorChangeRef = useRef(onCursorChange);
   const fontCompartment = useRef(new Compartment());
   onChangeRef.current = onChange;
+  onCursorChangeRef.current = onCursorChange;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -55,6 +58,14 @@ export default function CodeEditor({ value, onChange, readOnly = false, fontSize
         fontCompartment.current.of(fontSizeTheme(fontSize)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChangeRef.current(update.state.doc.toString());
+          if (update.docChanged || update.selectionSet) {
+            const head = update.state.selection.main.head;
+            const line = update.state.doc.lineAt(head);
+            onCursorChangeRef.current?.({
+              line: line.number,
+              column: head - line.from + 1,
+            });
+          }
         }),
         EditorState.readOnly.of(readOnly),
       ],

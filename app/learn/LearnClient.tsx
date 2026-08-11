@@ -422,6 +422,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   const conceptPanelRef = useRef<HTMLDivElement>(null);
   const [showOutput, setShowOutput] = useState(false);
   const [fontSize, setFontSize] = useState(9);
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const fontSizeStr = `${fontSize}pt`;
 
   const [mode, setMode] = useState<AppMode>("lv1");
@@ -1229,24 +1230,41 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                 flex: "none",
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                padding: "11px 16px",
-                borderBottom: "1px solid #F2EDF9",
+                gap: 7,
+                minHeight: 46,
+                padding: "0 12px",
+                borderBottom: "1px solid #E6E0F0",
+                background: "#F5F2F9",
               }}
             >
-              <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FF5C8A", display: "inline-block" }} />
-              <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FFC23C", display: "inline-block" }} />
-              <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#18C99A", display: "inline-block" }} />
-              <span
+              <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#FF668F", display: "inline-block" }} />
+              <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#F7BE3E", display: "inline-block" }} />
+              <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#28C99A", display: "inline-block" }} />
+              <div
                 style={{
+                  alignSelf: "stretch",
+                  minWidth: 128,
+                  marginLeft: 8,
+                  padding: "0 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  borderRight: "1px solid #E6E0F0",
+                  borderLeft: "1px solid #E6E0F0",
+                  borderTop: "2px solid #7B5CF0",
+                  background: "#fff",
                   fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
-                  fontSize: 13,
-                  color: "#9A93B5",
-                  marginLeft: 6,
+                  fontSize: 12,
+                  fontWeight: 650,
+                  color: "#514A68",
                 }}
               >
+                <span style={{ width: 20, height: 20, display: "grid", placeItems: "center", borderRadius: 6, background: "#3776AB", color: "#FFD343", fontSize: 8, fontWeight: 900 }}>
+                  PY
+                </span>
                 main.py
-              </span>
+                <span style={{ width: 5, height: 5, marginLeft: "auto", borderRadius: "50%", background: "#9A82E8" }} />
+              </div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
                 {/* Font size controls */}
                 <div style={{ display: "flex", alignItems: "center", gap: 3, background: "#F4F0FE", borderRadius: 8, padding: "2px 4px" }}>
@@ -1268,7 +1286,39 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
 
             {/* Code editor */}
             <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-              <CodeEditor value={code} onChange={setCode} fontSize={fontSizeStr} />
+              <CodeEditor
+                value={code}
+                onChange={setCode}
+                onCursorChange={setCursorPosition}
+                fontSize={fontSizeStr}
+              />
+            </div>
+
+            {/* IDE status bar */}
+            <div
+              aria-label="코드 편집기 상태"
+              style={{
+                flex: "none",
+                height: 27,
+                padding: "0 12px",
+                display: "flex",
+                alignItems: "center",
+                gap: 13,
+                borderTop: "1px solid #EAE5F2",
+                background: "#F7F5FA",
+                color: "#766D8F",
+                fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
+                fontSize: 9.5,
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#3776AB", fontWeight: 750 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: running ? "#F2B134" : "#22B88A", boxShadow: `0 0 0 3px ${running ? "#FFF2D5" : "#DDF7EE"}` }} />
+                Python 3
+              </span>
+              <span>{code.split(/\r?\n/).length} lines</span>
+              <span style={{ marginLeft: "auto" }}>Ln {cursorPosition.line}, Col {cursorPosition.column}</span>
+              <span>Spaces: 4</span>
+              <span>UTF-8</span>
             </div>
 
             {/* Action buttons */}
