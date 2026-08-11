@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import PasswordRecoveryModal from "@/components/account/PasswordRecoveryModal";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
 
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get("schoolCode");
@@ -104,12 +106,16 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{ width: "100%", padding: "14px 16px", border: "2px solid #ECE7F8", borderRadius: 14, background: "#FBFAFF", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 24 }}
+              style={{ width: "100%", padding: "14px 16px", border: "2px solid #ECE7F8", borderRadius: 14, background: "#FBFAFF", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 10 }}
               onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
               onBlur={(e) => { e.target.style.borderColor = "#ECE7F8"; e.target.style.background = "#FBFAFF"; }}
               placeholder="비밀번호를 입력하세요"
               required
             />
+
+            <div style={{ textAlign: "right", marginBottom: 18 }}>
+              <button type="button" onClick={() => setRecoveryOpen(true)} style={{ padding: 0, border: 0, background: "transparent", color: "#7B5CF0", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>비밀번호를 잊었나요?</button>
+            </div>
 
             <button
               type="submit"
@@ -141,6 +147,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+      <PasswordRecoveryModal open={recoveryOpen} initialSchoolCode={schoolCode} initialUsername={username} onClose={() => setRecoveryOpen(false)} />
     </div>
   );
 }

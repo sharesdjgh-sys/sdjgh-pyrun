@@ -19,6 +19,7 @@ import {
 } from "@/lib/curriculum-access";
 import { canManageStudentClass, canOpenAdminPage, isAdministratorRole } from "@/lib/roles";
 import { parseSchoolStudentNumber } from "@/lib/student-number";
+import { rateLimit } from "@/lib/api-guard";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 async function requireTeacher() {
@@ -192,10 +193,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const studentId = Number(body?.studentId);
-  const conceptId = Number(body?.conceptId);
+  const action = body?.action === "resetPassword" ? "resetPassword" : "unlockConcept";
 
-  if (!Number.isInteger(studentId) || studentId <= 0 || !Number.isInteger(conceptId) || conceptId <= 0) {
-    return NextResponse.json({ error: "유효하지 않은 학생 또는 단원입니다." }, { status: 400 });
+  if (!Number.isInteger(studentId) || studentId <= 0) {
+    return NextResponse.json({ error: "유효하지 않은 학생입니다." }, { status: 400 });
   }
 
   const [student] = await db
@@ -228,6 +229,31 @@ export async function POST(req: NextRequest) {
     if (!canManageStudentClass(authResult.role, assignments, studentGrade, studentClassNumber)) {
       return NextResponse.json({ error: "담당 학급의 학생만 관리할 수 있습니다." }, { status: 403 });
     }
+  }
+
+  if (action === "resetPassword") {
+    const rate = rateLimit(req, `teacher-password-reset:${authResult.userId}`, 20, 10 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json({ error: "비밀번호 변경 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfter) },
+      });
+    }
+    const temporaryPassword = typeof body?.temporaryPassword === "string" ? body.temporaryPassword : "";
+    if (temporaryPassword.length < 8 || temporaryPassword.length > 128) {
+      return NextResponse.json({ error: "임시 비밀번호는 8~128자로 입력해 주세요." }, { status: 400 });
+    }
+    const bcrypt = await import("bcryptjs");
+    await db
+      .update(users)
+      .set({ passwordHash: await bcrypt.hash(temporaryPassword, 10) })
+      .where(and(eq(users.id, student.id), eq(users.schoolId, authResult.schoolId)));
+    return NextResponse.json({ ok: true, studentId, action });
+  }
+
+  const conceptId = Number(body?.conceptId);
+  if (!Number.isInteger(conceptId) || conceptId <= 0) {
+    return NextResponse.json({ error: "유효하지 않은 단원입니다." }, { status: 400 });
   }
 
   const assignedCurriculumId = await resolveCurriculumIdForUser({

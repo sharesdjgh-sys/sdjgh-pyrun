@@ -3,9 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
+import { useState } from "react";
 import { canOpenAdminPage, isAdministratorRole, isStudentRole } from "@/lib/roles";
+import StudentProfileModal from "@/components/account/StudentProfileModal";
 
 export default function Header() {
+  const [profileOpen, setProfileOpen] = useState(false);
   const { data: session } = useSession();
   const name = session?.user?.name || "학생";
   const initial = name.slice(0, 1);
@@ -43,9 +46,12 @@ export default function Header() {
       {/* Right side */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {/* User badge */}
-        <div
+        <button
+          type="button"
+          onClick={() => isStudent && setProfileOpen(true)}
+          disabled={!isStudent}
           title={identityText ?? name}
-          style={{ display: "flex", alignItems: "center", gap: 8, background: "#F4F0FE", borderRadius: 99, padding: "5px 12px 5px 5px" }}
+          style={{ display: "flex", alignItems: "center", gap: 8, background: "#F4F0FE", border: "1px solid transparent", borderRadius: 99, padding: "5px 12px 5px 5px", cursor: isStudent ? "pointer" : "default", fontFamily: "inherit", textAlign: "left" }}
         >
           <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(140deg,#FF8FB8,#FF5C8A)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 14 }}>
             {initial}
@@ -58,7 +64,7 @@ export default function Header() {
               </span>
             )}
           </div>
-        </div>
+        </button>
 
         {/* Admin link — teacher/admin only */}
         {canManage && (
@@ -105,6 +111,7 @@ export default function Header() {
           </svg>
         </button>
       </div>
+      <StudentProfileModal open={profileOpen && isStudent} onClose={() => setProfileOpen(false)} />
     </header>
   );
 }

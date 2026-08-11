@@ -26,6 +26,7 @@ export const users = pgTable(
       .references(() => schools.id),
     username: varchar("username", { length: 50 }).notNull(),
     passwordHash: text("password_hash").notNull(),
+    recoveryCodeHash: text("recovery_code_hash"),
     role: varchar("role", { length: 20 }).notNull().default("student"),
     displayName: varchar("display_name", { length: 100 }),
     studentNumber: varchar("student_number", { length: 50 }),

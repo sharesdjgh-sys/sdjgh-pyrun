@@ -56,6 +56,8 @@ export default function StudentProgressManager() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [unlockingConceptId, setUnlockingConceptId] = useState<number | null>(null);
+  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   async function loadStudents() {
     setLoading(true);
@@ -91,6 +93,10 @@ export default function StudentProgressManager() {
   useEffect(() => {
     void loadStudents();
   }, []);
+
+  useEffect(() => {
+    setTemporaryPassword("");
+  }, [selectedStudentId]);
 
   const studentClassKeys = students
     .filter((student) => student.grade !== null && student.classNumber !== null)
@@ -172,6 +178,31 @@ export default function StudentProgressManager() {
     }
   }
 
+  async function resetStudentPassword() {
+    if (!selectedStudent || resettingPassword) return;
+    if (temporaryPassword.length < 8) {
+      setMessage("임시 비밀번호는 8자 이상으로 입력해 주세요.");
+      return;
+    }
+    setResettingPassword(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resetPassword", studentId: selectedStudent.id, temporaryPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "임시 비밀번호를 발급하지 못했습니다.");
+      setMessage(`${selectedStudent.displayName || selectedStudent.username} 학생의 임시 비밀번호를 변경했습니다. 학생에게 안전하게 전달해 주세요.`);
+      setTemporaryPassword("");
+    } catch (resetError) {
+      setMessage(resetError instanceof Error ? resetError.message : "임시 비밀번호를 발급하지 못했습니다.");
+    } finally {
+      setResettingPassword(false);
+    }
+  }
+
   if (loading) {
     return <div style={{ flex: 1, padding: 40, textAlign: "center", color: "#8B83A8" }}>학생 수업 정보를 불러오는 중...</div>;
   }
@@ -245,6 +276,20 @@ export default function StudentProgressManager() {
                   </div>
                   <div style={{ marginTop: 4, fontSize: 11.5, color: "#7B5CF0", fontWeight: 700 }}>
                     {selectedCurriculum?.name ?? "배정된 커리큘럼 없음"}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                    <input
+                      type="password"
+                      value={temporaryPassword}
+                      onChange={(event) => setTemporaryPassword(event.target.value)}
+                      minLength={8}
+                      maxLength={128}
+                      placeholder="임시 비밀번호 8자 이상"
+                      style={{ width: 180, padding: "7px 9px", border: "1px solid #DCD3F3", borderRadius: 8, color: "#4B416A", fontFamily: "inherit", fontSize: 11.5 }}
+                    />
+                    <button type="button" onClick={() => void resetStudentPassword()} disabled={resettingPassword || temporaryPassword.length < 8} style={{ padding: "7px 10px", border: "1px solid #CFC2F5", borderRadius: 8, background: "#F3EFFE", color: "#6C4BEF", cursor: resettingPassword ? "wait" : "pointer", fontSize: 11, fontWeight: 800 }}>
+                      {resettingPassword ? "변경 중" : "임시 비밀번호 발급"}
+                    </button>
                   </div>
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 900, color: "#7B5CF0" }}>{progressPercent}%</div>
