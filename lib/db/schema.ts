@@ -29,6 +29,7 @@ export const users = pgTable(
     recoveryCodeHash: text("recovery_code_hash"),
     role: varchar("role", { length: 20 }).notNull().default("student"),
     displayName: varchar("display_name", { length: 100 }),
+    nickname: varchar("nickname", { length: 20 }),
     studentNumber: varchar("student_number", { length: 50 }),
     grade: integer("grade"),
     classNumber: integer("class_number"),

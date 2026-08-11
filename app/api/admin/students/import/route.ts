@@ -106,7 +106,14 @@ export async function POST(req: NextRequest) {
   }
 
   const existingUsers = await db
-    .select({ id: users.id, username: users.username, studentNumber: users.studentNumber, role: users.role })
+    .select({
+      id: users.id,
+      username: users.username,
+      studentNumber: users.studentNumber,
+      role: users.role,
+      displayName: users.displayName,
+      nickname: users.nickname,
+    })
     .from(users)
     .where(and(
       eq(users.schoolId, context.schoolId),
@@ -135,6 +142,9 @@ export async function POST(req: NextRequest) {
         .set({
           role: "student",
           displayName: student.name,
+          nickname: existing.nickname && existing.nickname !== existing.displayName
+            ? existing.nickname
+            : "코드러너",
           studentNumber: student.studentNumber,
           grade: student.classInfo!.grade,
           classNumber: student.classInfo!.classNumber,
@@ -149,6 +159,7 @@ export async function POST(req: NextRequest) {
         passwordHash: await bcrypt.hash(student.password, 10),
         role: "student",
         displayName: student.name,
+        nickname: "코드러너",
         studentNumber: student.studentNumber,
         grade: student.classInfo!.grade,
         classNumber: student.classInfo!.classNumber,

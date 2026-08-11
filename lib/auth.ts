@@ -45,8 +45,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         return {
           id: String(user.id),
-          name: user.displayName || user.username,
+          name: user.role === "student"
+            ? user.nickname && user.nickname !== user.displayName ? user.nickname : "코드러너"
+            : user.displayName || user.username,
           username: user.username,
+          nickname: user.nickname,
+          displayName: user.displayName,
           role: user.role,
           schoolId: user.schoolId,
         };
@@ -58,11 +62,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.userId = Number(user.id);
         token.username = (user as { username?: string }).username;
+        token.nickname = (user as { nickname?: string | null }).nickname;
+        token.displayName = (user as { displayName?: string | null }).displayName;
         token.role = (user as { role?: string }).role;
         token.schoolId = (user as { schoolId?: number }).schoolId;
       }
       if (trigger === "update" && typeof session?.name === "string") {
         token.name = session.name.slice(0, 100);
+      }
+      if (trigger === "update" && typeof session?.nickname === "string") {
+        token.nickname = session.nickname.slice(0, 20);
+      }
+      if (trigger === "update" && typeof session?.displayName === "string") {
+        token.displayName = session.displayName.slice(0, 100);
       }
       return token;
     },
@@ -71,6 +83,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = String(token.userId);
         session.user.name = typeof token.name === "string" ? token.name : session.user.name;
         (session.user as { username?: string }).username = token.username as string;
+        (session.user as { nickname?: string }).nickname = typeof token.nickname === "string" ? token.nickname : "";
+        (session.user as { displayName?: string }).displayName = typeof token.displayName === "string" ? token.displayName : "";
         (session.user as { role?: string }).role = token.role as string;
         (session.user as { schoolId?: number }).schoolId = Number(token.schoolId);
       }

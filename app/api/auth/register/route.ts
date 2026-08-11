@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       username,
       passwordHash,
       displayName: displayName || username,
+      nickname: "코드러너",
       role: "student",
     });
 

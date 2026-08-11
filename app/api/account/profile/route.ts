@@ -15,8 +15,8 @@ export async function GET() {
 
   const [user] = await db
     .select({
-      username: users.username,
       displayName: users.displayName,
+      nickname: users.nickname,
       studentNumber: users.studentNumber,
       grade: users.grade,
       classNumber: users.classNumber,
@@ -35,6 +35,7 @@ export async function GET() {
         .select({
           id: badges.id,
           name: badges.nameKo,
+          sourceConceptId: concepts.sourceConceptId,
           iconName: badges.iconName,
           colorClass: badges.colorClass,
           clearedAt: userConceptClears.clearedAt,
@@ -79,12 +80,12 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => null) as Record<string, unknown> | null;
   if (!body) return NextResponse.json({ error: "요청 형식이 올바르지 않습니다." }, { status: 400 });
 
-  const displayName = typeof body.displayName === "string" ? body.displayName.trim() : undefined;
+  const nickname = typeof body.nickname === "string" ? body.nickname.trim() : undefined;
   const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
   const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
   const recoveryCode = typeof body.recoveryCode === "string" ? body.recoveryCode : "";
 
-  if (displayName !== undefined && (displayName.length < 1 || displayName.length > 20)) {
+  if (nickname !== undefined && (nickname.length < 1 || nickname.length > 20)) {
     return NextResponse.json({ error: "닉네임은 1~20자로 입력해 주세요." }, { status: 400 });
   }
   if (newPassword && (newPassword.length < PASSWORD_MIN_LENGTH || newPassword.length > 128)) {
@@ -93,7 +94,7 @@ export async function PATCH(req: NextRequest) {
   if (recoveryCode && !/^\d{6}$/.test(recoveryCode)) {
     return NextResponse.json({ error: "복구번호는 숫자 6자리여야 합니다." }, { status: 400 });
   }
-  if (displayName === undefined && !newPassword && !recoveryCode) {
+  if (nickname === undefined && !newPassword && !recoveryCode) {
     return NextResponse.json({ error: "변경할 내용을 입력해 주세요." }, { status: 400 });
   }
 
@@ -111,11 +112,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "새 비밀번호는 현재 비밀번호와 다르게 설정해 주세요." }, { status: 400 });
   }
 
-  const update: { displayName?: string; passwordHash?: string; recoveryCodeHash?: string } = {};
-  if (displayName !== undefined) update.displayName = displayName;
+  const update: { nickname?: string; passwordHash?: string; recoveryCodeHash?: string } = {};
+  if (nickname !== undefined) update.nickname = nickname;
   if (newPassword) update.passwordHash = await bcrypt.hash(newPassword, 10);
   if (recoveryCode) update.recoveryCodeHash = await bcrypt.hash(recoveryCode, 10);
 
   await db.update(users).set(update).where(and(eq(users.id, context.userId), eq(users.schoolId, context.schoolId)));
-  return NextResponse.json({ ok: true, displayName, recoveryCodeSet: Boolean(recoveryCode) });
+  return NextResponse.json({ ok: true, nickname, recoveryCodeSet: Boolean(recoveryCode) });
 }

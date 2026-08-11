@@ -2,20 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { Award, Eye, EyeOff, KeyRound, ShieldCheck, UserRound, X } from "lucide-react";
+import { Award, BadgeCheck, CheckCircle2, Eye, EyeOff, LockKeyhole, PencilLine, ShieldCheck, Sparkles, X } from "lucide-react";
+import { getBadgeImagePath } from "@/lib/badge-images";
+import styles from "./StudentProfileModal.module.css";
 
 type ProfileData = {
   user: {
-    username: string;
     displayName: string | null;
+    nickname: string | null;
     studentNumber: string | null;
     grade: number | null;
     classNumber: number | null;
     seatNumber: number | null;
     recoveryCodeSet: boolean;
   };
-  badges: Array<{ id: number; name: string; clearedAt: string | null }>;
+  badges: Array<{ id: number; name: string; sourceConceptId: number | null; clearedAt: string | null }>;
   badgeSummary: { earned: number; total: number };
 };
 
@@ -42,7 +45,7 @@ export default function StudentProfileModal({ open, onClose }: { open: boolean; 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "내 정보를 불러오지 못했습니다.");
         setProfile(data);
-        setNickname(data.user.displayName ?? data.user.username);
+        setNickname(data.user.nickname && data.user.nickname !== data.user.displayName ? data.user.nickname : "코드러너");
       })
       .catch((loadError) => setError(loadError instanceof Error ? loadError.message : "내 정보를 불러오지 못했습니다."))
       .finally(() => setLoading(false));
@@ -72,8 +75,12 @@ export default function StudentProfileModal({ open, onClose }: { open: boolean; 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "정보를 변경하지 못했습니다.");
       if (kind === "nickname") {
-        setProfile((current) => current ? { ...current, user: { ...current.user, displayName: nickname.trim() } } : current);
-        await updateSession({ name: nickname.trim() });
+        setProfile((current) => current ? { ...current, user: { ...current.user, nickname: nickname.trim() } } : current);
+        await updateSession({
+          name: nickname.trim(),
+          nickname: nickname.trim(),
+          displayName: profile?.user.displayName || "학생",
+        });
         setMessage("닉네임을 변경했습니다.");
       } else {
         setProfile((current) => current ? {
@@ -107,82 +114,138 @@ export default function StudentProfileModal({ open, onClose }: { open: boolean; 
     await save({ currentPassword, newPassword, recoveryCode }, "security");
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "11px 12px", border: "1.5px solid #E4DDF3", borderRadius: 11,
-    background: "#FCFBFF", color: "#39324F", outline: "none", fontFamily: "inherit", fontSize: 13.5,
-  };
-  const labelStyle: React.CSSProperties = { display: "block", marginBottom: 6, color: "#766D91", fontSize: 12, fontWeight: 700 };
+  const earnedPercent = profile?.badgeSummary.total
+    ? Math.min(100, Math.round((profile.badgeSummary.earned / profile.badgeSummary.total) * 100))
+    : 0;
+  const studentName = profile?.user.displayName || "학생";
+  const hasCustomNickname = Boolean(profile?.user.nickname && profile.user.nickname !== profile.user.displayName);
+  const profileNickname = hasCustomNickname ? profile!.user.nickname! : "코드러너";
+  const classLabel = profile?.user.grade && profile.user.classNumber
+    ? `${profile.user.grade}학년 ${profile.user.classNumber}반${profile.user.seatNumber ? ` ${profile.user.seatNumber}번` : ""}`
+    : "학급 정보 없음";
 
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="내 정보" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !saving) onClose();
-    }} style={{ position: "fixed", inset: 0, zIndex: 200, display: "grid", placeItems: "center", padding: 18, background: "rgba(42,34,70,.42)", backdropFilter: "blur(5px)" }}>
-      <div style={{ width: "min(760px, 100%)", maxHeight: "min(780px, 92vh)", overflow: "auto", borderRadius: 24, background: "#fff", boxShadow: "0 24px 70px rgba(50,35,100,.24)", border: "1px solid #EEE8F8" }}>
-        <div style={{ position: "sticky", top: 0, zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px", background: "rgba(255,255,255,.94)", borderBottom: "1px solid #EEE9F6" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#3D2E8A", fontSize: 18, fontWeight: 900 }}>
-            <UserRound size={21} color="#7B5CF0" /> 내 정보
+    }} className={styles.backdrop}>
+      <div className={styles.modal}>
+        <button type="button" onClick={onClose} disabled={Boolean(saving)} aria-label="닫기" className={styles.closeButton}><X size={19} /></button>
+
+        {loading && (
+          <div className={styles.loading}>
+            <div className={styles.loadingOrb}><Sparkles size={25} /></div>
+            <strong>나의 성장 기록을 불러오는 중</strong>
+            <span>잠시만 기다려 주세요</span>
           </div>
-          <button type="button" onClick={onClose} disabled={Boolean(saving)} aria-label="닫기" style={{ width: 34, height: 34, display: "grid", placeItems: "center", border: 0, borderRadius: 10, background: "#F4F0FA", color: "#81789B", cursor: saving ? "wait" : "pointer" }}><X size={18} /></button>
-        </div>
+        )}
 
-        <div style={{ padding: 20 }}>
-          {loading && <div style={{ padding: 50, textAlign: "center", color: "#8B83A8" }}>내 정보를 불러오는 중...</div>}
-          {error && <div role="alert" style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 10, background: "#FFF0F4", color: "#D93668", fontSize: 13, fontWeight: 700 }}>{error}</div>}
-          {message && <div style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 10, background: "#ECFBF6", color: "#168A68", fontSize: 13, fontWeight: 700 }}>{message}</div>}
-
-          {profile && !loading && (
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, .9fr) minmax(0, 1.1fr)", gap: 16 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <section style={{ padding: 16, borderRadius: 16, background: "linear-gradient(145deg,#F5F0FF,#FFF4F8)", border: "1px solid #EAE2F7" }}>
-                  <div style={{ color: "#8B83A8", fontSize: 11.5, fontWeight: 700 }}>학생 계정</div>
-                  <div style={{ marginTop: 4, color: "#3D2E8A", fontSize: 22, fontWeight: 900 }}>{profile.user.displayName || profile.user.username}</div>
-                  <div style={{ marginTop: 7, color: "#736A8D", fontSize: 12.5 }}>아이디 · {profile.user.username}</div>
-                  <div style={{ marginTop: 3, color: "#736A8D", fontSize: 12.5 }}>
-                    {profile.user.grade && profile.user.classNumber ? `${profile.user.grade}학년 ${profile.user.classNumber}반 ` : ""}
-                    {profile.user.seatNumber ? `${profile.user.seatNumber}번` : ""}
-                  </div>
-                </section>
-
-                <section style={{ padding: 16, borderRadius: 16, border: "1px solid #EAE5F2" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7, color: "#4B416A", fontWeight: 850 }}><Award size={17} color="#F2A21B" /> 현재 배지</div>
-                  <div style={{ marginTop: 8, fontSize: 25, color: "#7B5CF0", fontWeight: 900 }}>{profile.badgeSummary.earned}<span style={{ color: "#AAA2BD", fontSize: 13 }}> / {profile.badgeSummary.total}개</span></div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                    {profile.badges.length ? profile.badges.slice(-8).reverse().map((badge) => (
-                      <span key={badge.id} style={{ padding: "6px 8px", borderRadius: 8, background: "#F5F1FD", color: "#6956B5", fontSize: 11.5, fontWeight: 700 }}>{badge.name}</span>
-                    )) : <span style={{ color: "#9B93AE", fontSize: 12 }}>아직 획득한 배지가 없습니다.</span>}
-                  </div>
-                </section>
-
-                <section style={{ padding: 16, borderRadius: 16, border: "1px solid #EAE5F2" }}>
-                  <label style={labelStyle}>닉네임</label>
-                  <div style={{ display: "flex", gap: 7 }}>
-                    <input value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={20} style={inputStyle} />
-                    <button type="button" disabled={Boolean(saving) || !nickname.trim()} onClick={() => void save({ displayName: nickname }, "nickname")} style={{ flex: "none", padding: "0 13px", border: 0, borderRadius: 10, background: "#7B5CF0", color: "#fff", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>{saving === "nickname" ? "저장 중" : "저장"}</button>
-                  </div>
-                </section>
-              </div>
-
-              <form onSubmit={handleSecuritySubmit} style={{ padding: 17, borderRadius: 16, border: "1px solid #EAE5F2" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7, color: "#4B416A", fontWeight: 850 }}><KeyRound size={17} color="#7B5CF0" /> 비밀번호와 복구번호</div>
-                <p style={{ margin: "7px 0 14px", color: "#8B83A8", fontSize: 11.5, lineHeight: 1.5 }}>보안 정보 변경에는 현재 비밀번호가 필요합니다. 복구번호는 친구에게 알려주지 마세요.</p>
-                <label style={labelStyle}>현재 비밀번호</label>
-                <input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} style={{ ...inputStyle, marginBottom: 11 }} required />
-                <label style={labelStyle}>새 비밀번호 <span style={{ fontWeight: 500 }}>(변경할 때만)</span></label>
-                <input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} maxLength={128} placeholder="8자 이상" style={{ ...inputStyle, marginBottom: 9 }} />
-                <input type="password" autoComplete="new-password" value={newPasswordConfirm} onChange={(event) => setNewPasswordConfirm(event.target.value)} placeholder="새 비밀번호 확인" style={{ ...inputStyle, marginBottom: 14 }} />
-                <label style={labelStyle}>6자리 복구번호 <span style={{ color: profile.user.recoveryCodeSet ? "#18A67A" : "#D97706" }}>{profile.user.recoveryCodeSet ? "· 설정됨" : "· 설정 필요"}</span></label>
-                <div style={{ position: "relative" }}>
-                  <input type={showRecoveryCode ? "text" : "password"} inputMode="numeric" autoComplete="off" value={recoveryCode} onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, "").slice(0, 6))} pattern="\d{6}" placeholder="숫자 6자리" style={{ ...inputStyle, paddingRight: 48 }} />
-                  <button type="button" onClick={() => setShowRecoveryCode((visible) => !visible)} aria-label={showRecoveryCode ? "복구번호 숨기기" : "복구번호 보기"} aria-pressed={showRecoveryCode} style={{ position: "absolute", top: "50%", right: 7, transform: "translateY(-50%)", width: 34, height: 30, display: "grid", placeItems: "center", border: 0, borderRadius: 8, background: "transparent", color: "#81789B", cursor: "pointer" }}>
-                    {showRecoveryCode ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
+        {profile && !loading && (
+          <>
+            <header className={styles.hero}>
+              <span className={styles.heroGlowOne} />
+              <span className={styles.heroGlowTwo} />
+              <div className={styles.heroProfile}>
+                <div className={styles.avatar}>
+                  <span>{profileNickname.slice(0, 1)}</span>
+                  <i><BadgeCheck size={16} /></i>
                 </div>
-                <div style={{ display: "flex", gap: 6, alignItems: "start", marginTop: 10, padding: 10, borderRadius: 10, background: "#FFF8E8", color: "#8B6425", fontSize: 11, lineHeight: 1.45 }}><ShieldCheck size={15} style={{ flex: "none" }} /> 닉네임이나 휴대폰 뒤 4자리는 다른 학생이 알 수 있어 비밀번호 복구에 사용하지 않습니다.</div>
-                <button type="submit" disabled={Boolean(saving)} style={{ width: "100%", marginTop: 13, padding: 11, border: 0, borderRadius: 11, background: "linear-gradient(180deg,#8B6CFF,#7B5CF0)", color: "#fff", fontWeight: 850, cursor: saving ? "wait" : "pointer" }}>{saving === "security" ? "변경 중..." : "보안 정보 변경"}</button>
-              </form>
+                <div className={styles.heroCopy}>
+                  <div className={styles.eyebrow}><Sparkles size={13} /> PYRUN STUDENT</div>
+                  <div className={styles.studentName}>이름 · {studentName}</div>
+                  <h2>{profileNickname}</h2>
+                  <div className={styles.identityChips}>
+                    <span>{classLabel}</span>
+                    <span className={profile.user.recoveryCodeSet ? styles.secureChip : styles.warningChip}>
+                      {profile.user.recoveryCodeSet ? <CheckCircle2 size={12} /> : <LockKeyhole size={12} />}
+                      {profile.user.recoveryCodeSet ? "복구 설정 완료" : "복구 설정 필요"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.progressRing} style={{ background: `conic-gradient(#FFD166 ${earnedPercent * 3.6}deg, rgba(255,255,255,.2) 0deg)` }}>
+                <div><strong>{earnedPercent}%</strong><span>배지 달성</span></div>
+              </div>
+            </header>
+
+            <div className={styles.content}>
+              {error && <div role="alert" className={`${styles.notice} ${styles.errorNotice}`}>{error}</div>}
+              {message && <div className={`${styles.notice} ${styles.successNotice}`}><CheckCircle2 size={16} />{message}</div>}
+
+              <div className={styles.dashboardGrid}>
+                <div className={styles.leftColumn}>
+                  <section className={`${styles.card} ${styles.badgeCard}`}>
+                    <div className={styles.sectionHeading}>
+                      <div className={styles.sectionIcon}><Award size={18} /></div>
+                      <div><h3>나의 배지 컬렉션</h3><p>학습하며 모은 최근 배지를 확인해 보세요.</p></div>
+                      <div className={styles.badgeCount}><strong>{profile.badgeSummary.earned}</strong><span>/ {profile.badgeSummary.total}</span></div>
+                    </div>
+                    <div className={styles.progressTrack}><span style={{ width: `${earnedPercent}%` }} /></div>
+                    {profile.badges.length ? (
+                      <div className={styles.badgeGrid}>
+                        {profile.badges.slice(-6).reverse().map((badge) => {
+                          const imagePath = getBadgeImagePath(badge.sourceConceptId);
+                          return (
+                            <div key={badge.id} className={styles.badgeItem} title={badge.name}>
+                              <div className={styles.badgeImage}>
+                                {imagePath ? <Image src={imagePath} alt="" width={54} height={54} /> : <Award size={25} />}
+                              </div>
+                              <span>{badge.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className={styles.emptyBadges}><Award size={28} /><strong>첫 배지를 획득해 보세요!</strong><span>학습 단원을 완료하면 이곳에 배지가 나타나요.</span></div>
+                    )}
+                  </section>
+
+                  <section className={`${styles.card} ${styles.nicknameCard}`}>
+                    <div className={styles.sectionHeading}>
+                      <div className={`${styles.sectionIcon} ${styles.pinkIcon}`}><PencilLine size={18} /></div>
+                      <div><h3>나를 표현하는 닉네임</h3><p>수업 화면에 표시되는 이름이에요.</p></div>
+                    </div>
+                    <div className={styles.inlineField}>
+                      <input value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={20} aria-label="닉네임" placeholder="나만의 닉네임을 입력하세요" />
+                      <span>{nickname.length}/20</span>
+                      <button type="button" disabled={Boolean(saving) || !nickname.trim()} onClick={() => void save({ nickname }, "nickname")}>{saving === "nickname" ? "저장 중" : "닉네임 저장"}</button>
+                    </div>
+                  </section>
+                </div>
+
+                <form onSubmit={handleSecuritySubmit} className={`${styles.card} ${styles.securityCard}`}>
+                  <div className={styles.securityHeader}>
+                    <div className={`${styles.sectionIcon} ${styles.greenIcon}`}><ShieldCheck size={19} /></div>
+                    <div><h3>계정 보안</h3><p>내 계정을 안전하게 지켜요.</p></div>
+                    <span className={profile.user.recoveryCodeSet ? styles.statusOn : styles.statusOff}>{profile.user.recoveryCodeSet ? "안전" : "확인 필요"}</span>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label>현재 비밀번호</label>
+                    <input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} placeholder="현재 비밀번호 입력" required />
+                  </div>
+                  <div className={styles.formDivider}><span>비밀번호 변경</span></div>
+                  <div className={styles.formGroup}>
+                    <label>새 비밀번호 <small>변경할 때만</small></label>
+                    <input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} maxLength={128} placeholder="8자 이상 입력" />
+                    <input type="password" autoComplete="new-password" value={newPasswordConfirm} onChange={(event) => setNewPasswordConfirm(event.target.value)} placeholder="새 비밀번호 다시 입력" />
+                  </div>
+                  <div className={styles.formDivider}><span>비밀번호 복구</span></div>
+                  <div className={styles.formGroup}>
+                    <label>6자리 복구번호 <small className={profile.user.recoveryCodeSet ? styles.setText : styles.unsetText}>{profile.user.recoveryCodeSet ? "설정됨" : "설정 필요"}</small></label>
+                    <div className={styles.secretField}>
+                      <input type={showRecoveryCode ? "text" : "password"} inputMode="numeric" autoComplete="off" value={recoveryCode} onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, "").slice(0, 6))} pattern="\d{6}" placeholder="숫자 6자리" />
+                      <button type="button" onClick={() => setShowRecoveryCode((visible) => !visible)} aria-label={showRecoveryCode ? "복구번호 숨기기" : "복구번호 보기"} aria-pressed={showRecoveryCode}>{showRecoveryCode ? <EyeOff size={17} /> : <Eye size={17} />}</button>
+                    </div>
+                  </div>
+                  <div className={styles.securityTip}><LockKeyhole size={15} /><span>복구번호는 친구가 알기 어려운 번호로 정하고 다른 사람에게 알려주지 마세요.</span></div>
+                  <button type="submit" disabled={Boolean(saving)} className={styles.primaryButton}><ShieldCheck size={16} />{saving === "security" ? "안전하게 변경 중..." : "보안 정보 저장"}</button>
+                </form>
+              </div>
             </div>
-          )}
-        </div>
+          </>
+        )}
+
+        {!loading && !profile && error && <div role="alert" className={styles.loadError}>{error}</div>}
       </div>
     </div>,
     document.body

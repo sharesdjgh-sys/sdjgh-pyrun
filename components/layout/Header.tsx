@@ -10,16 +10,17 @@ import StudentProfileModal from "@/components/account/StudentProfileModal";
 export default function Header() {
   const [profileOpen, setProfileOpen] = useState(false);
   const { data: session } = useSession();
-  const name = session?.user?.name || "학생";
-  const initial = name.slice(0, 1);
-  const sessionUser = session?.user as { username?: string; role?: string } | undefined;
+  const sessionUser = session?.user as { username?: string; nickname?: string; displayName?: string; role?: string } | undefined;
   const username = sessionUser?.username;
   const role = sessionUser?.role;
   const canManage = canOpenAdminPage(role);
   const isAdmin = isAdministratorRole(role);
   const isStudent = isStudentRole(role);
+  const name = isStudent ? sessionUser?.nickname || "코드러너" : session?.user?.name || "사용자";
+  const initial = name.slice(0, 1);
+  const studentRealName = sessionUser?.displayName || (!sessionUser?.nickname ? session?.user?.name : "");
   const identityText = username
-    ? isStudent ? `아이디: ${username}` : `@${username}`
+    ? isStudent ? studentRealName || "학생" : `@${username}`
     : null;
 
   return (
