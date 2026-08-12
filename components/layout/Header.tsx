@@ -46,6 +46,33 @@ export default function Header() {
 
       {/* Right side */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* School logo — a quiet affiliation mark beside the student profile */}
+        <div
+          role="img"
+          aria-label="서대전여자고등학교"
+          style={{
+            position: "relative", flex: "none", width: 142, aspectRatio: "2396 / 449",
+            pointerEvents: "none",
+          }}
+        >
+          <Image
+            src="/sdj-logo.png"
+            alt=""
+            width={2396}
+            height={449}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", clipPath: "inset(0 84.5% 0 0)" }}
+            priority
+          />
+          <Image
+            src="/sdj-logo.png"
+            alt=""
+            width={2396}
+            height={449}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", clipPath: "inset(27% 0 0 15.5%)" }}
+            priority
+          />
+        </div>
+
         {/* User badge */}
         <button
           type="button"
