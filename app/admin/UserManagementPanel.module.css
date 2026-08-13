@@ -1,0 +1,118 @@
+.panel {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 30px 32px;
+  border: 1px solid #e8e4ee;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 42px rgba(57, 47, 76, 0.08);
+  color: #292532;
+  word-break: keep-all;
+}
+
+.headingRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.eyebrow { margin-bottom: 6px; color: #81798e; font-size: 10px; font-weight: 800; letter-spacing: .13em; }
+.title { margin: 0; color: #28232f; font-size: 24px; line-height: 1.25; letter-spacing: -.035em; }
+.description { margin: 7px 0 0; color: #7a7384; font-size: 13px; line-height: 1.55; }
+.totalBadge { display: flex; align-items: center; gap: 6px; flex: none; padding: 9px 12px; border: 1px solid #e5e0e9; border-radius: 12px; background: #faf9fb; color: #6b6375; font-size: 12px; font-variant-numeric: tabular-nums; }
+.totalBadge strong { color: #302a38; font-size: 15px; }
+
+.summaryGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 24px; }
+.summaryCard { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 9px; padding: 12px 14px; border: 1px solid transparent; border-radius: 13px; color: #5e5865; font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; transition: border-color .2s ease, background .2s ease, box-shadow .2s ease, transform .2s ease; }
+.summaryCard:hover { transform: translateY(-2px); }
+.summaryCard:active { transform: scale(.985); }
+.summaryCardActive { box-shadow: inset 0 0 0 1px currentColor, 0 7px 18px rgba(64, 54, 72, .08); }
+.summaryCard strong { color: #292532; font-size: 17px; font-variant-numeric: tabular-nums; }
+.summary_student { border-color: #cfe4dc; background: #eef8f4; color: #397665; }
+.summary_student:hover { border-color: #9fc9ba; background: #e7f4ef; }
+.summary_teacher { border-color: #ead8bd; background: #fbf3e8; color: #96612d; }
+.summary_teacher:hover { border-color: #d8b985; background: #f8eddd; }
+.summary_admin { border-color: #dacde3; background: #f3eef7; color: #735887; }
+.summary_admin:hover { border-color: #bca5cb; background: #eee6f3; }
+.roleDot { width: 8px; height: 8px; border-radius: 99px; }
+.student { background: #4e8e7d; }
+.teacher { background: #b77b3c; }
+.admin { background: #80679a; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; padding: 10px; border: 1px solid #e9e5ec; border-radius: 15px; background: #f8f7f9; }
+.searchBox { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 210px; padding: 0 12px; border: 1px solid #ded9e3; border-radius: 10px; background: #fff; color: #91899a; transition: border-color .2s ease, box-shadow .2s ease; }
+.searchBox:focus-within { border-color: #91829f; box-shadow: 0 0 0 3px rgba(112, 91, 130, .09); }
+.searchBox input { width: 100%; min-width: 0; padding: 9px 0; border: 0; outline: 0; background: transparent; color: #302a38; font: inherit; font-size: 13px; }
+.searchBox button { display: flex; padding: 3px; border: 0; background: transparent; color: #91899a; cursor: pointer; }
+.filterGroup { display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex: 2 1 660px; color: #91899a; }
+.filterDivider { width: 1px; height: 24px; margin: 0 2px; background: #dcd6e0; }
+.filterGroup select, .roleSelect select { height: 38px; padding: 0 28px 0 10px; border: 1px solid #ded9e3; border-radius: 9px; outline: none; background: #fff; color: #574f60; font: inherit; font-size: 12px; cursor: pointer; }
+.filterGroup select:focus, .roleSelect select:focus { border-color: #91829f; box-shadow: 0 0 0 3px rgba(112, 91, 130, .09); }
+
+.resultRow { display: flex; justify-content: space-between; align-items: center; min-height: 36px; color: #847d8c; font-size: 12px; font-variant-numeric: tabular-nums; }
+.resultRow strong { color: #3d3745; }
+.resultRow button { border: 0; background: transparent; color: #6f5f7c; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.message { margin-bottom: 12px; padding: 10px 12px; border-radius: 10px; font-size: 12.5px; font-weight: 700; }
+.messageSuccess { background: #edf7f2; color: #337761; }
+.messageError { background: #fff0f1; color: #b54b57; }
+
+.userGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.userCard { min-width: 0; padding: 14px 15px 15px; border: 1px solid; border-top-width: 3px; border-radius: 14px; transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease; }
+.userCard:hover { box-shadow: 0 10px 26px rgba(57, 47, 76, .11); transform: translateY(-2px); }
+.card_student { border-color: #d5e7e0; border-top-color: #639887; background: linear-gradient(145deg, #f3faf7 0%, #fff 54%); }
+.card_student:hover { border-color: #a8cfc1; border-top-color: #477d6c; }
+.card_teacher { border-color: #ecdeca; border-top-color: #c08a4e; background: linear-gradient(145deg, #fcf6ed 0%, #fff 54%); }
+.card_teacher:hover { border-color: #dbbf98; border-top-color: #9c682f; }
+.card_admin { border-color: #dfd4e7; border-top-color: #88709d; background: linear-gradient(145deg, #f6f1f9 0%, #fff 54%); }
+.card_admin:hover { border-color: #c3afd0; border-top-color: #6c527f; }
+.cardTop { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.avatar { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 1px solid; border-radius: 11px; font-size: 14px; font-weight: 800; }
+.avatar_student { border-color: #c8e0d7; background: #e3f2ed; color: #386f60; }
+.avatar_teacher { border-color: #e5ceb0; background: #f7ead8; color: #8e5b28; }
+.avatar_admin { border-color: #d4c4df; background: #eae1f0; color: #6b507e; }
+.identity { min-width: 0; flex: 1; }
+.nameLine { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.nameLine strong { overflow: hidden; color: #2f2a36; font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
+.selfBadge { flex: none; padding: 2px 5px; border-radius: 5px; background: #eeeaf1; color: #756a7c; font-size: 9px; font-weight: 800; }
+.username { display: block; overflow: hidden; margin-top: 2px; color: #938c9a; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.roleBadge { flex: none; padding: 4px 7px; border-radius: 7px; font-size: 10px; font-weight: 800; }
+.badge_student { background: #e9f4f0; color: #377463; }
+.badge_teacher { background: #fbf0e3; color: #96602a; }
+.badge_admin { background: #f0ebf5; color: #705584; }
+.memberMeta { display: flex; align-items: center; min-height: 36px; margin-top: 13px; overflow: hidden; border: 1px solid rgba(98, 87, 106, .09); border-radius: 10px; background: rgba(255, 255, 255, .74); }
+.schoolName { min-width: 0; flex: 1; overflow: hidden; padding: 8px 9px; color: #6e6676; font-size: 11.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.classInfo { display: flex; align-items: center; gap: 5px; flex: none; min-height: 24px; padding: 4px 9px; border-left: 1px solid rgba(98, 87, 106, .12); color: #6f6677; font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.classInfo span { padding-right: 6px; border-right: 1px solid rgba(98, 87, 106, .14); }
+.classInfo span:last-child { padding-right: 0; border-right: 0; }
+.classInfo strong { margin-right: 1px; color: #342e3a; font-size: 12.5px; }
+.unassigned { color: #a097a6; font-weight: 600; }
+.cardActions { display: flex; align-items: flex-end; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eeeaf0; }
+.roleSelect { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; color: #8c8493; font-size: 10px; font-weight: 700; }
+.roleSelect select { width: 100%; height: 34px; padding-left: 9px; }
+.roleSelect select:disabled { cursor: not-allowed; opacity: .6; }
+.deleteButton { display: flex; align-items: center; justify-content: center; gap: 4px; height: 34px; padding: 0 9px; border: 1px solid #ead2d5; border-radius: 9px; background: #fff; color: #b1545e; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; transition: background .2s ease, border-color .2s ease; }
+.deleteButton:hover:not(:disabled) { border-color: #d8aab0; background: #fff3f4; }
+.deleteButton:disabled { cursor: not-allowed; opacity: .4; }
+
+.emptyState { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px; padding: 40px; border: 1px dashed #d9d3de; border-radius: 14px; background: #faf9fb; color: #9a929f; text-align: center; }
+.emptyState strong { margin-top: 12px; color: #514a58; font-size: 14px; }
+.emptyState span { margin-top: 5px; font-size: 12px; }
+.emptyState button { margin-top: 15px; padding: 8px 12px; border: 1px solid #d5cedb; border-radius: 8px; background: #fff; color: #66596f; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 1040px) {
+  .userGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .toolbar { flex-direction: column; }
+  .filterGroup { flex-wrap: wrap; }
+  .filterGroup label { flex: 1; min-width: 112px; }
+  .filterGroup select { width: 100%; }
+}
+
+@media (max-width: 700px) {
+  .panel { padding: 22px 18px 24px; }
+  .headingRow { align-items: center; }
+  .description { max-width: 230px; }
+  .summaryGrid { gap: 7px; }
+  .summaryCard { grid-template-columns: auto 1fr; padding: 10px; }
+  .summaryCard strong { grid-column: 2; font-size: 15px; }
+  .filterGroup > svg { display: none; }
+  .filterDivider { display: none; }
+  .filterGroup label { flex: 1; min-width: 120px; }
+  .filterGroup select { width: 100%; }
+  .userGrid { grid-template-columns: 1fr; }
+}

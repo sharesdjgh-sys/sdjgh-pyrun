@@ -33,6 +33,10 @@ export default async function AdminPage() {
           username: users.username,
           role: users.role,
           displayName: users.displayName,
+          studentNumber: users.studentNumber,
+          grade: users.grade,
+          classNumber: users.classNumber,
+          seatNumber: users.seatNumber,
           schoolId: users.schoolId,
           schoolName: schools.name,
         })

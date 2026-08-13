@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
-import { USER_ROLES, isAdministratorRole, type UserRole } from "@/lib/roles";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, Users, BookOpenText, Database, GraduationCap, UsersRound, UserCog, School } from "lucide-react";
+import { isAdministratorRole, type UserRole } from "@/lib/roles";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, BookOpenText, Database, GraduationCap, UsersRound, UserCog, School } from "lucide-react";
 import StudentProgressManager from "./StudentProgressManager";
 import ClassRosterManager from "./ClassRosterManager";
 import TeacherCurriculumManager from "./TeacherCurriculumManager";
 import SchoolManager from "./SchoolManager";
+import UserManagementPanel from "./UserManagementPanel";
 import styles from "./AdminClient.module.css";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
@@ -37,6 +38,10 @@ interface UserSummary {
   username: string;
   role: string;
   displayName: string | null;
+  studentNumber: string | null;
+  grade: number | null;
+  classNumber: number | null;
+  seatNumber: number | null;
   schoolId: number;
   schoolName: string;
 }
@@ -46,12 +51,6 @@ interface EditData {
   exampleCode: string;
   practiceCode: string;
 }
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  student: "학생",
-  teacher: "교사",
-  admin: "관리자",
-};
 
 export default function AdminClient({
   concepts: initialConcepts,
@@ -433,82 +432,14 @@ export default function AdminClient({
         ) : adminTab === "schools" ? (
           <SchoolManager />
         ) : adminTab === "users" ? (
-          <div style={{ flex: 1, background: "#fff", borderRadius: 20, border: "1px solid #EFEAF8", boxShadow: "0 8px 24px rgba(90,63,214,.06)", padding: "28px 32px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <Users size={20} color="#7B5CF0" />
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#3D2E8A" }}>회원 관리</div>
-            </div>
-            <div style={{ fontSize: 13, color: "#8B83A8", marginBottom: 20 }}>
-              회원 등급을 학생, 교사, 관리자로 변경할 수 있습니다.
-            </div>
-
-            {userMessage && (
-              <div style={{ fontSize: 13, color: userMessage.includes("실패") || userMessage.includes("오류") || userMessage.includes("해제") ? "#D93668" : "#18A67A", marginBottom: 14, fontWeight: 700 }}>
-                {userMessage}
-              </div>
-            )}
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {users.map((user) => {
-                const role = USER_ROLES.includes(user.role as UserRole) ? (user.role as UserRole) : "student";
-                const isSelf = user.id === currentUserId;
-                return (
-                  <div
-                    key={user.id}
-                    style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) 130px 340px", alignItems: "center", gap: 14, padding: "14px 16px", background: "#F8F5FF", border: "1px solid #EFEAF8", borderRadius: 12 }}
-                  >
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "#3D2E8A" }}>{user.displayName || user.username}</div>
-                      <div style={{ fontSize: 12, color: "#9A93B5" }}>@{user.username}{isSelf ? " · 현재 계정" : ""}</div>
-                      <div style={{ marginTop: 2, fontSize: 11.5, color: "#7B5CF0", fontWeight: 700 }}>{user.schoolName}</div>
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#7B5CF0" }}>{ROLE_LABELS[role]}</div>
-                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                      {USER_ROLES.map((nextRole) => (
-                        <button
-                          key={nextRole}
-                          onClick={() => handleUserRoleChange(user.id, nextRole)}
-                          disabled={updatingUserId !== null || (isSelf && nextRole !== "admin")}
-                          style={{
-                            padding: "7px 11px",
-                            border: role === nextRole ? "1.5px solid #7B5CF0" : "1.5px solid #E0D9F5",
-                            borderRadius: 10,
-                            background: role === nextRole ? "#F2ECFD" : "#fff",
-                            color: role === nextRole ? "#7B5CF0" : "#6F668C",
-                            fontFamily: "inherit",
-                            fontSize: 12.5,
-                            fontWeight: 800,
-                            cursor: updatingUserId !== null || (isSelf && nextRole !== "admin") ? "not-allowed" : "pointer",
-                            opacity: updatingUserId === user.id ? 0.6 : 1,
-                          }}
-                        >
-                          {ROLE_LABELS[nextRole]}
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => handleUserDelete(user)}
-                        disabled={updatingUserId !== null || isSelf}
-                        style={{
-                          padding: "7px 11px",
-                          border: "1.5px solid #DC3F54",
-                          borderRadius: 10,
-                          background: "linear-gradient(180deg, #FF6B7A, #E84C5F)",
-                          color: "#fff",
-                          fontFamily: "inherit",
-                          fontSize: 12.5,
-                          fontWeight: 800,
-                          cursor: updatingUserId !== null || isSelf ? "not-allowed" : "pointer",
-                          opacity: updatingUserId === user.id ? 0.6 : 1,
-                        }}
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <UserManagementPanel
+            users={users}
+            currentUserId={currentUserId}
+            updatingUserId={updatingUserId}
+            message={userMessage}
+            onRoleChange={handleUserRoleChange}
+            onDelete={handleUserDelete}
+          />
         ) : (
         /* ── 커리큘럼 편집 탭 ── */
         <>
