@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
 import { USER_ROLES, isAdministratorRole, type UserRole } from "@/lib/roles";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, Users } from "lucide-react";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, Users, BookOpenText, Database, GraduationCap, UsersRound, UserCog, School } from "lucide-react";
 import StudentProgressManager from "./StudentProgressManager";
 import ClassRosterManager from "./ClassRosterManager";
 import TeacherCurriculumManager from "./TeacherCurriculumManager";
 import SchoolManager from "./SchoolManager";
+import styles from "./AdminClient.module.css";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu,
@@ -244,13 +245,22 @@ export default function AdminClient({
 
   const selectedConcept = concepts.find((c) => c.id === selectedId);
   const filteredGroups = levelFilter === 1 ? UNIT_GROUPS_LV1 : levelFilter === 2 ? UNIT_GROUPS_LV2 : UNIT_GROUPS_LV3;
-  const adminTabs: Array<[AdminTab, string]> = [
-    ["my-curricula", "내 커리큘럼"],
-    ["data", "데이터 파일 관리"],
-    ["students", "학생 수업 관리"],
-    ...(isAdministrator ? ([["classes", "학급·계정 관리"]] as Array<[AdminTab, string]>) : []),
-    ...(isAdministrator ? ([["users", "회원 관리"]] as Array<[AdminTab, string]>) : []),
-    ...(isAdministrator ? ([["schools", "학교 관리"]] as Array<[AdminTab, string]>) : []),
+  const adminTabs: Array<{
+    id: AdminTab;
+    label: string;
+    description: string;
+    icon: React.ElementType;
+  }> = [
+    { id: "my-curricula", label: "커리큘럼", description: "수업 과정 구성", icon: BookOpenText },
+    { id: "data", label: "데이터 파일 관리", description: "CSV 자료 관리", icon: Database },
+    { id: "students", label: "학생 수업 관리", description: "진도·잠금 설정", icon: GraduationCap },
+    ...(isAdministrator
+      ? ([
+          { id: "classes", label: "학급·계정 관리", description: "학급·계정 배정", icon: UsersRound },
+          { id: "users", label: "회원 관리", description: "권한·회원 조회", icon: UserCog },
+          { id: "schools", label: "학교 관리", description: "학교 환경 설정", icon: School },
+        ] as Array<{ id: AdminTab; label: string; description: string; icon: React.ElementType }>)
+      : []),
   ];
 
   return (
@@ -312,32 +322,41 @@ export default function AdminClient({
       </header>
 
       {/* Tab selector */}
-      <div style={{ display: "flex", gap: 4, padding: "12px 28px 0", maxWidth: 1200, width: "100%", margin: "0 auto", boxSizing: "border-box" }}>
-        {adminTabs.map(([tab, label]) => (
-          <button
-            key={tab}
-            onClick={() => setAdminTab(tab)}
-            style={{
-              padding: "9px 18px",
-              border: "none",
-              borderRadius: "12px 12px 0 0",
-              background: adminTab === tab ? "#fff" : "transparent",
-              color: adminTab === tab ? "#7B5CF0" : "#9A93B5",
-              fontWeight: adminTab === tab ? 700 : 500,
-              fontSize: 13.5,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              borderBottom: adminTab === tab ? "2px solid #7B5CF0" : "2px solid transparent",
-              transition: "all .13s",
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <nav className={styles.tabShell} aria-label="관리 메뉴">
+        <div className={styles.tabList} role="tablist" aria-orientation="horizontal">
+          {adminTabs.map(({ id, label, description, icon: Icon }) => {
+            const active = adminTab === id;
+
+            return (
+              <button
+                key={id}
+                id={`admin-tab-${id}`}
+                data-tab={id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-controls="admin-tab-panel"
+                className={`${styles.tabButton} ${active ? styles.tabButtonActive : ""}`}
+                onClick={() => setAdminTab(id)}
+              >
+                <span className={styles.tabIcon} aria-hidden="true">
+                  <Icon size={18} strokeWidth={2} />
+                </span>
+                <span className={styles.tabCopy}>
+                  <span className={styles.tabLabel}>{label}</span>
+                  <span className={styles.tabDescription}>{description}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* Main content */}
       <div
+        id="admin-tab-panel"
+        role="tabpanel"
+        aria-labelledby={`admin-tab-${adminTab}`}
         style={{
           flex: 1,
           display: "flex",
