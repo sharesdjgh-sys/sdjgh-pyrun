@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BookCopy, Plus, Save, School, Trash2 } from "lucide-react";
+import { BookCopy, Circle, Code2, LoaderCircle, Map, PencilLine, Play, Plus, Save, School, Sparkles, Trash2 } from "lucide-react";
+import CodeEditor from "@/components/editor/CodeEditor";
+import OutputPanel from "@/components/editor/OutputPanel";
+import { usePyodide } from "@/hooks/usePyodide";
+import styles from "./TeacherCurriculumManager.module.css";
 
 type CurriculumSummary = {
   id: number;
@@ -43,6 +47,8 @@ const inputStyle: React.CSSProperties = {
   border: "1.5px solid #E0D9F5",
   borderRadius: 10,
   fontFamily: "inherit",
+  fontSize: 12.5,
+  lineHeight: 1.45,
   color: "#3D2E8A",
   background: "#fff",
 };
@@ -53,6 +59,13 @@ export default function TeacherCurriculumManager() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
   const [unitForm, setUnitForm] = useState(emptyUnit);
+  const [unitLevelFilter, setUnitLevelFilter] = useState(1);
+  const [activeCodeTab, setActiveCodeTab] = useState<"example" | "practice">("example");
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+  const [runningCode, setRunningCode] = useState(false);
+  const [runOutput, setRunOutput] = useState("");
+  const [runError, setRunError] = useState("");
+  const [hasRunCode, setHasRunCode] = useState(false);
   const [newName, setNewName] = useState("");
   const [cloneFromId, setCloneFromId] = useState<number | "">("");
   const [assignGrade, setAssignGrade] = useState(1);
@@ -62,6 +75,9 @@ export default function TeacherCurriculumManager() {
 
   const selectedCurriculum = curricula.find((item) => item.id === selectedCurriculumId);
   const selectedUnit = units.find((item) => item.id === selectedUnitId);
+  const visibleUnits = units.filter((item) => item.level === unitLevelFilter);
+  const activeCode = activeCodeTab === "example" ? unitForm.exampleCode : unitForm.practiceCode;
+  const { loading: pyLoading, error: pyError, lv3Loading, initLv3, executeCode } = usePyodide();
 
   const loadCurricula = useCallback(async () => {
     const response = await fetch("/api/admin/curricula");
@@ -100,6 +116,7 @@ export default function TeacherCurriculumManager() {
       setUnitForm(emptyUnit);
       return;
     }
+    setUnitLevelFilter(selectedUnit.level);
     setUnitForm({
       nameKo: selectedUnit.nameKo,
       nameEn: selectedUnit.nameEn,
@@ -111,6 +128,42 @@ export default function TeacherCurriculumManager() {
       practiceCode: selectedUnit.practiceCode ?? "",
     });
   }, [selectedUnit]);
+
+  useEffect(() => {
+    setHasRunCode(false);
+    setRunOutput("");
+    setRunError("");
+    setCursorPosition({ line: 1, column: 1 });
+  }, [selectedUnitId, activeCodeTab]);
+
+  function updateActiveCode(value: string) {
+    setUnitForm((current) => ({
+      ...current,
+      [activeCodeTab === "example" ? "exampleCode" : "practiceCode"]: value,
+    }));
+    setHasRunCode(false);
+    setRunOutput("");
+    setRunError("");
+  }
+
+  async function runActiveCode() {
+    if (runningCode || pyLoading || !activeCode.trim()) return;
+    setRunningCode(true);
+    setHasRunCode(true);
+    setRunOutput("");
+    setRunError("");
+
+    try {
+      if (unitForm.level === 3) await initLv3();
+      const result = await executeCode(activeCode, unitForm.level === 3 ? "lv3" : undefined);
+      setRunOutput(result.stdout);
+      setRunError(result.stderr);
+    } catch (error) {
+      setRunError(error instanceof Error ? error.message : "코드를 실행하지 못했습니다.");
+    } finally {
+      setRunningCode(false);
+    }
+  }
 
   async function createCurriculum() {
     if (!newName.trim() || busy) return;
@@ -222,9 +275,9 @@ export default function TeacherCurriculumManager() {
   }
 
   return (
-    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", gap: 16 }}>
+    <div className={styles.managerLayout}>
       <aside style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 16, alignSelf: "start" }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: "#3D2E8A", marginBottom: 12 }}>내 커리큘럼</div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "#3D2E8A", marginBottom: 12 }}>내 커리큘럼</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           {curricula.map((item) => (
             <button
@@ -240,6 +293,9 @@ export default function TeacherCurriculumManager() {
                 color: selectedCurriculumId === item.id ? "#fff" : item.canEdit ? "#544D70" : "#9A93B5",
                 cursor: item.canEdit ? "pointer" : "default",
                 fontWeight: 700,
+                fontFamily: "inherit",
+                fontSize: 12.5,
+                lineHeight: 1.35,
               }}
               title={!item.canEdit ? "복제해서 편집할 수 있는 기본 템플릿입니다." : undefined}
             >
@@ -268,7 +324,7 @@ export default function TeacherCurriculumManager() {
           <>
             <section style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 18, display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#3D2E8A" }}>{selectedCurriculum.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.35, color: "#3D2E8A" }}>{selectedCurriculum.name}</div>
                 <div style={{ fontSize: 12.5, color: "#8B83A8", marginTop: 3 }}>{units.length}개 단원 · 삭제한 단원의 학생 기록은 유지됩니다.</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
                   {selectedCurriculum.assignments.length > 0
@@ -289,39 +345,185 @@ export default function TeacherCurriculumManager() {
               </button>
             </section>
 
-            <div style={{ display: "grid", gridTemplateColumns: "220px minmax(0, 1fr)", gap: 12 }}>
-              <section style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 12, alignSelf: "start" }}>
-                <button onClick={addUnit} disabled={busy} style={{ width: "100%", padding: 10, border: "1.5px dashed #9B7FFF", borderRadius: 10, background: "#F8F5FF", color: "#7B5CF0", fontWeight: 800, cursor: "pointer", marginBottom: 10 }}>
-                  <Plus size={14} style={{ verticalAlign: "middle" }} /> 단원 추가
-                </button>
-                {units.map((unit) => (
-                  <button
-                    key={unit.id}
-                    onClick={() => setSelectedUnitId(unit.id)}
-                    style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 9, padding: "9px 10px", marginBottom: 4, background: selectedUnitId === unit.id ? "#7B5CF0" : "transparent", color: selectedUnitId === unit.id ? "#fff" : "#655D80", cursor: "pointer" }}
-                  >
-                    <strong>Lv.{unit.level}</strong> {unit.nameKo}
+            <div className={styles.workspaceGrid}>
+              <section className={styles.unitMapCard} aria-labelledby="curriculum-map-title">
+                <div className={styles.unitMapHeading}>
+                  <div>
+                    <div className={styles.sectionKicker}><Map size={14} /> CURRICULUM MAP</div>
+                    <h3 id="curriculum-map-title">단원 구성</h3>
+                  </div>
+                  <button type="button" onClick={addUnit} disabled={busy} className={styles.addUnitButton}>
+                    <Plus size={14} /> 단원 추가
                   </button>
-                ))}
+                </div>
+
+                <div className={styles.levelTabs} role="tablist" aria-label="편집할 레벨 선택">
+                  {([1, 2, 3] as const).map((level) => {
+                    const count = units.filter((unit) => unit.level === level).length;
+                    return (
+                      <button
+                        key={level}
+                        type="button"
+                        role="tab"
+                        aria-selected={unitLevelFilter === level}
+                        data-level={level}
+                        className={unitLevelFilter === level ? styles.levelTabActive : ""}
+                        onClick={() => {
+                          setUnitLevelFilter(level);
+                          const firstUnit = units.find((unit) => unit.level === level);
+                          if (firstUnit) setSelectedUnitId(firstUnit.id);
+                        }}
+                      >
+                        <strong>Lv.{level}</strong>
+                        <span>{count}개</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className={styles.unitList}>
+                  {visibleUnits.length === 0 ? (
+                    <div className={styles.emptyLevel}>
+                      <Sparkles size={20} />
+                      <strong>아직 단원이 없습니다</strong>
+                      <span>단원을 추가한 뒤 레벨을 설정해 주세요.</span>
+                    </div>
+                  ) : visibleUnits.map((unit, index) => {
+                    const active = selectedUnitId === unit.id;
+                    return (
+                      <button
+                        key={unit.id}
+                        type="button"
+                        aria-pressed={active}
+                        data-level={unit.level}
+                        className={`${styles.unitRow} ${active ? styles.unitRowActive : ""}`}
+                        onClick={() => setSelectedUnitId(unit.id)}
+                      >
+                        <span className={styles.unitNode} aria-hidden="true">
+                          {active ? <PencilLine size={15} /> : <Circle size={14} />}
+                          {index < visibleUnits.length - 1 && <i />}
+                        </span>
+                        <span className={styles.unitCopy}>
+                          <strong>{unit.nameKo}</strong>
+                          <small>{unit.groupName} · {unit.nameEn}</small>
+                        </span>
+                        <em>{active ? "편집 중" : `${unit.orderIndex + 1}번째`}</em>
+                      </button>
+                    );
+                  })}
+                </div>
               </section>
 
               {selectedUnit && (
-                <section style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 90px 90px", gap: 8 }}>
-                    <input style={inputStyle} value={unitForm.nameKo} onChange={(e) => setUnitForm({ ...unitForm, nameKo: e.target.value })} placeholder="한글 단원명" />
-                    <input style={inputStyle} value={unitForm.nameEn} onChange={(e) => setUnitForm({ ...unitForm, nameEn: e.target.value })} placeholder="영문 단원명" />
-                    <input style={inputStyle} value={unitForm.groupName} onChange={(e) => setUnitForm({ ...unitForm, groupName: e.target.value })} placeholder="그룹명" />
-                    <input style={inputStyle} type="number" min={1} max={3} value={unitForm.level} onChange={(e) => setUnitForm({ ...unitForm, level: Number(e.target.value) })} title="레벨" />
-                    <input style={inputStyle} type="number" min={0} value={unitForm.orderIndex} onChange={(e) => setUnitForm({ ...unitForm, orderIndex: Number(e.target.value) })} title="순서" />
+                <section className={styles.editorCard} aria-labelledby="unit-editor-title">
+                  <div className={styles.editorHeading}>
+                    <div>
+                      <div className={styles.sectionKicker}><PencilLine size={14} /> UNIT EDITOR</div>
+                      <h3 id="unit-editor-title">{selectedUnit.nameKo}</h3>
+                      <p>학생 대시보드에 표시될 단원 정보와 코드를 편집합니다.</p>
+                    </div>
+                    <span data-level={unitForm.level}>Lv.{unitForm.level}</span>
                   </div>
-                  <textarea style={{ ...inputStyle, resize: "vertical" }} rows={3} value={unitForm.description} onChange={(e) => setUnitForm({ ...unitForm, description: e.target.value })} placeholder="학생에게 보일 설명" />
-                  <textarea style={{ ...inputStyle, resize: "vertical", fontFamily: "monospace" }} rows={10} value={unitForm.exampleCode} onChange={(e) => setUnitForm({ ...unitForm, exampleCode: e.target.value })} placeholder="예제 코드" />
-                  <textarea style={{ ...inputStyle, resize: "vertical", fontFamily: "monospace" }} rows={10} value={unitForm.practiceCode} onChange={(e) => setUnitForm({ ...unitForm, practiceCode: e.target.value })} placeholder="문제 코드" />
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={saveUnit} disabled={busy} style={{ padding: "11px 18px", border: "none", borderRadius: 10, background: "#18C99A", color: "#fff", fontWeight: 800, cursor: "pointer" }}>
+
+                  <div className={styles.basicFields}>
+                    <label>
+                      <span>한글 단원명</span>
+                      <input style={inputStyle} value={unitForm.nameKo} onChange={(e) => setUnitForm({ ...unitForm, nameKo: e.target.value })} placeholder="한글 단원명" />
+                    </label>
+                    <label>
+                      <span>영문 단원명</span>
+                      <input style={inputStyle} value={unitForm.nameEn} onChange={(e) => setUnitForm({ ...unitForm, nameEn: e.target.value })} placeholder="영문 단원명" />
+                    </label>
+                    <label>
+                      <span>그룹</span>
+                      <input style={inputStyle} value={unitForm.groupName} onChange={(e) => setUnitForm({ ...unitForm, groupName: e.target.value })} placeholder="그룹명" />
+                    </label>
+                    <label>
+                      <span>레벨</span>
+                      <input style={inputStyle} type="number" min={1} max={3} value={unitForm.level} onChange={(e) => setUnitForm({ ...unitForm, level: Number(e.target.value) })} />
+                    </label>
+                    <label>
+                      <span>표시 순서</span>
+                      <input style={inputStyle} type="number" min={0} value={unitForm.orderIndex} onChange={(e) => setUnitForm({ ...unitForm, orderIndex: Number(e.target.value) })} />
+                    </label>
+                  </div>
+
+                  <label className={styles.descriptionField}>
+                    <span>학생 안내</span>
+                    <textarea style={{ ...inputStyle, resize: "vertical" }} rows={3} value={unitForm.description} onChange={(e) => setUnitForm({ ...unitForm, description: e.target.value })} placeholder="학생에게 보일 설명" />
+                  </label>
+
+                  <div className={styles.codeWorkbench}>
+                    <div className={styles.codeTitlebar}>
+                      <div className={styles.windowDots} aria-hidden="true">
+                        <i /><i /><i />
+                      </div>
+                      <div className={styles.codeTabs} role="tablist" aria-label="코드 종류 선택">
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={activeCodeTab === "example"}
+                          className={activeCodeTab === "example" ? styles.codeTabActive : ""}
+                          onClick={() => setActiveCodeTab("example")}
+                        >
+                          <Code2 size={13} /> 예제 코드
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={activeCodeTab === "practice"}
+                          className={activeCodeTab === "practice" ? styles.codeTabActive : ""}
+                          onClick={() => setActiveCodeTab("practice")}
+                        >
+                          <Code2 size={13} /> 문제 코드
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.runCodeButton}
+                        onClick={() => void runActiveCode()}
+                        disabled={runningCode || pyLoading || lv3Loading || !activeCode.trim()}
+                        title={pyError ?? `${activeCodeTab === "example" ? "예제" : "문제"} 코드를 실행합니다.`}
+                      >
+                        {runningCode || lv3Loading ? <LoaderCircle size={14} className={styles.spin} /> : <Play size={14} fill="currentColor" />}
+                        {pyLoading ? "Python 준비 중" : runningCode || lv3Loading ? "실행 중" : "코드 실행"}
+                      </button>
+                    </div>
+
+                    <div className={styles.codeEditorBody}>
+                      <CodeEditor
+                        value={activeCode}
+                        onChange={updateActiveCode}
+                        onCursorChange={setCursorPosition}
+                        fontSize="9pt"
+                      />
+                    </div>
+
+                    <div className={styles.codeStatusbar} aria-label="코드 편집기 상태">
+                      <span><i /> Python 3</span>
+                      <span>{activeCode.split(/\r?\n/).length} lines</span>
+                      <span>{activeCodeTab === "example" ? "예제 코드" : "문제 코드"}</span>
+                      <span className={styles.cursorStatus}>Ln {cursorPosition.line}, Col {cursorPosition.column}</span>
+                      <span>Spaces: 4</span>
+                      <span>UTF-8</span>
+                    </div>
+                  </div>
+
+                  {(hasRunCode || pyError) && (
+                    <div className={styles.executionResult}>
+                      <div className={styles.executionHeading}>
+                        <span><Play size={12} fill="currentColor" /> 실행 결과</span>
+                        <small>{activeCodeTab === "example" ? "예제 코드" : "문제 코드"} 기준</small>
+                      </div>
+                      <OutputPanel output={runOutput} error={runError || pyError || ""} hasRun={hasRunCode || Boolean(pyError)} />
+                    </div>
+                  )}
+
+                  <div className={styles.editorActions}>
+                    <button onClick={saveUnit} disabled={busy} className={styles.saveButton}>
                       <Save size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 저장
                     </button>
-                    <button onClick={deleteUnit} disabled={busy} style={{ padding: "11px 18px", border: "none", borderRadius: 10, background: "#FFE8EF", color: "#D93668", fontWeight: 800, cursor: "pointer" }}>
+                    <button onClick={deleteUnit} disabled={busy} className={styles.deleteButton}>
                       <Trash2 size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 삭제
                     </button>
                   </div>
