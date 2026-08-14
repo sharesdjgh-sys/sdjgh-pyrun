@@ -1242,28 +1242,42 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#28C99A", display: "inline-block" }} />
               <div
                 style={{
-                  alignSelf: "stretch",
-                  minWidth: 128,
-                  marginLeft: 8,
-                  padding: "0 14px",
+                  position: "relative",
+                  zIndex: 1,
+                  alignSelf: "flex-end",
+                  minWidth: 118,
+                  minHeight: 38,
+                  marginLeft: 9,
+                  marginBottom: -1,
+                  padding: "0 15px",
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
-                  borderRight: "1px solid #E6E0F0",
-                  borderLeft: "1px solid #E6E0F0",
-                  borderTop: "2px solid #7B5CF0",
-                  background: "#fff",
+                  justifyContent: "center",
+                  gap: 9,
+                  border: "1px solid #DED7EA",
+                  borderBottom: "1px solid #FCFBFF",
+                  borderRadius: "12px 12px 0 0",
+                  background: "#FCFBFF",
+                  boxShadow: "0 -4px 12px rgba(77,55,135,.06), inset 0 2px 0 #8B70DF",
                   fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
-                  fontSize: 12,
-                  fontWeight: 650,
-                  color: "#514A68",
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  letterSpacing: "-.01em",
+                  color: "#4F4763",
                 }}
+                aria-label="현재 편집 파일 main.py"
               >
-                <span style={{ width: 20, height: 20, display: "grid", placeItems: "center", borderRadius: 6, background: "#3776AB", color: "#FFD343", fontSize: 8, fontWeight: 900 }}>
-                  PY
-                </span>
                 main.py
-                <span style={{ width: 5, height: 5, marginLeft: "auto", borderRadius: "50%", background: "#9A82E8" }} />
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "#8064D8",
+                    boxShadow: "0 0 0 3px #EEE9FB",
+                  }}
+                />
               </div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
                 {/* Font size controls */}
