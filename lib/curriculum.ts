@@ -59,8 +59,33 @@ robot.size(1.0)
 # ⑦ 도형 그리기 & 지우기
 robot.say("그림 그리기!")
 robot.clear()
-for shape in ["circle", "star", "heart", "diamond", "square", "triangle"]:
-    robot.draw(shape)
+
+# draw()는 로봇의 현재 위치에 도형을 그려요.
+# 먼저 왼쪽 위로 이동한 뒤, 3개씩 두 줄로 그려봅시다.
+robot.turn("left")
+robot.move(4)
+robot.turn("up")
+robot.move(2)
+
+robot.draw("circle")
+robot.turn("right")
+robot.move(2)
+robot.draw("star")
+robot.move(2)
+robot.draw("heart")
+
+robot.turn("down")
+robot.move(2)
+robot.draw("diamond")
+robot.turn("left")
+robot.move(2)
+robot.draw("square")
+robot.move(2)
+robot.draw("triangle")
+
+# 마지막 도형을 가리지 않도록 아래로 이동해요.
+robot.turn("down")
+robot.move(2)
 
 # ⑧ 복제
 robot.say("복제!")

@@ -6,11 +6,14 @@ import RobotCharacter from "./RobotCharacter";
 import DogCharacter from "./DogCharacter";
 import GameCharacter from "./GameCharacter";
 import MechdogCharacter from "./MechdogCharacter";
+import WizardCharacter from "./WizardCharacter";
+import AstronautCharacter from "./AstronautCharacter";
+import SlimeCharacter from "./SlimeCharacter";
 import RobotSpeechBubble from "./RobotSpeechBubble";
 import StageBackground from "./StageBackground";
 import VariableFloat from "./VariableFloat";
 import type { RobotCommand } from "@/lib/animation-queue";
-import type { RobotEmotion, RobotState } from "@/types";
+import type { CharacterType, RobotEmotion, RobotState } from "@/types";
 
 interface RobotStageProps {
   commands: RobotCommand[];
@@ -18,7 +21,7 @@ interface RobotStageProps {
   varName?: string;
   varValue?: string;
   showVariable?: boolean;
-  characterType?: "robot" | "dog" | "game" | "mechdog";
+  characterType?: CharacterType;
   isError?: boolean;
 }
 
@@ -94,6 +97,36 @@ export default function RobotStage({
       case "game":
         return (
           <GameCharacter
+            state={charState}
+            emotion={charEmotion}
+            scale={charScale}
+            direction={charDir}
+            size={charSize}
+          />
+        );
+      case "wizard":
+        return (
+          <WizardCharacter
+            state={charState}
+            emotion={charEmotion}
+            scale={charScale}
+            direction={charDir}
+            size={charSize}
+          />
+        );
+      case "astronaut":
+        return (
+          <AstronautCharacter
+            state={charState}
+            emotion={charEmotion}
+            scale={charScale}
+            direction={charDir}
+            size={charSize}
+          />
+        );
+      case "slime":
+        return (
+          <SlimeCharacter
             state={charState}
             emotion={charEmotion}
             scale={charScale}
@@ -610,7 +643,7 @@ export default function RobotStage({
                   key={shape.id}
                   cx={cx}
                   cy={cy}
-                  r="10"
+                  r="14"
                   fill="#FF6B9D"
                   className="animate-pulse"
                   opacity="0.85"
@@ -620,11 +653,11 @@ export default function RobotStage({
               return (
                 <rect
                   key={shape.id}
-                  x={cx - 10}
-                  y={cy - 10}
-                  width="20"
-                  height="20"
-                  rx="3"
+                  x={cx - 14}
+                  y={cy - 14}
+                  width="28"
+                  height="28"
+                  rx="4"
                   fill="#4ECDC4"
                   opacity="0.85"
                 />
@@ -633,7 +666,7 @@ export default function RobotStage({
               return (
                 <polygon
                   key={shape.id}
-                  points={getStarPoints(cx, cy, 5, 12, 5)}
+                  points={getStarPoints(cx, cy, 5, 16, 7)}
                   fill="#FFE66D"
                   opacity="0.85"
                 />
@@ -642,7 +675,7 @@ export default function RobotStage({
               return (
                 <polygon
                   key={shape.id}
-                  points={`${cx},${cy - 12} ${cx - 12},${cy + 10} ${cx + 12},${cy + 10}`}
+                  points={`${cx},${cy - 16} ${cx - 16},${cy + 14} ${cx + 16},${cy + 14}`}
                   fill="#A78BFA"
                   opacity="0.85"
                 />
@@ -651,7 +684,7 @@ export default function RobotStage({
               return (
                 <g key={shape.id} transform={`translate(${cx}, ${cy})`}>
                   <path
-                    d="M 0 -6 C -3 -12 -14 -9 -14 -2 C -14 5 -7 11 0 16 C 7 11 14 5 14 -2 C 14 -9 3 -12 0 -6 Z"
+                    d="M 0 -7 C -4 -15 -17 -11 -17 -2 C -17 7 -8 14 0 20 C 8 14 17 7 17 -2 C 17 -11 4 -15 0 -7 Z"
                     fill="#FF6B9D"
                     opacity="0.85"
                     style={{ filter: "drop-shadow(0 1px 2px rgba(255,107,157,0.4))" }}
@@ -662,7 +695,7 @@ export default function RobotStage({
               return (
                 <g key={shape.id} transform={`translate(${cx}, ${cy})`}>
                   <polygon
-                    points="0,-14 14,0 0,14 -14,0"
+                    points="0,-17 17,0 0,17 -17,0"
                     fill="#60A5FA"
                     opacity="0.85"
                     style={{ filter: "drop-shadow(0 1px 2px rgba(96,165,250,0.4))" }}

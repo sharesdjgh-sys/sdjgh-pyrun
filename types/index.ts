@@ -65,6 +65,17 @@ export type RobotState =
   | "spinning"
   | "shaking";
 
+export type CharacterType =
+  | "robot"
+  | "dog"
+  | "game"
+  | "wizard"
+  | "astronaut"
+  | "slime"
+  | "mechdog";
+
+export type SelectableCharacterType = Exclude<CharacterType, "mechdog">;
+
 export interface RobotStateData {
   state: RobotState;
   steps?: number;

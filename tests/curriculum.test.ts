@@ -11,6 +11,15 @@ import {
   isExactExpectedOutput,
 } from "../lib/practice-template";
 
+test("robot API introduction spaces drawing examples across the stage", () => {
+  const code = CONCEPT_EXAMPLES[0].exampleCode;
+  const drawCalls = code.match(/robot\.draw\(/g) ?? [];
+
+  assert.equal(drawCalls.length, 6);
+  assert.match(code, /robot\.draw\("circle"\)[\s\S]*robot\.move\(2\)[\s\S]*robot\.draw\("star"\)/);
+  assert.match(code, /robot\.draw\("diamond"\)[\s\S]*robot\.move\(2\)[\s\S]*robot\.draw\("square"\)/);
+});
+
 test("print practice output matches Python string operations", () => {
   const code = CONCEPT_EXAMPLES[1].practiceCode;
   const starter = createStudentPracticeTemplate(code);

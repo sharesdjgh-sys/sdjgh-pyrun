@@ -109,7 +109,7 @@ export default function RobotApiTooltip() {
               <span style={{ color: "#5A527A" }}>로봇 크기 변경 (0.5 ~ 3.0)</span>
 
               <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.draw("도형")</code>
-              <span style={{ color: "#5A527A" }}>도형 그리기 (circle/square/star/triangle/heart/diamond)</span>
+              <span style={{ color: "#5A527A" }}>로봇의 현재 위치에 도형 그리기 (circle/square/star/triangle/heart/diamond)</span>
 
               <code style={{ color: "#7B5CF0", fontWeight: 700 }}>robot.clone()</code>
               <span style={{ color: "#5A527A" }}>현재 자리에 로봇 복제하기 (최대 5개)</span>

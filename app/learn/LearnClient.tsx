@@ -9,16 +9,18 @@ import { animationQueue, type RobotCommand } from "@/lib/animation-queue";
 import RobotStage from "@/components/robot/RobotStage";
 import RobotApiTooltip from "@/components/robot/RobotApiTooltip";
 import MechdogApiTooltip from "@/components/robot/MechdogApiTooltip";
+import CharacterPicker from "@/components/robot/CharacterPicker";
 import DataVizPanel from "@/components/editor/DataVizPanel";
 import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
 import StudentHintChatbot from "@/components/chat/StudentHintChatbot";
 import type { CurriculumItem } from "@/lib/curriculum";
+import type { SelectableCharacterType } from "@/types";
 import { curriculumLevelOrders, groupCurriculumUnits, type CurriculumView } from "@/lib/curriculum-model";
 import { getBadgeImagePath } from "@/lib/badge-images";
 import { highestEarnedBadgesByLevel } from "@/lib/badge-ranks";
-import { AlertTriangle, Bot, Layers, Calculator, CheckCircle2, GitBranch, Braces, ShieldAlert, PawPrint, Sword, BarChart2, TrendingUp, Filter, Cpu, Lock, Check, Sparkles } from "lucide-react";
+import { AlertTriangle, Bot, Layers, Calculator, CheckCircle2, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu, Lock, Check, Sparkles } from "lucide-react";
 import Image from "next/image";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
@@ -445,7 +447,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     }));
   const currentUnitGroups = groupCurriculumUnits(curriculumView.units, currentLevel);
 
-  const [characterType, setCharacterType] = useState<"robot" | "dog" | "game" | "mechdog">("robot");
+  const [characterType, setCharacterType] = useState<SelectableCharacterType>("robot");
   const [isError, setIsError] = useState(false);
 
   const [commands, setCommands] = useState<RobotCommand[]>([]);
@@ -522,14 +524,11 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   useEffect(() => {
     setPracticeConceptId(null);
     if (mode === "mechdog") {
-      setCharacterType("mechdog");
       const first = MECDOG_EXAMPLES[0];
       setSelectedMechdogId(first.id);
       setCode(first.code);
       return;
     }
-    // mechdog 전용 캐릭터는 다른 모드에서 선택 불가하므로 로봇으로 복귀
-    setCharacterType((prev) => (prev === "mechdog" ? "robot" : prev));
     if (mode === "lv3") {
       const firstId = curriculumView.units
         .filter((unit) => unit.level === 3)
@@ -1777,37 +1776,8 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
 
             {/* Character selector */}
             {mode !== "mechdog" && (
-            <div style={{ flex: "none", display: "flex", justifyContent: "center", gap: 5, padding: "2px 14px 8px" }}>
-              {(["robot", "dog", "game"] as const).map((type) => {
-                const isSelected = characterType === type;
-                const labels = { robot: "로봇", dog: "강아지", game: "전사" };
-                const icons = { robot: Bot, dog: PawPrint, game: Sword };
-                const Icon = icons[type];
-                return (
-                  <button
-                    key={type}
-                    onClick={() => setCharacterType(type)}
-                    style={{
-                      background: isSelected ? "linear-gradient(180deg,#8B6CFF,#7B5CF0)" : "#fff",
-                      color: isSelected ? "#fff" : "#8B83A8",
-                      fontSize: 11.5,
-                      fontWeight: 700,
-                      padding: "5px 11px",
-                      borderRadius: 9,
-                      cursor: "pointer",
-                      boxShadow: isSelected ? "0 3px 8px rgba(123,92,240,.22)" : "none",
-                      border: isSelected ? "none" : "1.5px solid #ECE7F8",
-                      transition: "all 0.13s ease",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <Icon size={12} />
-                    {labels[type]}
-                  </button>
-                );
-              })}
+            <div style={{ flex: "none", display: "flex", justifyContent: "center", padding: "2px 14px 8px" }}>
+              <CharacterPicker value={characterType} onChange={setCharacterType} />
             </div>
             )}
 
