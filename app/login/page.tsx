@@ -80,16 +80,10 @@ export default function LoginPage() {
         <div
           className="w-full max-w-[400px]"
           style={{
-            background: "linear-gradient(145deg,rgba(255,255,255,.92),rgba(241,235,252,.88))",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            borderRadius: 28,
-            padding: "30px 28px",
-            boxShadow: "0 24px 60px rgba(66,46,120,.22),inset 0 1px 0 rgba(255,255,255,.86)",
-            border: "1px solid rgba(255,255,255,.72)",
+            padding: "64px 4px 20px",
           }}
         >
-          <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 21, marginBottom: 20, color: "#2C2747" }}>로그인</div>
+          <h1 className="sr-only">로그인</h1>
 
           {error && (
             <div style={{ background: "#FFF0F4", border: "1px solid #FFD0DC", borderRadius: 12, padding: "11px 14px", marginBottom: 16, fontSize: 13.5, color: "#E23E70" }}>
@@ -98,7 +92,7 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>학교명</label>
+            <label style={{ display: "block", fontSize: 13, color: "#574875", fontWeight: 700, marginBottom: 7 }}>학교명</label>
             <input
               type="text"
               value={schoolCode}
@@ -109,7 +103,7 @@ export default function LoginPage() {
               required
             />
 
-            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>학번</label>
+            <label style={{ display: "block", fontSize: 13, color: "#574875", fontWeight: 700, marginBottom: 7 }}>학번</label>
             <input
               type="text"
               value={username}
@@ -121,7 +115,7 @@ export default function LoginPage() {
               required
             />
 
-            <label style={{ display: "block", fontSize: 13, color: "#8B83A8", fontWeight: 600, marginBottom: 7 }}>비밀번호</label>
+            <label style={{ display: "block", fontSize: 13, color: "#574875", fontWeight: 700, marginBottom: 7 }}>비밀번호</label>
             <input
               type="password"
               value={password}
@@ -161,7 +155,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div style={{ textAlign: "center", marginTop: 18, fontSize: 14, color: "#8B83A8" }}>
+          <div style={{ textAlign: "center", marginTop: 18, fontSize: 14, color: "#5D507A", fontWeight: 500 }}>
             아직 계정이 없나요?{" "}
             <Link href="/register" style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>회원가입</Link>
           </div>
