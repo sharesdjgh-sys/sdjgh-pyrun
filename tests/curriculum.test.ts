@@ -20,6 +20,14 @@ test("robot API introduction spaces drawing examples across the stage", () => {
   assert.match(code, /robot\.draw\("diamond"\)[\s\S]*robot\.move\(2\)[\s\S]*robot\.draw\("square"\)/);
 });
 
+test("robot API introduction speaks before changing emotion", () => {
+  const code = CONCEPT_EXAMPLES[0].exampleCode;
+
+  assert.match(code, /for feeling[\s\S]*robot\.say\(feeling \+ "!"\)\n    robot\.emotion\(feeling\)/);
+  assert.match(code, /robot\.say\("이동 시작!"\)\nrobot\.emotion\("happy"\)/);
+  assert.doesNotMatch(code, /robot\.emotion\(feeling\)\n    robot\.say\(feeling \+ "!"\)/);
+});
+
 test("print practice output matches Python string operations", () => {
   const code = CONCEPT_EXAMPLES[1].practiceCode;
   const starter = createStudentPracticeTemplate(code);

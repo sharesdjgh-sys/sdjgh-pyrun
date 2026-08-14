@@ -27,12 +27,12 @@ robot.say("안녕! 나는 AI 로봇이야!")
 
 # ② 감정 표현 - happy / sad / angry / surprised
 for feeling in ["happy", "sad", "angry", "surprised"]:
-    robot.emotion(feeling)
     robot.say(feeling + "!")
+    robot.emotion(feeling)
 
 # ③ 이동 & 방향 전환
-robot.emotion("happy")
 robot.say("이동 시작!")
+robot.emotion("happy")
 robot.move(3)
 robot.turn("left")
 robot.move(2)

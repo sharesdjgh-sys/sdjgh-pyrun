@@ -13,6 +13,12 @@ import RobotSpeechBubble from "./RobotSpeechBubble";
 import StageBackground from "./StageBackground";
 import VariableFloat from "./VariableFloat";
 import type { RobotCommand } from "@/lib/animation-queue";
+import {
+  characterFacing,
+  cloneAnimationState,
+  placeRobotClone,
+  type StageDirection,
+} from "@/lib/robot-stage-layout";
 import type { CharacterType, RobotEmotion, RobotState } from "@/types";
 
 interface RobotStageProps {
@@ -32,13 +38,13 @@ interface DrawnShape {
   y: number;
 }
 
-type Direction4 = "left" | "right" | "up" | "down";
-
 interface RobotClone {
   id: string;
+  originX: number;
+  originY: number;
   x: number;
   y: number;
-  direction: Direction4;
+  direction: StageDirection;
   scale: number;
   emotion: RobotEmotion;
 }
@@ -54,7 +60,7 @@ export default function RobotStage({
 }: RobotStageProps) {
   // 로봇 상태 변수들
   const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [direction, setDirection] = useState<Direction4>("right");
+  const [direction, setDirection] = useState<StageDirection>("right");
   const [scale, setScale] = useState(1.0);
   const [emotion, setEmotion] = useState<RobotEmotion>("idle");
   const [robotState, setRobotState] = useState<RobotState>("idle");
@@ -190,7 +196,7 @@ export default function RobotStage({
       const run = async () => {
         // 초기화
         let currentPos = { x: 0, y: 0 };
-        let currentDir: Direction4 = "right";
+        let currentDir: StageDirection = "right";
         let currentScale = 1.0;
         let currentEmotion: RobotEmotion = "idle";
 
@@ -247,7 +253,7 @@ export default function RobotStage({
 
             case "turn": {
               const dir = cmd.params.direction;
-              currentDir = (["left", "right", "up", "down"].includes(dir) ? dir : "right") as Direction4;
+              currentDir = (["left", "right", "up", "down"].includes(dir) ? dir : "right") as StageDirection;
               setDirection(currentDir);
               await delay(400);
               break;
@@ -304,12 +310,18 @@ export default function RobotStage({
               // 복제 로봇 5개 제한
               setClones((prev) => {
                 if (prev.length >= 5) return prev;
+                const clonePosition = placeRobotClone(
+                  currentPos,
+                  prev.map((clone) => ({ x: clone.x, y: clone.y })),
+                );
                 return [
                   ...prev,
                   {
                     id: Math.random().toString(),
-                    x: currentPos.x,
-                    y: currentPos.y,
+                    originX: currentPos.x,
+                    originY: currentPos.y,
+                    x: clonePosition.x,
+                    y: clonePosition.y,
                     direction: currentDir,
                     scale: currentScale,
                     emotion: currentEmotion,
@@ -565,15 +577,6 @@ export default function RobotStage({
     }
   }, [commands, isError]);
 
-  // 4방향 헬퍼: up/down은 캐릭터를 회전시키고 left/right는 그대로
-  const toBaseDir = (dir: Direction4): "left" | "right" =>
-    dir === "up" || dir === "down" ? "right" : dir;
-  const toDirRotate = (dir: Direction4): string | undefined => {
-    if (dir === "up") return "rotate(-90deg)";
-    if (dir === "down") return "rotate(90deg)";
-    return undefined;
-  };
-
   // 논리 좌표 x/y를 백분율 스타일 좌표로 매핑
   const getPercentX = (x: number) => `${((200 + x) / 400) * 100}%`;
   const getPercentY = (y: number) => `${((150 - y) / 300) * 100}%`;
@@ -712,17 +715,32 @@ export default function RobotStage({
       {clones.map((clone) => (
         <div
           key={clone.id}
-          className="absolute z-20 transition-all duration-500 ease-out"
+          className="absolute z-20"
           style={{
             left: getPercentX(clone.x),
             top: getPercentY(clone.y),
-            transform: "translate(-50%, -90%) scale(0.65)",
-            opacity: 0.75,
+            transform: "translate(-50%, -90%)",
+            opacity: 0.78,
           }}
         >
-          <div style={{ transform: toDirRotate(clone.direction) }}>
-            {renderCharacter("idle", clone.emotion, clone.scale, toBaseDir(clone.direction), 70)}
-          </div>
+          <motion.div
+            initial={{
+              x: clone.originX - clone.x,
+              y: clone.y - clone.originY,
+              scale: 0.25,
+              opacity: 0,
+            }}
+            animate={{ x: 0, y: 0, scale: 0.65, opacity: 1 }}
+            transition={{ duration: 0.48, ease: "backOut" }}
+          >
+            {renderCharacter(
+              cloneAnimationState(robotState),
+              clone.emotion,
+              clone.scale,
+              characterFacing(clone.direction),
+              70
+            )}
+          </motion.div>
         </div>
       ))}
 
@@ -758,9 +776,7 @@ export default function RobotStage({
               : { rotate: 0, x: 0 }
           }
         >
-          <div style={{ transform: toDirRotate(direction) }}>
-            {renderCharacter(robotState, emotion, scale, toBaseDir(direction), 70)}
-          </div>
+          {renderCharacter(robotState, emotion, scale, characterFacing(direction), 70)}
         </motion.div>
       </div>
     </div>
