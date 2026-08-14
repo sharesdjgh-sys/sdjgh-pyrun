@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import PasswordRecoveryModal from "@/components/account/PasswordRecoveryModal";
 
 export default function LoginPage() {
@@ -41,34 +40,55 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 32,
+        padding: "clamp(20px, 4vw, 48px)",
         position: "relative",
-        overflow: "hidden",
-        background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)",
+        overflowX: "hidden",
+        overflowY: "auto",
+        background: "linear-gradient(160deg,#D7CDEA 0%,#CEC4E3 24%,#BEADDC 55%,#AE9ED6 76%,#9E8BCC 100%)",
       }}
     >
       {/* Blobs */}
       <div style={{ position: "absolute", top: -80, left: -60, width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle at 30% 30%,#C9B6FF,#A78BFA00)", filter: "blur(8px)", animation: "blobFloat 9s ease-in-out infinite" }} />
       <div style={{ position: "absolute", bottom: -90, right: -50, width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle at 60% 40%,#FFC2DA,#FF8FB800)", filter: "blur(8px)", animation: "blobFloat 11s ease-in-out infinite reverse" }} />
 
-      <div style={{ position: "relative", width: "100%", maxWidth: 400 }}>
+      <div className="relative grid w-full max-w-[860px] items-center gap-5 md:grid-cols-[minmax(180px,280px)_minmax(0,400px)] md:justify-center md:gap-8 lg:gap-12">
         {/* Logo area */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 22 }}>
-          <Image
-            src="/pyrun_studio-1대1-logo.png"
-            alt="PyRun Studio"
-            width={160}
-            height={160}
-            style={{ objectFit: "contain" }}
-            priority
+        <div className="flex min-w-0 flex-col items-center text-center">
+          <video
+            src="/pyrun_studio_login.mp4?v=3"
+            aria-label="PyRun Studio animated logo"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            disablePictureInPicture
+            className="pointer-events-none h-auto w-[150px] object-contain sm:w-[180px] md:w-[280px]"
+            style={{
+              WebkitMaskImage: "linear-gradient(to right,transparent 0%,#000 10%,#000 90%,transparent 100%),linear-gradient(to bottom,transparent 0%,#000 7%,#000 93%,transparent 100%)",
+              WebkitMaskComposite: "source-in",
+              maskImage: "linear-gradient(to right,transparent 0%,#000 10%,#000 90%,transparent 100%),linear-gradient(to bottom,transparent 0%,#000 7%,#000 93%,transparent 100%)",
+              maskComposite: "intersect",
+            }}
           />
-          <div style={{ fontSize: 13.5, color: "#8B83A8", marginTop: 6 }}>
+          <div style={{ maxWidth: 260, fontSize: 13.5, color: "#51436F", fontWeight: 600, marginTop: 6, lineHeight: 1.55, textShadow: "0 1px 0 rgba(255,255,255,.28)" }}>
             코딩하면 캐릭터가 반응하는 실습형 파이썬
           </div>
         </div>
 
         {/* Card */}
-        <div style={{ background: "#fff", borderRadius: 28, padding: "30px 28px", boxShadow: "0 18px 50px rgba(90,63,214,.14)", border: "1px solid #F1ECFA" }}>
+        <div
+          className="w-full max-w-[400px]"
+          style={{
+            background: "linear-gradient(145deg,rgba(255,255,255,.92),rgba(241,235,252,.88))",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderRadius: 28,
+            padding: "30px 28px",
+            boxShadow: "0 24px 60px rgba(66,46,120,.22),inset 0 1px 0 rgba(255,255,255,.86)",
+            border: "1px solid rgba(255,255,255,.72)",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 21, marginBottom: 20, color: "#2C2747" }}>로그인</div>
 
           {error && (
@@ -83,7 +103,7 @@ export default function LoginPage() {
               type="text"
               value={schoolCode}
               onChange={(e) => setSchoolCode(e.target.value)}
-              style={{ width: "100%", padding: "14px 16px", border: "2px solid #ECE7F8", borderRadius: 14, background: "#FBFAFF", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 16 }}
+              style={{ width: "100%", padding: "14px 16px", border: "2px solid rgba(126,101,181,.18)", borderRadius: 14, background: "rgba(255,255,255,.68)", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 16, boxShadow: "inset 0 1px 2px rgba(83,61,130,.05)" }}
               placeholder="예: 서대전여고"
               autoComplete="organization"
               required
@@ -94,9 +114,9 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              style={{ width: "100%", padding: "14px 16px", border: "2px solid #ECE7F8", borderRadius: 14, background: "#FBFAFF", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 16 }}
+              style={{ width: "100%", padding: "14px 16px", border: "2px solid rgba(126,101,181,.18)", borderRadius: 14, background: "rgba(255,255,255,.68)", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 16, boxShadow: "inset 0 1px 2px rgba(83,61,130,.05)" }}
               onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
-              onBlur={(e) => { e.target.style.borderColor = "#ECE7F8"; e.target.style.background = "#FBFAFF"; }}
+              onBlur={(e) => { e.target.style.borderColor = "rgba(126,101,181,.18)"; e.target.style.background = "rgba(255,255,255,.68)"; }}
               placeholder="학번을 입력하세요"
               required
             />
@@ -106,9 +126,9 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{ width: "100%", padding: "14px 16px", border: "2px solid #ECE7F8", borderRadius: 14, background: "#FBFAFF", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 10 }}
+              style={{ width: "100%", padding: "14px 16px", border: "2px solid rgba(126,101,181,.18)", borderRadius: 14, background: "rgba(255,255,255,.68)", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 10, boxShadow: "inset 0 1px 2px rgba(83,61,130,.05)" }}
               onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
-              onBlur={(e) => { e.target.style.borderColor = "#ECE7F8"; e.target.style.background = "#FBFAFF"; }}
+              onBlur={(e) => { e.target.style.borderColor = "rgba(126,101,181,.18)"; e.target.style.background = "rgba(255,255,255,.68)"; }}
               placeholder="비밀번호를 입력하세요"
               required
             />
@@ -123,14 +143,14 @@ export default function LoginPage() {
               style={{
                 width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 padding: 15, border: "none", borderRadius: 16,
-                background: loading ? "#A78BFA" : "linear-gradient(180deg,#8B6CFF,#7B5CF0)",
+                background: loading ? "#9A86D8" : "linear-gradient(180deg,#8168D8,#6C50C5)",
                 color: "#fff", fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 17,
                 cursor: loading ? "not-allowed" : "pointer",
-                boxShadow: "0 6px 0 #5B3FD6,0 12px 22px rgba(123,92,240,.34)",
+                boxShadow: "0 6px 0 #52399F,0 12px 24px rgba(82,57,159,.28)",
                 transition: "transform .12s, box-shadow .12s",
               }}
-              onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(4px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 0 #5B3FD6"; }}
-              onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = ""; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 0 #5B3FD6,0 12px 22px rgba(123,92,240,.34)"; }}
+              onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(4px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 0 #52399F"; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = ""; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 0 #52399F,0 12px 24px rgba(82,57,159,.28)"; }}
             >
               {loading ? (
                 <span style={{ width: 18, height: 18, border: "2.5px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
