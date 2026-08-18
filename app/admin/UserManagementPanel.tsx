@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import {
+  Check,
+  LoaderCircle,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -30,7 +32,7 @@ interface UserManagementPanelProps {
   currentUserId: number;
   updatingUserId: number | null;
   message: string;
-  onRoleChange: (userId: number, role: UserRole) => void;
+  onRoleChange: (userId: number, role: UserRole) => Promise<boolean>;
   onDelete: (user: ManagedUser) => void;
 }
 
@@ -57,6 +59,10 @@ export default function UserManagementPanel({
   const [classFilter, setClassFilter] = useState("all");
   const [seatFilter, setSeatFilter] = useState("all");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const [pendingTeacher, setPendingTeacher] = useState<ManagedUser | null>(null);
+  const [selectedTeacherClassKeys, setSelectedTeacherClassKeys] = useState<string[]>([]);
+  const [teacherModalSaving, setTeacherModalSaving] = useState(false);
+  const [teacherModalError, setTeacherModalError] = useState("");
 
   const schools = useMemo(
     () => Array.from(new Set(users.map((user) => user.schoolName))).sort((a, b) => a.localeCompare(b, "ko")),
@@ -86,6 +92,27 @@ export default function UserManagementPanel({
       .sort((a, b) => a - b),
     [classFilter, gradeFilter, users]
   );
+
+  const teacherClassOptions = useMemo(() => {
+    if (!pendingTeacher) return [];
+    return users
+      .filter((user) =>
+        user.schoolId === pendingTeacher.schoolId &&
+        user.role === "student" &&
+        user.grade !== null &&
+        user.classNumber !== null
+      )
+      .map((user) => ({ grade: user.grade as number, classNumber: user.classNumber as number }))
+      .filter((item, index, items) => items.findIndex((candidate) =>
+        candidate.grade === item.grade && candidate.classNumber === item.classNumber
+      ) === index)
+      .sort((a, b) => a.grade - b.grade || a.classNumber - b.classNumber);
+  }, [pendingTeacher, users]);
+
+  const teacherClassesByGrade = useMemo(() => teacherClassOptions.reduce<Record<number, typeof teacherClassOptions>>((groups, item) => {
+    (groups[item.grade] ??= []).push(item);
+    return groups;
+  }, {}), [teacherClassOptions]);
 
   const roleCounts = useMemo(
     () =>
@@ -140,6 +167,78 @@ export default function UserManagementPanel({
     setGradeFilter("all");
     setClassFilter("all");
     setSeatFilter("all");
+  }
+
+  function handleRoleSelection(user: ManagedUser, currentRole: UserRole, nextRole: UserRole) {
+    if (nextRole === currentRole) return;
+    if (nextRole === "teacher") {
+      setPendingTeacher(user);
+      setSelectedTeacherClassKeys([]);
+      setTeacherModalError("");
+      return;
+    }
+    void onRoleChange(user.id, nextRole);
+  }
+
+  function closeTeacherModal() {
+    if (teacherModalSaving) return;
+    setPendingTeacher(null);
+    setSelectedTeacherClassKeys([]);
+    setTeacherModalError("");
+  }
+
+  function toggleTeacherClass(key: string) {
+    setSelectedTeacherClassKeys((current) => current.includes(key)
+      ? current.filter((item) => item !== key)
+      : [...current, key]
+    );
+  }
+
+  function toggleTeacherGrade(grade: number) {
+    const keys = (teacherClassesByGrade[grade] ?? []).map((item) => `${item.grade}:${item.classNumber}`);
+    const allSelected = keys.every((key) => selectedTeacherClassKeys.includes(key));
+    setSelectedTeacherClassKeys((current) => allSelected
+      ? current.filter((key) => !keys.includes(key))
+      : [...new Set([...current, ...keys])]
+    );
+  }
+
+  async function confirmTeacherRole() {
+    if (!pendingTeacher || teacherModalSaving) return;
+    setTeacherModalSaving(true);
+    setTeacherModalError("");
+    try {
+      const currentUser = users.find((user) => user.id === pendingTeacher.id);
+      const roleChanged = currentUser?.role === "teacher" || await onRoleChange(pendingTeacher.id, "teacher");
+      if (!roleChanged) {
+        setTeacherModalError("교사 등급 변경에 실패했습니다.");
+        return;
+      }
+
+      const response = await fetch("/api/admin/teacher-classes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teacherUserId: pendingTeacher.id,
+          classes: selectedTeacherClassKeys.map((key) => {
+            const [grade, classNumber] = key.split(":").map(Number);
+            return { grade, classNumber };
+          }),
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setTeacherModalError(data.error ?? "담당 학급 배정에 실패했습니다.");
+        return;
+      }
+      setPendingTeacher(null);
+      setSelectedTeacherClassKeys([]);
+      setTeacherModalError("");
+    } catch {
+      setTeacherModalError("네트워크 오류가 발생했습니다.");
+    } finally {
+      setTeacherModalSaving(false);
+    }
   }
 
   return (
@@ -306,7 +405,7 @@ export default function UserManagementPanel({
                     <span>역할</span>
                     <select
                       value={role}
-                      onChange={(event) => onRoleChange(user.id, event.target.value as UserRole)}
+                      onChange={(event) => handleRoleSelection(user, role, event.target.value as UserRole)}
                       disabled={updatingUserId !== null || isSelf}
                       aria-label={`${displayName} 역할 변경`}
                     >
@@ -337,6 +436,79 @@ export default function UserManagementPanel({
           <strong>조건에 맞는 회원이 없습니다</strong>
           <span>검색어나 필터를 바꿔보세요.</span>
           {hasActiveFilters && <button type="button" onClick={resetFilters}>모든 회원 보기</button>}
+        </div>
+      )}
+
+      {pendingTeacher && (
+        <div className={styles.teacherModalOverlay} onMouseDown={(event) => event.target === event.currentTarget && closeTeacherModal()}>
+          <div className={styles.teacherModal} role="dialog" aria-modal="true" aria-labelledby="teacher-assignment-title">
+            <div className={styles.teacherModalHeader}>
+              <div>
+                <div className={styles.eyebrow}>TEACHER SETUP</div>
+                <h2 id="teacher-assignment-title">교사 담당 학급 지정</h2>
+                <p><strong>{pendingTeacher.displayName || pendingTeacher.username}</strong> 님을 교사로 변경하고 담당 학급을 선택합니다.</p>
+              </div>
+              <button type="button" onClick={closeTeacherModal} disabled={teacherModalSaving} aria-label="팝업 닫기"><X size={18} /></button>
+            </div>
+
+            <div className={styles.teacherSchoolContext}>
+              <span>배정 학교</span>
+              <strong>{pendingTeacher.schoolName}</strong>
+            </div>
+
+            <div className={styles.teacherClassHeading}>
+              <div>
+                <strong>담당 학급 다중 선택</strong>
+                <span>{selectedTeacherClassKeys.length}개 학급 선택됨</span>
+              </div>
+              {selectedTeacherClassKeys.length > 0 && <button type="button" onClick={() => setSelectedTeacherClassKeys([])}>전체 해제</button>}
+            </div>
+
+            {teacherClassOptions.length === 0 ? (
+              <div className={styles.teacherClassEmpty}>이 학교에 등록된 학생 학급이 없습니다. 학생 계정을 먼저 등록해주세요.</div>
+            ) : (
+              <div className={styles.teacherGradeGrid}>
+                {Object.entries(teacherClassesByGrade).map(([gradeKey, classes]) => {
+                  const grade = Number(gradeKey);
+                  const gradeKeys = classes.map((item) => `${item.grade}:${item.classNumber}`);
+                  const allSelected = gradeKeys.every((key) => selectedTeacherClassKeys.includes(key));
+                  return (
+                    <section key={grade} className={styles.teacherGradeCard}>
+                      <div>
+                        <strong>{grade}학년</strong>
+                        <button type="button" onClick={() => toggleTeacherGrade(grade)}>{allSelected ? "전체 해제" : "전체 선택"}</button>
+                      </div>
+                      <div className={styles.teacherClassGrid}>
+                        {classes.map((item) => {
+                          const key = `${item.grade}:${item.classNumber}`;
+                          const selected = selectedTeacherClassKeys.includes(key);
+                          return (
+                            <button key={key} type="button" aria-pressed={selected} className={selected ? styles.teacherClassSelected : ""} onClick={() => toggleTeacherClass(key)}>
+                              <span>{selected && <Check size={11} strokeWidth={3} />}</span>
+                              {item.classNumber}반
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+
+            {teacherModalError && <div className={styles.teacherModalError} role="alert">{teacherModalError}</div>}
+
+            <div className={styles.teacherModalFooter}>
+              <button type="button" onClick={closeTeacherModal} disabled={teacherModalSaving}>취소</button>
+              <button type="button" onClick={() => void confirmTeacherRole()} disabled={teacherModalSaving}>
+                {teacherModalSaving
+                  ? <><LoaderCircle size={15} /> 처리 중...</>
+                  : selectedTeacherClassKeys.length > 0
+                    ? `교사로 변경하고 ${selectedTeacherClassKeys.length}개 학급 배정`
+                    : "학급 없이 교사로 변경"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>

@@ -133,7 +133,7 @@ export default function AdminClient({
   }
 
   async function handleUserRoleChange(userId: number, role: UserRole) {
-    if (updatingUserId !== null) return;
+    if (updatingUserId !== null) return false;
     setUpdatingUserId(userId);
     setUserMessage("");
 
@@ -147,13 +147,15 @@ export default function AdminClient({
 
       if (!res.ok) {
         setUserMessage(data.error ?? "회원 등급 변경에 실패했습니다.");
-        return;
+        return false;
       }
 
       setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, ...data.user } : user)));
       setUserMessage("회원 등급을 변경했습니다.");
+      return true;
     } catch {
       setUserMessage("네트워크 오류가 발생했습니다.");
+      return false;
     } finally {
       setUpdatingUserId(null);
     }

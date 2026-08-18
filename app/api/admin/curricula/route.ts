@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq, inArray, isNull, or } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
-import { badges, classCurriculumAssignments, concepts, curriculumSets } from "@/lib/db/schema";
+import { badges, classCurriculumAssignments, concepts, curriculumSets, teacherClassAssignments, users } from "@/lib/db/schema";
 import { getCurriculumUnits, sessionTenant } from "@/lib/curriculum-access";
 import { canOpenAdminPage, isAdministratorRole } from "@/lib/roles";
 
@@ -37,6 +37,25 @@ export async function GET() {
         ))
         .orderBy(asc(classCurriculumAssignments.grade), asc(classCurriculumAssignments.classNumber))
     : [];
+  const assignableClassRows = await db
+    .select({
+      grade: teacherClassAssignments.grade,
+      classNumber: teacherClassAssignments.classNumber,
+    })
+    .from(teacherClassAssignments)
+    .innerJoin(users, eq(teacherClassAssignments.teacherUserId, users.id))
+    .where(isAdministratorRole(context.role)
+      ? eq(users.schoolId, context.schoolId)
+      : and(
+          eq(users.schoolId, context.schoolId),
+          eq(teacherClassAssignments.teacherUserId, context.userId)
+        ))
+    .orderBy(asc(teacherClassAssignments.grade), asc(teacherClassAssignments.classNumber));
+  const assignableClasses = assignableClassRows.filter((item, index, items) =>
+    items.findIndex((candidate) =>
+      candidate.grade === item.grade && candidate.classNumber === item.classNumber
+    ) === index
+  );
 
   return NextResponse.json({
     curricula: rows.map((row) => ({
@@ -46,6 +65,7 @@ export async function GET() {
         .filter((item) => item.curriculumId === row.id)
         .map(({ grade, classNumber }) => ({ grade, classNumber })),
     })),
+    assignableClasses,
   });
 }
 

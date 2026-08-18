@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { BookCopy, Circle, Code2, LoaderCircle, Map, PencilLine, Play, Plus, Save, School, Sparkles, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BookCopy, Check, CheckCircle2, Circle, Code2, LoaderCircle, Map, PencilLine, Play, Plus, Save, School, Sparkles, Trash2, X } from "lucide-react";
 import CodeEditor from "@/components/editor/CodeEditor";
 import OutputPanel from "@/components/editor/OutputPanel";
 import { usePyodide } from "@/hooks/usePyodide";
@@ -29,6 +29,11 @@ type Unit = {
   practiceCode: string | null;
 };
 
+type AssignableClass = {
+  grade: number;
+  classNumber: number;
+};
+
 const emptyUnit = {
   nameKo: "",
   nameEn: "",
@@ -54,6 +59,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 export default function TeacherCurriculumManager() {
+  const actionLockRef = useRef(false);
   const [curricula, setCurricula] = useState<CurriculumSummary[]>([]);
   const [selectedCurriculumId, setSelectedCurriculumId] = useState<number | null>(null);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -68,13 +74,21 @@ export default function TeacherCurriculumManager() {
   const [hasRunCode, setHasRunCode] = useState(false);
   const [newName, setNewName] = useState("");
   const [cloneFromId, setCloneFromId] = useState<number | "">("");
-  const [assignGrade, setAssignGrade] = useState(1);
-  const [assignClass, setAssignClass] = useState(1);
+  const [assignableClasses, setAssignableClasses] = useState<AssignableClass[]>([]);
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+  const [selectedAssignmentKeys, setSelectedAssignmentKeys] = useState<string[]>([]);
+  const [assignmentModalError, setAssignmentModalError] = useState("");
   const [message, setMessage] = useState("");
+  const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"create" | "assign" | null>(null);
 
   const selectedCurriculum = curricula.find((item) => item.id === selectedCurriculumId);
   const selectedUnit = units.find((item) => item.id === selectedUnitId);
+  const assignmentGroups = assignableClasses.reduce<Record<number, AssignableClass[]>>((groups, item) => {
+    (groups[item.grade] ??= []).push(item);
+    return groups;
+  }, {});
   const visibleUnits = units.filter((item) => item.level === unitLevelFilter);
   const activeCode = activeCodeTab === "example" ? unitForm.exampleCode : unitForm.practiceCode;
   const { loading: pyLoading, error: pyError, lv3Loading, initLv3, executeCode } = usePyodide();
@@ -84,6 +98,8 @@ export default function TeacherCurriculumManager() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error ?? "커리큘럼을 불러오지 못했습니다.");
     setCurricula(data.curricula ?? []);
+    const nextAssignableClasses: AssignableClass[] = data.assignableClasses ?? [];
+    setAssignableClasses(nextAssignableClasses);
     setCloneFromId((current) => current || data.curricula?.find((item: CurriculumSummary) => item.isDefault)?.id || "");
     setSelectedCurriculumId((current) => {
       if (current && data.curricula?.some((item: CurriculumSummary) => item.id === current && item.canEdit)) return current;
@@ -130,6 +146,26 @@ export default function TeacherCurriculumManager() {
   }, [selectedUnit]);
 
   useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(""), 2200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    if (!assignmentModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !actionLockRef.current) setAssignmentModalOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [assignmentModalOpen]);
+
+  useEffect(() => {
     setHasRunCode(false);
     setRunOutput("");
     setRunError("");
@@ -166,8 +202,10 @@ export default function TeacherCurriculumManager() {
   }
 
   async function createCurriculum() {
-    if (!newName.trim() || busy) return;
+    if (!newName.trim() || busy || actionLockRef.current) return;
+    actionLockRef.current = true;
     setBusy(true);
+    setPendingAction("create");
     setMessage("");
     try {
       const response = await fetch("/api/admin/curricula", {
@@ -184,6 +222,8 @@ export default function TeacherCurriculumManager() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "생성 오류");
     } finally {
+      actionLockRef.current = false;
+      setPendingAction(null);
       setBusy(false);
     }
   }
@@ -254,28 +294,70 @@ export default function TeacherCurriculumManager() {
     }
   }
 
-  async function assignCurriculum() {
-    if (!selectedCurriculumId || busy) return;
+  function openAssignmentModal() {
+    if (!selectedCurriculum) return;
+    const assignableKeys = new Set(assignableClasses.map((item) => `${item.grade}:${item.classNumber}`));
+    setSelectedAssignmentKeys(selectedCurriculum.assignments
+      .map((item) => `${item.grade}:${item.classNumber}`)
+      .filter((key) => assignableKeys.has(key)));
+    setAssignmentModalError("");
+    setAssignmentModalOpen(true);
+  }
+
+  function toggleAssignment(key: string) {
+    setSelectedAssignmentKeys((current) => current.includes(key)
+      ? current.filter((item) => item !== key)
+      : [...current, key]);
+  }
+
+  function toggleGradeAssignments(classes: AssignableClass[]) {
+    const keys = classes.map((item) => `${item.grade}:${item.classNumber}`);
+    const allSelected = keys.every((key) => selectedAssignmentKeys.includes(key));
+    setSelectedAssignmentKeys((current) => allSelected
+      ? current.filter((key) => !keys.includes(key))
+      : Array.from(new Set([...current, ...keys])));
+  }
+
+  async function saveCurriculumAssignments() {
+    if (!selectedCurriculumId || busy || actionLockRef.current) return;
+    actionLockRef.current = true;
     setBusy(true);
+    setPendingAction("assign");
+    setAssignmentModalError("");
+    setToast("");
     try {
       const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/assign`, {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ grade: assignGrade, classNumber: assignClass }),
+        body: JSON.stringify({
+          classes: selectedAssignmentKeys.map((key) => {
+            const [grade, classNumber] = key.split(":").map(Number);
+            return { grade, classNumber };
+          }),
+        }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "학급 배정에 실패했습니다.");
+      if (!response.ok) throw new Error(data.error ?? "학급 배정 저장에 실패했습니다.");
       await loadCurricula();
-      setMessage(`${assignGrade}학년 ${assignClass}반에 배정했습니다.`);
+      setAssignmentModalOpen(false);
+      setToast("학급 배정을 저장했습니다.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "배정 오류");
+      setAssignmentModalError(error instanceof Error ? error.message : "학급 배정 저장 오류");
     } finally {
+      actionLockRef.current = false;
+      setPendingAction(null);
       setBusy(false);
     }
   }
 
   return (
     <div className={styles.managerLayout}>
+      {toast && (
+        <div className={styles.successToast} role="status" aria-live="polite">
+          <CheckCircle2 size={17} />
+          {toast}
+        </div>
+      )}
       <aside style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 16, alignSelf: "start" }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: "#3D2E8A", marginBottom: 12 }}>내 커리큘럼</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
@@ -310,14 +392,22 @@ export default function TeacherCurriculumManager() {
             <option value="">빈 커리큘럼</option>
             {curricula.map((item) => <option key={item.id} value={item.id}>{item.name} 복제</option>)}
           </select>
-          <button onClick={createCurriculum} disabled={busy || !newName.trim()} style={{ width: "100%", padding: 10, border: "none", borderRadius: 10, background: "#18C99A", color: "#fff", fontWeight: 800, cursor: "pointer" }}>
-            <BookCopy size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 만들기
+          <button
+            onClick={createCurriculum}
+            disabled={busy || !newName.trim()}
+            aria-busy={pendingAction === "create"}
+            className={styles.actionButton}
+            style={{ width: "100%", padding: 10, border: "none", borderRadius: 10, background: "#18C99A", color: "#fff", fontWeight: 800 }}
+          >
+            {pendingAction === "create"
+              ? <><LoaderCircle size={14} className={styles.spin} /> 만드는 중...</>
+              : <><BookCopy size={14} /> 내 커리큘럼 만들기</>}
           </button>
         </div>
       </aside>
 
       <main style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-        {message && <div style={{ padding: "10px 14px", borderRadius: 12, background: "#F4F0FE", color: "#5B4B99", fontWeight: 700, fontSize: 13 }}>{message}</div>}
+        {message && <div role="status" aria-live="polite" style={{ padding: "10px 14px", borderRadius: 12, background: "#F4F0FE", color: "#5B4B99", fontWeight: 700, fontSize: 13 }}>{message}</div>}
         {!selectedCurriculum ? (
           <div style={{ background: "#fff", borderRadius: 20, padding: 30, color: "#8B83A8" }}>기본 커리큘럼을 복제하거나 새 커리큘럼을 만드세요.</div>
         ) : (
@@ -336,12 +426,14 @@ export default function TeacherCurriculumManager() {
                     : <span style={{ color: "#A39CC0", fontSize: 11.5 }}>아직 배정된 학급이 없습니다.</span>}
                 </div>
               </div>
-              <input type="number" min={1} max={12} value={assignGrade} onChange={(e) => setAssignGrade(Number(e.target.value))} style={{ ...inputStyle, width: 72 }} aria-label="학년" />
-              <span>학년</span>
-              <input type="number" min={1} max={99} value={assignClass} onChange={(e) => setAssignClass(Number(e.target.value))} style={{ ...inputStyle, width: 72 }} aria-label="반" />
-              <span>반</span>
-              <button onClick={assignCurriculum} disabled={busy} style={{ padding: "10px 14px", border: "none", borderRadius: 10, background: "#7B5CF0", color: "#fff", fontWeight: 800, cursor: "pointer" }}>
-                <School size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 학급 배정
+              <button
+                type="button"
+                onClick={openAssignmentModal}
+                disabled={busy}
+                className={styles.actionButton}
+                style={{ padding: "10px 14px", border: "none", borderRadius: 10, background: "#7B5CF0", color: "#fff", fontWeight: 800 }}
+              >
+                <School size={14} /> 학급 배정 관리
               </button>
             </section>
 
@@ -533,6 +625,88 @@ export default function TeacherCurriculumManager() {
           </>
         )}
       </main>
+
+      {assignmentModalOpen && selectedCurriculum && (
+        <div className={styles.assignmentModalOverlay} role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !busy) setAssignmentModalOpen(false);
+        }}>
+          <section className={styles.assignmentModal} role="dialog" aria-modal="true" aria-labelledby="assignment-modal-title">
+            <header className={styles.assignmentModalHeader}>
+              <div>
+                <span>CURRICULUM CLASS</span>
+                <h3 id="assignment-modal-title">학급 배정</h3>
+                <p><strong>{selectedCurriculum.name}</strong> 커리큘럼을 적용할 담당 학급을 선택하세요.</p>
+              </div>
+              <button type="button" onClick={() => setAssignmentModalOpen(false)} disabled={busy} aria-label="학급 배정 창 닫기">
+                <X size={20} />
+              </button>
+            </header>
+
+            <div className={styles.assignmentModalSummary}>
+              <span><School size={15} /> 담당 학급 {assignableClasses.length}개</span>
+              <strong>{selectedAssignmentKeys.length}개 선택</strong>
+            </div>
+
+            <div className={styles.assignmentModalBody}>
+              {assignableClasses.length === 0 ? (
+                <div className={styles.assignmentEmpty}>
+                  <School size={24} />
+                  <strong>배정 가능한 담당 학급이 없습니다.</strong>
+                  <span>관리자가 설정에서 담당 학급을 먼저 배정해야 합니다.</span>
+                </div>
+              ) : Object.entries(assignmentGroups).map(([grade, classes]) => {
+                const gradeKeys = classes.map((item) => `${item.grade}:${item.classNumber}`);
+                const allSelected = gradeKeys.every((key) => selectedAssignmentKeys.includes(key));
+                return (
+                  <div className={styles.assignmentGradeGroup} key={grade}>
+                    <div className={styles.assignmentGradeHeader}>
+                      <strong>{grade}학년</strong>
+                      <button type="button" onClick={() => toggleGradeAssignments(classes)} disabled={busy}>
+                        {allSelected ? "전체 해제" : "전체 선택"}
+                      </button>
+                    </div>
+                    <div className={styles.assignmentClassGrid}>
+                      {classes.map((item) => {
+                        const key = `${item.grade}:${item.classNumber}`;
+                        const selected = selectedAssignmentKeys.includes(key);
+                        return (
+                          <button
+                            type="button"
+                            key={key}
+                            className={selected ? styles.assignmentClassSelected : styles.assignmentClassButton}
+                            aria-pressed={selected}
+                            onClick={() => toggleAssignment(key)}
+                            disabled={busy}
+                          >
+                            <span>{selected ? <Check size={15} /> : null}</span>
+                            {item.classNumber}반
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {assignmentModalError && <div className={styles.assignmentModalError} role="alert">{assignmentModalError}</div>}
+
+            <footer className={styles.assignmentModalFooter}>
+              <button type="button" onClick={() => setAssignmentModalOpen(false)} disabled={busy}>취소</button>
+              <button
+                type="button"
+                onClick={saveCurriculumAssignments}
+                disabled={busy || assignableClasses.length === 0}
+                aria-busy={pendingAction === "assign"}
+              >
+                {pendingAction === "assign"
+                  ? <><LoaderCircle size={15} className={styles.spin} /> 저장 중...</>
+                  : <><Save size={15} /> 선택한 학급 저장</>}
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

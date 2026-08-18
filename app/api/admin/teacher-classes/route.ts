@@ -4,7 +4,7 @@ import { db } from "@/lib/db/index";
 import { teacherClassAssignments, users } from "@/lib/db/schema";
 import { sessionTenant } from "@/lib/curriculum-access";
 import { isAdministratorRole } from "@/lib/roles";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 
 async function requireAdministrator() {
   const context = sessionTenant(await auth());
@@ -76,6 +76,76 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ assignment });
+}
+
+export async function PUT(req: NextRequest) {
+  const authResult = await requireAdministrator();
+  if ("denied" in authResult) return authResult.denied;
+
+  const body = await req.json().catch(() => null);
+  const teacherUserId = Number(body?.teacherUserId);
+  const requestedClasses: Array<{ grade?: unknown; classNumber?: unknown }> | null = Array.isArray(body?.classes)
+    ? body.classes
+    : null;
+  if (!Number.isInteger(teacherUserId) || teacherUserId <= 0 || !requestedClasses || requestedClasses.length > 200) {
+    return NextResponse.json({ error: "교사와 담당 학급을 올바르게 선택해주세요." }, { status: 400 });
+  }
+
+  const classes = requestedClasses.map((item) => ({
+    grade: Number(item?.grade),
+    classNumber: Number(item?.classNumber),
+  }));
+  if (classes.some((item) =>
+    !Number.isInteger(item.grade) || item.grade < 1 || item.grade > 12 ||
+    !Number.isInteger(item.classNumber) || item.classNumber < 1 || item.classNumber > 99
+  )) {
+    return NextResponse.json({ error: "학년과 반을 올바르게 선택해주세요." }, { status: 400 });
+  }
+
+  const uniqueClasses = classes.filter((item, index, items) =>
+    items.findIndex((candidate) => candidate.grade === item.grade && candidate.classNumber === item.classNumber) === index
+  );
+  const [teacher] = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(and(eq(users.id, teacherUserId), eq(users.schoolId, authResult.schoolId)))
+    .limit(1);
+  if (!teacher || teacher.role !== "teacher") {
+    return NextResponse.json({ error: "교사 계정을 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  const existing = await db
+    .select({
+      id: teacherClassAssignments.id,
+      grade: teacherClassAssignments.grade,
+      classNumber: teacherClassAssignments.classNumber,
+    })
+    .from(teacherClassAssignments)
+    .where(eq(teacherClassAssignments.teacherUserId, teacherUserId));
+  const desiredKeys = new Set(uniqueClasses.map((item) => `${item.grade}:${item.classNumber}`));
+  const existingKeys = new Set(existing.map((item) => `${item.grade}:${item.classNumber}`));
+  const removalIds = existing.filter((item) => !desiredKeys.has(`${item.grade}:${item.classNumber}`)).map((item) => item.id);
+  const additions = uniqueClasses.filter((item) => !existingKeys.has(`${item.grade}:${item.classNumber}`));
+
+  if (additions.length > 0) {
+    await db.insert(teacherClassAssignments).values(additions.map((item) => ({ teacherUserId, ...item }))).onConflictDoNothing();
+  }
+  if (removalIds.length > 0) {
+    await db.delete(teacherClassAssignments).where(inArray(teacherClassAssignments.id, removalIds));
+  }
+
+  const assignments = await db
+    .select({
+      id: teacherClassAssignments.id,
+      teacherUserId: teacherClassAssignments.teacherUserId,
+      grade: teacherClassAssignments.grade,
+      classNumber: teacherClassAssignments.classNumber,
+    })
+    .from(teacherClassAssignments)
+    .where(eq(teacherClassAssignments.teacherUserId, teacherUserId))
+    .orderBy(asc(teacherClassAssignments.grade), asc(teacherClassAssignments.classNumber));
+
+  return NextResponse.json({ assignments });
 }
 
 export async function DELETE(req: NextRequest) {

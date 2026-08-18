@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { School, Trash2, Upload, Users } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, LoaderCircle, School, Trash2, Upload, Users } from "lucide-react";
 
 interface TeacherSummary {
   id: number;
   username: string;
   displayName: string | null;
   role: string;
+  grade?: number | null;
+  classNumber?: number | null;
+  schoolName?: string;
 }
 
 interface Assignment {
@@ -34,16 +37,43 @@ const fieldStyle = {
 
 export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
   const teachers = users.filter((user) => user.role === "teacher");
+  const schoolName = users.find((user) => user.schoolName)?.schoolName ?? "현재 학교";
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [teacherUserId, setTeacherUserId] = useState<number>(teachers[0]?.id ?? 0);
-  const [grade, setGrade] = useState(1);
-  const [classNumber, setClassNumber] = useState(1);
+  const [selectedClassKeys, setSelectedClassKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingAction, setSavingAction] = useState<"bulk" | number | null>(null);
   const [assignmentMessage, setAssignmentMessage] = useState("");
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const classOptions = useMemo(() => {
+    const options = [
+      ...users.flatMap((user) => user.role === "student" && user.grade !== null && user.grade !== undefined && user.classNumber !== null && user.classNumber !== undefined
+        ? [{ grade: user.grade, classNumber: user.classNumber }]
+        : []),
+      ...assignments.map(({ grade, classNumber }) => ({ grade, classNumber })),
+    ];
+    return options
+      .filter((item, index, items) => items.findIndex((candidate) => candidate.grade === item.grade && candidate.classNumber === item.classNumber) === index)
+      .sort((a, b) => a.grade - b.grade || a.classNumber - b.classNumber);
+  }, [assignments, users]);
+  const classesByGrade = useMemo(() => classOptions.reduce<Record<number, typeof classOptions>>((groups, item) => {
+    (groups[item.grade] ??= []).push(item);
+    return groups;
+  }, {}), [classOptions]);
+  const teacherAssignments = assignments.filter((item) => item.teacherUserId === teacherUserId);
+  const savedClassKeys = teacherAssignments.map((item) => `${item.grade}:${item.classNumber}`).sort();
+  const hasAssignmentChanges = savedClassKeys.join(",") !== [...selectedClassKeys].sort().join(",");
+  const assignmentGroups = teachers
+    .map((teacher) => ({
+      teacher,
+      items: assignments
+        .filter((item) => item.teacherUserId === teacher.id)
+        .sort((a, b) => a.grade - b.grade || a.classNumber - b.classNumber),
+    }))
+    .filter((group) => group.items.length > 0);
 
   useEffect(() => {
     fetch("/api/admin/teacher-classes")
@@ -62,23 +92,55 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
     }
   }, [teacherUserId, teachers]);
 
-  async function addAssignment() {
-    if (!teacherUserId || saving) return;
+  useEffect(() => {
+    setSelectedClassKeys(
+      assignments
+        .filter((item) => item.teacherUserId === teacherUserId)
+        .map((item) => `${item.grade}:${item.classNumber}`)
+    );
+  }, [assignments, teacherUserId]);
+
+  function toggleClass(key: string) {
+    setSelectedClassKeys((current) => current.includes(key) ? current.filter((item) => item !== key) : [...current, key]);
+  }
+
+  function toggleGrade(grade: number) {
+    const gradeKeys = (classesByGrade[grade] ?? []).map((item) => `${item.grade}:${item.classNumber}`);
+    const allSelected = gradeKeys.every((key) => selectedClassKeys.includes(key));
+    setSelectedClassKeys((current) => allSelected
+      ? current.filter((key) => !gradeKeys.includes(key))
+      : [...new Set([...current, ...gradeKeys])]
+    );
+  }
+
+  async function saveAssignments() {
+    if (!teacherUserId || saving || !hasAssignmentChanges) return;
     setSaving(true);
+    setSavingAction("bulk");
     setAssignmentMessage("");
     try {
       const res = await fetch("/api/admin/teacher-classes", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teacherUserId, grade, classNumber }),
+        body: JSON.stringify({
+          teacherUserId,
+          classes: selectedClassKeys.map((key) => {
+            const [grade, classNumber] = key.split(":").map(Number);
+            return { grade, classNumber };
+          }),
+        }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "담당 학급 배정에 실패했습니다.");
-      setAssignments((current) => [...current, data.assignment]);
-      setAssignmentMessage("담당 학급을 배정했습니다.");
+      if (!res.ok) throw new Error(data.error ?? "담당 학급 저장에 실패했습니다.");
+      setAssignments((current) => [
+        ...current.filter((item) => item.teacherUserId !== teacherUserId),
+        ...(data.assignments ?? []),
+      ]);
+      setAssignmentMessage(`${data.assignments?.length ?? 0}개 학급을 담당 학급으로 저장했습니다.`);
     } catch (error) {
-      setAssignmentMessage(error instanceof Error ? error.message : "담당 학급 배정에 실패했습니다.");
+      setAssignmentMessage(error instanceof Error ? error.message : "담당 학급 저장에 실패했습니다.");
     } finally {
+      setSavingAction(null);
       setSaving(false);
     }
   }
@@ -86,6 +148,7 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
   async function removeAssignment(assignmentId: number) {
     if (saving) return;
     setSaving(true);
+    setSavingAction(assignmentId);
     setAssignmentMessage("");
     try {
       const res = await fetch("/api/admin/teacher-classes", {
@@ -100,6 +163,7 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
     } catch (error) {
       setAssignmentMessage(error instanceof Error ? error.message : "담당 학급 해제에 실패했습니다.");
     } finally {
+      setSavingAction(null);
       setSaving(false);
     }
   }
@@ -126,7 +190,7 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
   }
 
   return (
-    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 18, alignItems: "start" }}>
+    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 18, alignItems: "start" }}>
       <section style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 24, boxShadow: "0 8px 24px rgba(90,63,214,.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 16, fontWeight: 800, color: "#3D2E8A" }}>
           <Upload size={19} color="#7B5CF0" /> 학생 계정 일괄 등록
@@ -147,47 +211,140 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
       </section>
 
       <section style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 24, boxShadow: "0 8px 24px rgba(90,63,214,.06)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 16, fontWeight: 800, color: "#3D2E8A" }}>
-          <School size={19} color="#18A67A" /> 교사 담당 학급 배정
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 16, fontWeight: 800, color: "#3D2E8A" }}>
+            <School size={19} color="#18A67A" /> 교사 담당 학급 배정
+          </div>
+          <span style={{ maxWidth: 190, overflow: "hidden", padding: "5px 9px", border: "1px solid #CDEDE4", borderRadius: 99, background: "#F0FFF9", color: "#11785B", fontSize: 10.5, fontWeight: 850, textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={schoolName}>
+            {schoolName}
+          </span>
         </div>
-        <p style={{ margin: "7px 0 16px", fontSize: 13, lineHeight: 1.6, color: "#8B83A8" }}>교사는 여기에서 배정된 학년·반의 학생만 조회하고 관리할 수 있습니다.</p>
+        <p style={{ margin: "7px 0 10px", fontSize: 13, lineHeight: 1.6, color: "#8B83A8" }}>교사는 여기에서 배정된 학년·반의 학생만 조회하고 관리할 수 있습니다.</p>
+        <div style={{ marginBottom: 16, padding: "9px 11px", borderRadius: 10, background: "#F7F4FD", color: "#62577F", fontSize: 11.5, lineHeight: 1.45 }}>
+          배정 대상 학교: <strong style={{ color: "#3D2E8A" }}>{schoolName}</strong>
+          <span style={{ display: "block", marginTop: 2, color: "#9A93B5", fontSize: 10.5 }}>학급은 이 학교 안에서만 구분되며 다른 학교의 동일 학년·반과 섞이지 않습니다.</span>
+        </div>
 
         {teachers.length === 0 ? (
           <div style={{ padding: 18, borderRadius: 11, background: "#FFF8E8", color: "#9A6A13", fontSize: 13 }}>먼저 회원 관리에서 교사 등급 계정을 만들어주세요.</div>
         ) : (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 75px 75px", gap: 7 }}>
-              <select value={teacherUserId} onChange={(event) => setTeacherUserId(Number(event.target.value))} style={fieldStyle}>
-                {teachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.displayName || teacher.username} (@{teacher.username})</option>)}
-              </select>
-              <input type="number" min={1} max={12} value={grade} onChange={(event) => setGrade(Number(event.target.value))} aria-label="학년" style={fieldStyle} />
-              <input type="number" min={1} max={99} value={classNumber} onChange={(event) => setClassNumber(Number(event.target.value))} aria-label="반" style={fieldStyle} />
+            <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+              <div style={{ padding: 12, border: "1px solid #EAE4F5", borderRadius: 14, background: "#FAF9FD" }}>
+                <div style={{ marginBottom: 9, color: "#4B416A", fontSize: 12.5, fontWeight: 850 }}>교사 선택</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {teachers.map((teacher) => {
+                    const selected = teacher.id === teacherUserId;
+                    const count = assignments.filter((item) => item.teacherUserId === teacher.id).length;
+                    return (
+                      <button
+                        key={teacher.id}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setTeacherUserId(teacher.id)}
+                        disabled={saving}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, width: "100%", padding: "9px 10px", border: selected ? "1px solid #8F75E8" : "1px solid transparent", borderRadius: 10, background: selected ? "#F0EBFF" : "#fff", color: selected ? "#543BA8" : "#5E5575", cursor: saving ? "wait" : "pointer", fontFamily: "inherit", textAlign: "left" }}
+                      >
+                        <span style={{ minWidth: 0 }}>
+                          <strong style={{ display: "block", overflow: "hidden", fontSize: 11.5, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{teacher.displayName || teacher.username}</strong>
+                          <small style={{ display: "block", marginTop: 1, color: "#9A93B5", fontSize: 9.5 }}>@{teacher.username}</small>
+                        </span>
+                        <span style={{ flex: "none", padding: "3px 6px", borderRadius: 99, background: selected ? "#7B5CF0" : "#F0ECF7", color: selected ? "#fff" : "#7E7495", fontSize: 9.5, fontWeight: 850 }}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ minWidth: 0, padding: 14, border: "1px solid #E1F0EA", borderRadius: 14, background: "linear-gradient(145deg,#FBFFFD,#F7FCFA)" }}>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <div>
+                <div style={{ color: "#4B416A", fontSize: 12.5, fontWeight: 850 }}>담당 학급 다중 선택</div>
+                <div style={{ marginTop: 2, color: "#9A93B5", fontSize: 11 }}>{selectedClassKeys.length}개 학급 선택됨</div>
+              </div>
+              {selectedClassKeys.length > 0 && (
+                <button type="button" onClick={() => setSelectedClassKeys([])} disabled={saving} style={{ padding: "5px 8px", border: 0, borderRadius: 8, background: "#F3EFFB", color: "#746A91", cursor: "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 750 }}>
+                  전체 해제
+                </button>
+              )}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 75px 75px", gap: 7, marginTop: 3, color: "#AAA2BF", fontSize: 10.5, textAlign: "center" }}>
-              <span /> <span>학년</span> <span>반</span>
+
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {Object.entries(classesByGrade).length === 0 ? (
+                <div style={{ padding: "15px 13px", border: "1px dashed #DCD3F3", borderRadius: 11, background: "#FBFAFE", color: "#8B83A8", fontSize: 12, lineHeight: 1.55 }}>
+                  학생 계정을 먼저 등록하면 학년·반 목록이 자동으로 표시됩니다.
+                </div>
+              ) : Object.entries(classesByGrade).map(([gradeKey, classes]) => {
+                const grade = Number(gradeKey);
+                const gradeKeys = classes.map((item) => `${item.grade}:${item.classNumber}`);
+                const allSelected = gradeKeys.every((key) => selectedClassKeys.includes(key));
+                return (
+                  <div key={grade} style={{ padding: 10, border: "1px solid #EAE4F7", borderRadius: 12, background: "#FBFAFE" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <strong style={{ color: "#544A73", fontSize: 12 }}>{grade}학년</strong>
+                      <button type="button" onClick={() => toggleGrade(grade)} disabled={saving} style={{ padding: "3px 7px", border: 0, borderRadius: 7, background: allSelected ? "#E9FFF8" : "#F0ECFA", color: allSelected ? "#12805F" : "#6E6096", cursor: "pointer", fontFamily: "inherit", fontSize: 10, fontWeight: 800 }}>
+                        {allSelected ? "학년 전체 해제" : "학년 전체 선택"}
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {classes.map((item) => {
+                        const key = `${item.grade}:${item.classNumber}`;
+                        const selected = selectedClassKeys.includes(key);
+                        return (
+                          <button key={key} type="button" aria-pressed={selected} onClick={() => toggleClass(key)} disabled={saving} style={{ display: "inline-flex", alignItems: "center", gap: 5, minWidth: 54, padding: "7px 9px", border: selected ? "1px solid #18A67A" : "1px solid #DED7EC", borderRadius: 9, background: selected ? "#E9FFF8" : "#fff", color: selected ? "#11785B" : "#746A91", cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 800 }}>
+                            <span style={{ display: "grid", placeItems: "center", width: 15, height: 15, borderRadius: 4, background: selected ? "#18A67A" : "#EEEAF5", color: "#fff" }}>{selected && <Check size={11} strokeWidth={3} />}</span>
+                            {item.classNumber}반
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <button onClick={() => void addAssignment()} disabled={saving} style={{ marginTop: 10, width: "100%", padding: 10, border: 0, borderRadius: 10, background: "#18A67A", color: "#fff", cursor: saving ? "wait" : "pointer", fontFamily: "inherit", fontWeight: 800 }}>담당 학급 추가</button>
+
+            <button onClick={() => void saveAssignments()} disabled={saving || !hasAssignmentChanges} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 12, width: "100%", padding: 11, border: 0, borderRadius: 10, background: hasAssignmentChanges ? "#18A67A" : "#D9D4E3", color: "#fff", cursor: saving ? "wait" : hasAssignmentChanges ? "pointer" : "not-allowed", fontFamily: "inherit", fontWeight: 800 }}>
+              {savingAction === "bulk" ? <><LoaderCircle size={15} style={{ animation: "spin .8s linear infinite" }} /> 저장 중...</> : <>선택한 담당 학급 저장</>}
+            </button>
+              </div>
+            </div>
           </>
         )}
 
         {assignmentMessage && <div style={{ marginTop: 11, color: assignmentMessage.includes("실패") || assignmentMessage.includes("없") || assignmentMessage.includes("이미") ? "#D93668" : "#168A68", fontSize: 12.5, fontWeight: 700 }}>{assignmentMessage}</div>}
 
-        <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 6, color: "#62577F", fontSize: 12.5, fontWeight: 800 }}><Users size={15} /> 현재 배정</div>
+        <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid #EFEAF8", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#4B416A", fontSize: 13, fontWeight: 850 }}><Users size={16} /> 현재 배정 현황</div>
+          <span style={{ padding: "3px 8px", borderRadius: 99, background: "#F1ECFD", color: "#6C4BEF", fontSize: 10.5, fontWeight: 800 }}>{assignmentGroups.length}명 · {assignments.length}개 학급</span>
+        </div>
         {loading ? (
           <div style={{ padding: "14px 0", color: "#9A93B5", fontSize: 12.5 }}>불러오는 중...</div>
         ) : assignments.length === 0 ? (
-          <div style={{ padding: "14px 0", color: "#9A93B5", fontSize: 12.5 }}>배정된 담당 학급이 없습니다.</div>
+          <div style={{ marginTop: 10, padding: 16, borderRadius: 11, background: "#F8F6FC", color: "#9A93B5", fontSize: 12.5, textAlign: "center" }}>배정된 담당 학급이 없습니다.</div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 9 }}>
-            {assignments.map((assignment) => {
-              const teacher = users.find((user) => user.id === assignment.teacherUserId);
-              return (
-                <div key={assignment.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "9px 11px", borderRadius: 10, background: "#F6F3FC" }}>
-                  <div style={{ minWidth: 0, fontSize: 12.5, color: "#4B416A" }}><strong>{assignment.grade}학년 {assignment.classNumber}반</strong> · {teacher?.displayName || teacher?.username || "삭제된 교사"}</div>
-                  <button onClick={() => void removeAssignment(assignment.id)} disabled={saving} title="배정 해제" style={{ flex: "none", padding: 5, border: 0, background: "transparent", color: "#D93668", cursor: saving ? "wait" : "pointer" }}><Trash2 size={14} /></button>
+          <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {assignmentGroups.map(({ teacher, items }) => (
+              <div key={teacher.id} style={{ padding: 12, border: teacher.id === teacherUserId ? "1px solid #CFC2F4" : "1px solid #EAE4F5", borderRadius: 12, background: teacher.id === teacherUserId ? "#FAF8FF" : "#fff" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <strong style={{ display: "block", overflow: "hidden", color: "#453A68", fontSize: 12.5, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{teacher.displayName || teacher.username}</strong>
+                    <span style={{ color: "#9A93B5", fontSize: 10.5 }}>@{teacher.username}</span>
+                  </div>
+                  <span style={{ flex: "none", color: "#766A96", fontSize: 10.5, fontWeight: 800 }}>{items.length}개 학급</span>
                 </div>
-              );
-            })}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 9 }}>
+                  {items.map((assignment) => (
+                    <span key={assignment.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 6px 5px 9px", borderRadius: 99, background: "#F0ECFA", color: "#5D4E8B", fontSize: 10.5, fontWeight: 800 }}>
+                      {assignment.grade}학년 {assignment.classNumber}반
+                      <button onClick={() => void removeAssignment(assignment.id)} disabled={saving} title="배정 해제" aria-label={`${teacher.displayName || teacher.username}의 ${assignment.grade}학년 ${assignment.classNumber}반 배정 해제`} style={{ display: "grid", placeItems: "center", width: 20, height: 20, padding: 0, border: 0, borderRadius: "50%", background: "rgba(217,54,104,.08)", color: "#D93668", cursor: saving ? "wait" : "pointer" }}>
+                        {savingAction === assignment.id ? <LoaderCircle size={11} style={{ animation: "spin .8s linear infinite" }} /> : <Trash2 size={11} />}
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>

@@ -486,8 +486,337 @@
   animation: editorSpin 0.8s linear infinite;
 }
 
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(61, 46, 138, 0.22);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease, opacity 120ms ease;
+}
+
+.actionButton:not(:disabled):hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 rgba(61, 46, 138, 0.22);
+}
+
+.actionButton:not(:disabled):active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(61, 46, 138, 0.22);
+}
+
+.actionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  box-shadow: none;
+}
+
+.successToast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border: 1px solid rgba(24, 201, 154, 0.28);
+  border-radius: 12px;
+  background: rgba(38, 45, 68, 0.94);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 750;
+  box-shadow: 0 12px 28px rgba(35, 27, 67, 0.22);
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: toastIn 180ms ease-out both;
+}
+
+.successToast svg {
+  color: #4ee0b5;
+}
+
+.assignmentModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(31, 24, 58, 0.48);
+  backdrop-filter: blur(3px);
+  animation: assignmentOverlayIn 160ms ease-out both;
+}
+
+.assignmentModal {
+  width: min(580px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(123, 92, 240, 0.18);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(35, 25, 75, 0.28);
+  animation: assignmentModalIn 190ms ease-out both;
+}
+
+.assignmentModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 22px 17px;
+  border-bottom: 1px solid #eee9f7;
+}
+
+.assignmentModalHeader span {
+  color: #7b5cf0;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.assignmentModalHeader h3 {
+  margin: 3px 0 5px;
+  color: #332775;
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.assignmentModalHeader p {
+  margin: 0;
+  color: #847c99;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.assignmentModalHeader p strong {
+  color: #5a4a9e;
+}
+
+.assignmentModalHeader > button {
+  flex: 0 0 auto;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: #f5f2fb;
+  color: #766d8b;
+  cursor: pointer;
+}
+
+.assignmentModalSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 22px;
+  background: #faf8fe;
+  color: #776f8a;
+  font-size: 11.5px;
+}
+
+.assignmentModalSummary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assignmentModalSummary strong {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #ece6ff;
+  color: #6546df;
+  font-size: 11px;
+}
+
+.assignmentModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 150px;
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+
+.assignmentGradeGroup {
+  padding: 14px;
+  border: 1px solid #ece7f5;
+  border-radius: 15px;
+  background: #fdfcff;
+}
+
+.assignmentGradeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.assignmentGradeHeader strong {
+  color: #45377e;
+  font-size: 13px;
+}
+
+.assignmentGradeHeader button {
+  padding: 4px 7px;
+  border: 0;
+  background: transparent;
+  color: #7258d8;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.assignmentClassGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.assignmentClassButton,
+.assignmentClassSelected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  transition: border-color 130ms ease, background 130ms ease, color 130ms ease, transform 130ms ease;
+}
+
+.assignmentClassButton {
+  border: 1px solid #e4deef;
+  background: #fff;
+  color: #6d657e;
+}
+
+.assignmentClassSelected {
+  border: 1px solid #7b5cf0;
+  background: #7b5cf0;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(123, 92, 240, 0.2);
+}
+
+.assignmentClassButton span,
+.assignmentClassSelected span {
+  display: grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+}
+
+.assignmentClassButton:hover:not(:disabled),
+.assignmentClassSelected:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.assignmentEmpty {
+  display: flex;
+  min-height: 150px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  color: #9a92aa;
+  text-align: center;
+}
+
+.assignmentEmpty strong {
+  margin-top: 4px;
+  color: #625a73;
+  font-size: 13px;
+}
+
+.assignmentEmpty span {
+  font-size: 11.5px;
+}
+
+.assignmentModalError {
+  margin: 0 22px 14px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: #fff0f3;
+  color: #bd3659;
+  font-size: 11.5px;
+  font-weight: 750;
+}
+
+.assignmentModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 15px 22px 19px;
+  border-top: 1px solid #eee9f7;
+}
+
+.assignmentModalFooter button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 15px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 850;
+}
+
+.assignmentModalFooter button:first-child {
+  background: #f2eff7;
+  color: #6e667c;
+}
+
+.assignmentModalFooter button:last-child {
+  min-width: 136px;
+  background: #7051e9;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(112, 81, 233, 0.22);
+}
+
+.assignmentModal button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 @keyframes editorSpin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes assignmentOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes assignmentModalIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .codeWorkbench + .executionResult {
@@ -594,6 +923,36 @@
   .codeTabs button {
     padding: 0 8px;
   }
+
+  .assignmentModalOverlay {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .assignmentModal {
+    max-height: calc(100vh - 24px);
+    border-radius: 19px;
+  }
+
+  .assignmentModalHeader,
+  .assignmentModalBody,
+  .assignmentModalFooter {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .assignmentModalSummary {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .assignmentClassGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .assignmentModalFooter button {
+    flex: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -601,6 +960,14 @@
   .unitRow,
   .saveButton,
   .deleteButton {
+    transition: none;
+  }
+
+  .assignmentModalOverlay,
+  .assignmentModal,
+  .assignmentClassButton,
+  .assignmentClassSelected {
+    animation: none;
     transition: none;
   }
 }
