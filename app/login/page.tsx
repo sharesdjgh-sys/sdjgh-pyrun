@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import PasswordRecoveryModal from "@/components/account/PasswordRecoveryModal";
 
 export default function LoginPage() {
@@ -43,7 +44,6 @@ export default function LoginPage() {
         padding: "clamp(20px, 4vw, 48px)",
         position: "relative",
         overflowX: "hidden",
-        overflowY: "auto",
         background: "linear-gradient(160deg,#D7CDEA 0%,#CEC4E3 24%,#BEADDC 55%,#AE9ED6 76%,#9E8BCC 100%)",
       }}
     >
@@ -80,7 +80,7 @@ export default function LoginPage() {
         <div
           className="w-full max-w-[400px]"
           style={{
-            padding: "64px 4px 20px",
+            padding: "80px 4px 0",
           }}
         >
           <h1 className="sr-only">로그인</h1>
@@ -97,7 +97,7 @@ export default function LoginPage() {
               type="text"
               value={schoolCode}
               onChange={(e) => setSchoolCode(e.target.value)}
-              style={{ width: "100%", padding: "14px 16px", border: "2px solid rgba(126,101,181,.18)", borderRadius: 14, background: "rgba(255,255,255,.68)", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 16, boxShadow: "inset 0 1px 2px rgba(83,61,130,.05)" }}
+              style={{ width: "100%", padding: "12px 15px", border: "2px solid rgba(126,101,181,.18)", borderRadius: 14, background: "rgba(255,255,255,.68)", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 12, boxShadow: "inset 0 1px 2px rgba(83,61,130,.05)" }}
               placeholder="예: 서대전여고"
               autoComplete="organization"
               required
@@ -108,7 +108,7 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              style={{ width: "100%", padding: "14px 16px", border: "2px solid rgba(126,101,181,.18)", borderRadius: 14, background: "rgba(255,255,255,.68)", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 16, boxShadow: "inset 0 1px 2px rgba(83,61,130,.05)" }}
+              style={{ width: "100%", padding: "12px 15px", border: "2px solid rgba(126,101,181,.18)", borderRadius: 14, background: "rgba(255,255,255,.68)", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 12, boxShadow: "inset 0 1px 2px rgba(83,61,130,.05)" }}
               onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
               onBlur={(e) => { e.target.style.borderColor = "rgba(126,101,181,.18)"; e.target.style.background = "rgba(255,255,255,.68)"; }}
               placeholder="학번을 입력하세요"
@@ -120,14 +120,14 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{ width: "100%", padding: "14px 16px", border: "2px solid rgba(126,101,181,.18)", borderRadius: 14, background: "rgba(255,255,255,.68)", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 10, boxShadow: "inset 0 1px 2px rgba(83,61,130,.05)" }}
+              style={{ width: "100%", padding: "12px 15px", border: "2px solid rgba(126,101,181,.18)", borderRadius: 14, background: "rgba(255,255,255,.68)", fontSize: 15, color: "#2C2747", fontFamily: "inherit", outline: "none", marginBottom: 8, boxShadow: "inset 0 1px 2px rgba(83,61,130,.05)" }}
               onFocus={(e) => { e.target.style.borderColor = "#7B5CF0"; e.target.style.background = "#fff"; }}
               onBlur={(e) => { e.target.style.borderColor = "rgba(126,101,181,.18)"; e.target.style.background = "rgba(255,255,255,.68)"; }}
               placeholder="비밀번호를 입력하세요"
               required
             />
 
-            <div style={{ textAlign: "right", marginBottom: 18 }}>
+            <div style={{ textAlign: "right", marginBottom: 14 }}>
               <button type="button" onClick={() => setRecoveryOpen(true)} style={{ padding: 0, border: 0, background: "transparent", color: "#7B5CF0", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>비밀번호를 잊었나요?</button>
             </div>
 
@@ -136,7 +136,7 @@ export default function LoginPage() {
               disabled={loading}
               style={{
                 width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                padding: 15, border: "none", borderRadius: 16,
+                padding: 14, border: "none", borderRadius: 16,
                 background: loading ? "#9A86D8" : "linear-gradient(180deg,#8168D8,#6C50C5)",
                 color: "#fff", fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 17,
                 cursor: loading ? "not-allowed" : "pointer",
@@ -155,9 +155,19 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div style={{ textAlign: "center", marginTop: 18, fontSize: 14, color: "#5D507A", fontWeight: 500 }}>
+          <div style={{ textAlign: "center", marginTop: 14, fontSize: 14, color: "#5D507A", fontWeight: 500 }}>
             아직 계정이 없나요?{" "}
             <Link href="/register" style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>회원가입</Link>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 22 }}>
+            <Image
+              src="/lifeprofessor-logo.png"
+              alt="인생교수의 AI 연구소"
+              width={403}
+              height={61}
+              style={{ width: 160, height: "auto", opacity: 0.76 }}
+            />
           </div>
         </div>
       </div>
