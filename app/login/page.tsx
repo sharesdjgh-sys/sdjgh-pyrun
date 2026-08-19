@@ -9,7 +9,7 @@ import PasswordRecoveryModal from "@/components/account/PasswordRecoveryModal";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [schoolCode, setSchoolCode] = useState("");
+  const [schoolCode, setSchoolCode] = useState("서대전여고");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
