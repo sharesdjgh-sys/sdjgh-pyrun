@@ -33,6 +33,12 @@ interface CurriculumDefinition {
   units: LearningUnitMeta[];
 }
 
+const levelButtonStyles = {
+  1: { color: "#087F8C", light: "#22B8B1", tint: "#E2F8F6", border: "#B8E9E4" },
+  2: { color: "#704FDF", light: "#9B7CF7", tint: "#EEE9FF", border: "#D8CDFA" },
+  3: { color: "#AD6209", light: "#E79A28", tint: "#FFF1D5", border: "#F3D49D" },
+} as const;
+
 function formatDate(value: string | null) {
   if (!value) return "아직 활동 없음";
   return new Intl.DateTimeFormat("ko-KR", {
@@ -312,9 +318,35 @@ export default function StudentProgressManager() {
               {message && <div style={{ marginBottom: 12, padding: "9px 12px", borderRadius: 10, background: message.includes("실패") ? "#FFF0F3" : "#ECFBF6", color: message.includes("실패") ? "#D93668" : "#168A68", fontSize: 12.5, fontWeight: 700 }}>{message}</div>}
 
               <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-                {([1, 2, 3] as const).map((levelNumber) => (
-                  <button key={levelNumber} onClick={() => setLevel(levelNumber)} style={{ padding: "7px 15px", border: 0, borderRadius: 9, background: level === levelNumber ? "#7B5CF0" : "#F0ECF9", color: level === levelNumber ? "#fff" : "#7A7198", cursor: "pointer", fontWeight: 800 }}>Lv.{levelNumber}</button>
-                ))}
+                {([1, 2, 3] as const).map((levelNumber) => {
+                  const selected = level === levelNumber;
+                  const palette = levelButtonStyles[levelNumber];
+                  return (
+                    <button
+                      type="button"
+                      key={levelNumber}
+                      onClick={() => setLevel(levelNumber)}
+                      aria-pressed={selected}
+                      style={{
+                        minWidth: 68,
+                        padding: "8px 15px",
+                        border: `1px solid ${selected ? palette.color : palette.border}`,
+                        borderRadius: 9,
+                        background: selected
+                          ? `linear-gradient(145deg, ${palette.light}, ${palette.color})`
+                          : palette.tint,
+                        color: selected ? "#fff" : palette.color,
+                        cursor: "pointer",
+                        fontWeight: 850,
+                        boxShadow: selected ? `0 4px 10px ${palette.color}33` : "none",
+                        transform: selected ? "translateY(-1px)" : "none",
+                        transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 140ms ease",
+                      }}
+                    >
+                      Lv.{levelNumber}
+                    </button>
+                  );
+                })}
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
