@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, LoaderCircle, School, Trash2, Upload, Users } from "lucide-react";
+import { Check, Eraser, LoaderCircle, School, Trash2, Upload, Users } from "lucide-react";
 
 interface TeacherSummary {
   id: number;
@@ -45,6 +45,7 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
   const [saving, setSaving] = useState(false);
   const [savingAction, setSavingAction] = useState<"bulk" | number | null>(null);
   const [assignmentMessage, setAssignmentMessage] = useState("");
+  const [cleaningEmptyClasses, setCleaningEmptyClasses] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -168,6 +169,29 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
     }
   }
 
+  async function cleanupEmptyClasses() {
+    if (saving || cleaningEmptyClasses) return;
+    if (!window.confirm("학생이 한 명도 없는 학급의 교사 담당 배정과 커리큘럼 배정을 모두 정리할까요?")) return;
+    setCleaningEmptyClasses(true);
+    setAssignmentMessage("");
+    try {
+      const res = await fetch("/api/admin/classes/cleanup", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "빈 학급 정리에 실패했습니다.");
+      const removedKeys = new Set<string>((data.removedClasses ?? []).map(
+        (item: { grade: number; classNumber: number }) => `${item.grade}:${item.classNumber}`
+      ));
+      setAssignments((current) => current.filter((item) => !removedKeys.has(`${item.grade}:${item.classNumber}`)));
+      setAssignmentMessage(removedKeys.size > 0
+        ? `학생이 없는 학급 ${removedKeys.size}개와 연결된 배정 정보를 정리했습니다.`
+        : "정리할 빈 학급이 없습니다.");
+    } catch (error) {
+      setAssignmentMessage(error instanceof Error ? error.message : "빈 학급 정리에 실패했습니다.");
+    } finally {
+      setCleaningEmptyClasses(false);
+    }
+  }
+
   async function importStudents(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file || importing) return;
@@ -215,9 +239,20 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
           <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 16, fontWeight: 800, color: "#3D2E8A" }}>
             <School size={19} color="#18A67A" /> 교사 담당 학급 배정
           </div>
-          <span style={{ maxWidth: 190, overflow: "hidden", padding: "5px 9px", border: "1px solid #CDEDE4", borderRadius: 99, background: "#F0FFF9", color: "#11785B", fontSize: 10.5, fontWeight: 850, textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={schoolName}>
-            {schoolName}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", gap: 7 }}>
+            <span style={{ maxWidth: 190, overflow: "hidden", padding: "5px 9px", border: "1px solid #CDEDE4", borderRadius: 99, background: "#F0FFF9", color: "#11785B", fontSize: 10.5, fontWeight: 850, textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={schoolName}>
+              {schoolName}
+            </span>
+            <button
+              type="button"
+              onClick={cleanupEmptyClasses}
+              disabled={saving || cleaningEmptyClasses}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 9px", border: "1px solid #E5DDF2", borderRadius: 9, background: "#FAF8FD", color: "#6D6283", cursor: saving || cleaningEmptyClasses ? "wait" : "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 800 }}
+            >
+              {cleaningEmptyClasses ? <LoaderCircle size={13} className="animate-spin" /> : <Eraser size={13} />}
+              {cleaningEmptyClasses ? "정리 중..." : "빈 학급 정리"}
+            </button>
+          </div>
         </div>
         <p style={{ margin: "7px 0 10px", fontSize: 13, lineHeight: 1.6, color: "#8B83A8" }}>교사는 여기에서 배정된 학년·반의 학생만 조회하고 관리할 수 있습니다.</p>
         <div style={{ marginBottom: 16, padding: "9px 11px", borderRadius: 10, background: "#F7F4FD", color: "#62577F", fontSize: 11.5, lineHeight: 1.45 }}>

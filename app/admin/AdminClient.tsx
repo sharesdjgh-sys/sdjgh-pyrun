@@ -167,7 +167,10 @@ export default function AdminClient({
       setUserMessage("현재 로그인한 관리자 계정은 삭제할 수 없습니다.");
       return;
     }
-    if (!confirm(`'${user.username}' 계정과 학습 기록을 모두 삭제할까요?`)) return;
+    const emptyClassNotice = user.role === "student" && user.grade !== null && user.classNumber !== null
+      ? "\n\n이 학생이 해당 학급의 마지막 학생이면 교사 담당 학급과 커리큘럼 배정도 함께 정리됩니다."
+      : "";
+    if (!confirm(`'${user.username}' 계정과 학습 기록을 모두 삭제할까요?${emptyClassNotice}`)) return;
 
     setUpdatingUserId(user.id);
     setUserMessage("");
@@ -186,7 +189,10 @@ export default function AdminClient({
       }
 
       setUsers((prev) => prev.filter((item) => item.id !== user.id));
-      setUserMessage(`'${user.username}' 계정을 삭제했습니다.`);
+      const cleanedClassCount = data.cleanup?.removedClasses?.length ?? 0;
+      setUserMessage(cleanedClassCount > 0
+        ? `'${user.username}' 계정을 삭제하고 학생이 없는 학급 ${cleanedClassCount}개의 배정 정보도 정리했습니다.`
+        : `'${user.username}' 계정을 삭제했습니다.`);
     } catch {
       setUserMessage("네트워크 오류가 발생했습니다.");
     } finally {

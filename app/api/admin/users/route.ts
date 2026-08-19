@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { feedbackHistory, schools, userConceptClears, userConceptPractices, users } from "@/lib/db/schema";
+import { cleanupEmptyClassAssignments } from "@/lib/class-cleanup";
 import { sessionTenant } from "@/lib/curriculum-access";
 import { isAdministratorRole, isUserRole, type UserRole } from "@/lib/roles";
 import { asc, eq } from "drizzle-orm";
@@ -96,7 +97,14 @@ export async function DELETE(req: NextRequest) {
   }
 
   const [targetUser] = await db
-    .select({ id: users.id, username: users.username })
+    .select({
+      id: users.id,
+      username: users.username,
+      role: users.role,
+      schoolId: users.schoolId,
+      grade: users.grade,
+      classNumber: users.classNumber,
+    })
     .from(users)
     .where(eq(users.id, targetUserId))
     .limit(1);
@@ -110,5 +118,12 @@ export async function DELETE(req: NextRequest) {
   await db.delete(userConceptPractices).where(eq(userConceptPractices.userId, targetUserId));
   await db.delete(users).where(eq(users.id, targetUserId));
 
-  return NextResponse.json({ ok: true, userId: targetUser.id, username: targetUser.username });
+  const cleanup = targetUser.role === "student" && targetUser.grade !== null && targetUser.classNumber !== null
+    ? await cleanupEmptyClassAssignments(targetUser.schoolId, {
+        grade: targetUser.grade,
+        classNumber: targetUser.classNumber,
+      })
+    : null;
+
+  return NextResponse.json({ ok: true, userId: targetUser.id, username: targetUser.username, cleanup });
 }
