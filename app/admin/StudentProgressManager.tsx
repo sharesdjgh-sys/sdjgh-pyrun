@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { curriculumLevelOrders, groupCurriculumUnits, type LearningUnitMeta } from "@/lib/curriculum-model";
 import {
   effectiveConceptAccessIdsForOrders,
   isConceptUnlockedInOrders,
 } from "@/lib/progress";
-import { Check, Clock3, Lock, LockOpen, PlayCircle, RotateCcw, Users } from "lucide-react";
+import { Check, Clock3, Lock, LockOpen, PlayCircle, RotateCcw, Search, Users, X } from "lucide-react";
 
 interface StudentStatus {
   id: number;
@@ -55,8 +55,11 @@ export default function StudentProgressManager() {
   const [curricula, setCurricula] = useState<CurriculumDefinition[]>([]);
   const [assignedClasses, setAssignedClasses] = useState<Array<{ grade: number; classNumber: number }>>([]);
   const [unrestricted, setUnrestricted] = useState(false);
-  const [selectedClassKey, setSelectedClassKey] = useState("");
+  const [selectedClassKey, setSelectedClassKey] = useState("all");
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [studentQuery, setStudentQuery] = useState("");
+  const [progressFilter, setProgressFilter] = useState<"all" | "notStarted" | "inProgress" | "completed">("all");
+  const [studentSort, setStudentSort] = useState<"classSeat" | "name" | "progress" | "recent">("classSeat");
   const [level, setLevel] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,17 +81,10 @@ export default function StudentProgressManager() {
       setCurricula(data.curricula ?? []);
       setAssignedClasses(nextAssignedClasses);
       setUnrestricted(Boolean(data.unrestricted));
-      const firstClass = nextAssignedClasses[0]
-        ?? nextStudents.find((student) => student.grade !== null && student.classNumber !== null);
-      const firstClassKey = firstClass && firstClass.grade !== null && firstClass.classNumber !== null
-        ? `${firstClass.grade}:${firstClass.classNumber}`
-        : "unassigned";
-      setSelectedClassKey((current) => current || firstClassKey);
-      setSelectedStudentId((current) => current ?? nextStudents.find((student) => (
-        firstClassKey === "unassigned"
-          ? student.grade === null || student.classNumber === null
-          : `${student.grade}:${student.classNumber}` === firstClassKey
-      ))?.id ?? null);
+      setSelectedClassKey((current) => current || "all");
+      setSelectedStudentId((current) => current && nextStudents.some((student) => student.id === current)
+        ? current
+        : nextStudents[0]?.id ?? null);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "학생 정보를 불러오지 못했습니다.");
     } finally {
@@ -118,16 +114,12 @@ export default function StudentProgressManager() {
   if (unrestricted && students.some((student) => student.grade === null || student.classNumber === null)) {
     classOptions.push("unassigned");
   }
-  const filteredStudents = students.filter((student) => (
-    selectedClassKey === "unassigned"
-      ? student.grade === null || student.classNumber === null
-      : `${student.grade}:${student.classNumber}` === selectedClassKey
-  ));
-
   function selectClass(classKey: string) {
     setSelectedClassKey(classKey);
     const firstStudent = students.find((student) => (
-      classKey === "unassigned"
+      classKey === "all"
+        ? true
+        : classKey === "unassigned"
         ? student.grade === null || student.classNumber === null
         : `${student.grade}:${student.classNumber}` === classKey
     ));
@@ -136,12 +128,84 @@ export default function StudentProgressManager() {
   }
 
   const selectedStudent = students.find((student) => student.id === selectedStudentId) ?? null;
-  const curriculumForStudent = (student: StudentStatus | null) => {
+  const curriculumForStudent = useCallback((student: StudentStatus | null) => {
     if (!student) return curricula.find((item) => item.isDefault) ?? null;
     return curricula.find((item) => item.assignments.some((assignment) =>
       assignment.grade === student.grade && assignment.classNumber === student.classNumber
     )) ?? curricula.find((item) => item.isDefault) ?? null;
-  };
+  }, [curricula]);
+  const progressForStudent = useCallback((student: StudentStatus) => {
+    const unitIds = new Set(curriculumForStudent(student)?.units.map((unit) => unit.id) ?? []);
+    const completed = student.clearedConceptIds.filter((id) => unitIds.has(id)).length;
+    return {
+      completed,
+      total: unitIds.size,
+      percent: unitIds.size > 0 ? Math.round((completed / unitIds.size) * 100) : 0,
+    };
+  }, [curriculumForStudent]);
+  const filteredStudents = useMemo(() => {
+    const normalizedQuery = studentQuery.trim().toLocaleLowerCase("ko");
+    return students
+      .filter((student) => (
+        selectedClassKey === "all"
+          ? true
+          : selectedClassKey === "unassigned"
+          ? student.grade === null || student.classNumber === null
+          : `${student.grade}:${student.classNumber}` === selectedClassKey
+      ))
+      .filter((student) => {
+        if (!normalizedQuery) return true;
+        const classLabel = student.grade !== null && student.classNumber !== null
+          ? `${student.grade}학년 ${student.classNumber}반 ${student.seatNumber ?? ""}번`
+          : "학급 미배정";
+        return `${student.displayName ?? ""} ${student.username} ${student.studentNumber ?? ""} ${classLabel}`
+          .toLocaleLowerCase("ko")
+          .includes(normalizedQuery);
+      })
+      .filter((student) => {
+        if (progressFilter === "all") return true;
+        const progress = progressForStudent(student);
+        if (progressFilter === "notStarted") return progress.completed === 0;
+        if (progressFilter === "completed") return progress.total > 0 && progress.completed >= progress.total;
+        return progress.completed > 0 && progress.completed < progress.total;
+      })
+      .sort((a, b) => {
+        if (studentSort === "name") {
+          return (a.displayName || a.username).localeCompare(b.displayName || b.username, "ko");
+        }
+        if (studentSort === "progress") {
+          return progressForStudent(b).percent - progressForStudent(a).percent ||
+            (a.displayName || a.username).localeCompare(b.displayName || b.username, "ko");
+        }
+        if (studentSort === "recent") {
+          return (b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0) -
+            (a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0);
+        }
+        return (a.grade ?? Number.MAX_SAFE_INTEGER) - (b.grade ?? Number.MAX_SAFE_INTEGER) ||
+          (a.classNumber ?? Number.MAX_SAFE_INTEGER) - (b.classNumber ?? Number.MAX_SAFE_INTEGER) ||
+          (a.seatNumber ?? Number.MAX_SAFE_INTEGER) - (b.seatNumber ?? Number.MAX_SAFE_INTEGER) ||
+          (a.displayName || a.username).localeCompare(b.displayName || b.username, "ko");
+      });
+  }, [progressFilter, progressForStudent, selectedClassKey, studentQuery, studentSort, students]);
+  const hasActiveStudentFilters = selectedClassKey !== "all" || studentQuery.trim() !== "" || progressFilter !== "all" || studentSort !== "classSeat";
+
+  useEffect(() => {
+    if (filteredStudents.length === 0) {
+      setSelectedStudentId(null);
+      return;
+    }
+    if (!filteredStudents.some((student) => student.id === selectedStudentId)) {
+      setSelectedStudentId(filteredStudents[0].id);
+      setMessage("");
+    }
+  }, [filteredStudents, selectedStudentId]);
+
+  function resetStudentFilters() {
+    setSelectedClassKey("all");
+    setStudentQuery("");
+    setProgressFilter("all");
+    setStudentSort("classSeat");
+  }
   const selectedCurriculum = curriculumForStudent(selectedStudent);
   const curriculumUnits = selectedCurriculum?.units ?? [];
   const curriculumUnitIds = new Set(curriculumUnits.map((unit) => unit.id));
@@ -232,15 +296,6 @@ export default function StudentProgressManager() {
           <div style={{ marginTop: 5, fontSize: 13, color: "#8B83A8" }}>학생별 학습 현황을 확인하고 필요한 단원을 직접 열어줄 수 있습니다.</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          {classOptions.length > 0 && (
-            <select value={selectedClassKey} onChange={(event) => selectClass(event.target.value)} style={{ padding: "8px 10px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#5C5180", fontFamily: "inherit", fontWeight: 700 }}>
-              {classOptions.map((classKey) => {
-                const count = students.filter((student) => classKey === "unassigned" ? student.grade === null || student.classNumber === null : `${student.grade}:${student.classNumber}` === classKey).length;
-                const label = classKey === "unassigned" ? "학급 미배정" : `${classKey.split(":")[0]}학년 ${classKey.split(":")[1]}반`;
-                return <option key={classKey} value={classKey}>{label} ({count}명)</option>;
-              })}
-            </select>
-          )}
           <button onClick={() => void loadStudents()} title="새로고침" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#7B5CF0", cursor: "pointer", fontWeight: 700 }}>
             <RotateCcw size={14} /> 새로고침
           </button>
@@ -250,22 +305,76 @@ export default function StudentProgressManager() {
       {students.length === 0 ? (
         <div style={{ padding: 50, textAlign: "center", background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, color: "#9A93B5" }}>담당 학급에 등록된 학생 계정이 없습니다.</div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", gap: 16, alignItems: "start" }}>
-          <aside style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 18, padding: 10, boxShadow: "0 8px 24px rgba(90,63,214,.05)" }}>
-            {filteredStudents.map((student) => {
+        <>
+          <div style={{ marginBottom: 12, padding: 12, border: "1px solid #E9E3F3", borderRadius: 15, background: "#fff", boxShadow: "0 6px 18px rgba(90,63,214,.04)" }}>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.6fr)_repeat(3,minmax(130px,.8fr))_auto]">
+              <label style={{ position: "relative", minWidth: 0 }}>
+                <span style={{ position: "absolute", left: 11, top: "50%", display: "grid", placeItems: "center", color: "#9187A8", transform: "translateY(-50%)", pointerEvents: "none" }}><Search size={15} /></span>
+                <input
+                  type="search"
+                  value={studentQuery}
+                  onChange={(event) => setStudentQuery(event.target.value)}
+                  placeholder="이름·학번·아이디 검색"
+                  aria-label="학생 검색"
+                  style={{ width: "100%", boxSizing: "border-box", padding: "9px 34px 9px 34px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#FCFBFE", color: "#4B416A", fontFamily: "inherit", fontSize: 12.5, outline: "none" }}
+                />
+                {studentQuery && (
+                  <button type="button" onClick={() => setStudentQuery("")} aria-label="검색어 지우기" style={{ position: "absolute", right: 8, top: "50%", display: "grid", width: 23, height: 23, placeItems: "center", padding: 0, border: 0, borderRadius: 7, background: "#F0ECF7", color: "#817793", cursor: "pointer", transform: "translateY(-50%)" }}>
+                    <X size={13} />
+                  </button>
+                )}
+              </label>
+
+              <select value={selectedClassKey} onChange={(event) => selectClass(event.target.value)} aria-label="학급 필터" style={{ padding: "8px 10px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#5C5180", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                <option value="all">전체 학급 ({students.length}명)</option>
+                {classOptions.map((classKey) => {
+                  const count = students.filter((student) => classKey === "unassigned" ? student.grade === null || student.classNumber === null : `${student.grade}:${student.classNumber}` === classKey).length;
+                  const label = classKey === "unassigned" ? "학급 미배정" : `${classKey.split(":")[0]}학년 ${classKey.split(":")[1]}반`;
+                  return <option key={classKey} value={classKey}>{label} ({count}명)</option>;
+                })}
+              </select>
+
+              <select value={progressFilter} onChange={(event) => setProgressFilter(event.target.value as typeof progressFilter)} aria-label="학습 상태 필터" style={{ padding: "8px 10px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#5C5180", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                <option value="all">모든 학습 상태</option>
+                <option value="notStarted">학습 시작 전</option>
+                <option value="inProgress">학습 진행 중</option>
+                <option value="completed">전체 완료</option>
+              </select>
+
+              <select value={studentSort} onChange={(event) => setStudentSort(event.target.value as typeof studentSort)} aria-label="학생 정렬" style={{ padding: "8px 10px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#5C5180", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
+                <option value="classSeat">학년·반·번호순</option>
+                <option value="name">이름순</option>
+                <option value="progress">진도 높은순</option>
+                <option value="recent">최근 활동순</option>
+              </select>
+
+              <button type="button" onClick={resetStudentFilters} disabled={!hasActiveStudentFilters} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "8px 10px", border: "1px solid #E0D9EC", borderRadius: 10, background: hasActiveStudentFilters ? "#F4F0FA" : "#FAF9FC", color: hasActiveStudentFilters ? "#6C579F" : "#AAA3B5", cursor: hasActiveStudentFilters ? "pointer" : "default", fontFamily: "inherit", fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap" }}>
+                <RotateCcw size={13} /> 초기화
+              </button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 9, padding: "0 2px", color: "#8B83A8", fontSize: 11.5 }}>
+              <span>담당 범위 내 학생만 검색됩니다.</span>
+              <strong style={{ color: "#6C4BEF" }}>전체 {students.length}명 중 {filteredStudents.length}명</strong>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", gap: 16, alignItems: "start" }}>
+          <aside style={{ maxHeight: "calc(100vh - 240px)", overflowY: "auto", background: "#fff", border: "1px solid #EFEAF8", borderRadius: 18, padding: 10, boxShadow: "0 8px 24px rgba(90,63,214,.05)" }}>
+            {filteredStudents.length === 0 ? (
+              <div style={{ padding: "38px 12px", textAlign: "center", color: "#9A93B5", fontSize: 12.5, lineHeight: 1.6 }}>
+                조건에 맞는 학생이 없습니다.<br />검색어나 필터를 변경해 주세요.
+              </div>
+            ) : filteredStudents.map((student) => {
               const active = student.id === selectedStudentId;
-              const studentCurriculum = curriculumForStudent(student);
-              const studentUnitIds = new Set(studentCurriculum?.units.map((unit) => unit.id) ?? []);
-              const studentTotal = studentUnitIds.size;
-              const studentCompleted = student.clearedConceptIds.filter((id) => studentUnitIds.has(id)).length;
+              const studentProgress = progressForStudent(student);
               return (
                 <button key={student.id} onClick={() => { setSelectedStudentId(student.id); setMessage(""); }} style={{ width: "100%", textAlign: "left", padding: "12px 13px", marginBottom: 5, border: active ? "1px solid #CFC2F5" : "1px solid transparent", borderRadius: 12, background: active ? "#F3EFFE" : "transparent", cursor: "pointer", fontFamily: "inherit" }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: active ? "#6C4BEF" : "#443B63" }}>{student.displayName || student.username}</div>
-                  <div style={{ marginTop: 2, fontSize: 11.5, color: "#9A93B5" }}>{student.seatNumber ? `${student.seatNumber}번 · ` : ""}학번 {student.studentNumber || student.username}</div>
+                  <div style={{ marginTop: 2, fontSize: 11.5, color: "#9A93B5" }}>{student.grade && student.classNumber ? `${student.grade}-${student.classNumber} · ` : ""}{student.seatNumber ? `${student.seatNumber}번 · ` : ""}학번 {student.studentNumber || student.username}</div>
                   <div style={{ marginTop: 8, height: 5, borderRadius: 99, background: "#EDE8F8", overflow: "hidden" }}>
-                    <div style={{ width: `${studentTotal > 0 ? Math.round((studentCompleted / studentTotal) * 100) : 0}%`, height: "100%", background: "linear-gradient(90deg,#9B7FFF,#18C99A)" }} />
+                    <div style={{ width: `${studentProgress.percent}%`, height: "100%", background: "linear-gradient(90deg,#9B7FFF,#18C99A)" }} />
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 11, color: "#7A7198" }}>{studentCompleted}/{studentTotal} 완료</div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: "#7A7198" }}>{studentProgress.completed}/{studentProgress.total} 완료</div>
                 </button>
               );
             })}
@@ -387,7 +496,8 @@ export default function StudentProgressManager() {
               </div>
             </section>
           )}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
