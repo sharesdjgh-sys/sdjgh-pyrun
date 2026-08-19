@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,11 +9,13 @@ import PasswordRecoveryModal from "@/components/account/PasswordRecoveryModal";
 
 export default function LoginPage() {
   const router = useRouter();
+  const submitLockRef = useRef(false);
   const [schoolCode, setSchoolCode] = useState("서대전여고");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("로그인 확인 중...");
   const [recoveryOpen, setRecoveryOpen] = useState(false);
 
   useEffect(() => {
@@ -23,14 +25,27 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setError("");
     setLoading(true);
-    const result = await signIn("credentials", { schoolCode, username, password, redirect: false });
-    setLoading(false);
-    if (result?.error) {
-      setError("학번 또는 비밀번호가 올바르지 않습니다.");
-    } else {
-      router.push("/learn");
+    setLoadingText("로그인 확인 중...");
+
+    try {
+      const result = await signIn("credentials", { schoolCode, username, password, redirect: false });
+      if (result?.error) {
+        setError("학번 또는 비밀번호가 올바르지 않습니다.");
+        submitLockRef.current = false;
+        setLoading(false);
+        return;
+      }
+
+      setLoadingText("학습 공간 여는 중...");
+      router.replace("/learn");
+    } catch {
+      setError("로그인 중 연결 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      submitLockRef.current = false;
+      setLoading(false);
     }
   }
 
@@ -151,7 +166,7 @@ export default function LoginPage() {
               ) : (
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff" stroke="none"><path d="M7 4l13 8-13 8z" /></svg>
               )}
-              학습 시작하기
+              {loading ? loadingText : "학습 시작하기"}
             </button>
           </form>
 
