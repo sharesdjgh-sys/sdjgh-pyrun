@@ -14,6 +14,8 @@ export const schools = pgTable("schools", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 120 }).notNull(),
   code: varchar("code", { length: 40 }).notNull().unique(),
+  logoUrl: text("logo_url"),
+  logoScale: integer("logo_scale").notNull().default(100),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

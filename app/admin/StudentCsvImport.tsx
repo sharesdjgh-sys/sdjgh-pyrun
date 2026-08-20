@@ -7,7 +7,7 @@ import styles from "./StudentCsvImport.module.css";
 
 const EMPTY_STUDENT = { studentNumber: "", name: "", password: "" };
 
-export default function StudentCsvImport() {
+export default function StudentCsvImport({ schoolName }: { schoolName: string }) {
   const [student, setStudent] = useState(EMPTY_STUDENT);
   const [creating, setCreating] = useState(false);
   const [createMessage, setCreateMessage] = useState("");
@@ -71,7 +71,7 @@ export default function StudentCsvImport() {
           <h2>학생 계정 등록</h2>
           <p>한 명은 바로 입력하고, 여러 명은 CSV로 한 번에 등록하세요.</p>
         </div>
-        <span className={styles.scopeBadge}>현재 학교에만 등록</span>
+        <span className={styles.scopeBadge}>{schoolName} 학생 등록</span>
       </header>
 
       <div className={styles.grid}>

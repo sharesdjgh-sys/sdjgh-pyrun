@@ -74,6 +74,13 @@
   --tab-shadow: rgba(84, 60, 155, 0.11);
 }
 
+.tabButton[data-tab="school-branding"] {
+  --tab-color: #247b87;
+  --tab-soft: #e8f5f6;
+  --tab-border: rgba(36, 123, 135, 0.2);
+  --tab-shadow: rgba(36, 123, 135, 0.11);
+}
+
 .tabButton[data-tab="classes"] {
   --tab-color: #3f6fae;
   --tab-soft: #e9f1fb;

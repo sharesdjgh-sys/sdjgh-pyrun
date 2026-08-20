@@ -12,6 +12,8 @@ export async function register() {
     await sql`ALTER TABLE concepts ADD COLUMN IF NOT EXISTS example_code text`;
     await sql`ALTER TABLE concepts ADD COLUMN IF NOT EXISTS practice_code text`;
     await sql`ALTER TABLE concepts ADD COLUMN IF NOT EXISTS level integer NOT NULL DEFAULT 1`;
+    await sql`ALTER TABLE schools ADD COLUMN IF NOT EXISTS logo_url text`;
+    await sql`ALTER TABLE schools ADD COLUMN IF NOT EXISTS logo_scale integer NOT NULL DEFAULT 100`;
 
     await sql`
       CREATE TABLE IF NOT EXISTS data_files (

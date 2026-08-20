@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   Check,
   LoaderCircle,
+  RefreshCw,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -32,6 +33,8 @@ interface UserManagementPanelProps {
   currentUserId: number;
   updatingUserId: number | null;
   message: string;
+  refreshing: boolean;
+  onRefresh: () => Promise<void>;
   onRoleChange: (userId: number, role: UserRole) => Promise<boolean>;
   onDelete: (user: ManagedUser) => void;
 }
@@ -50,6 +53,8 @@ export default function UserManagementPanel({
   currentUserId,
   updatingUserId,
   message,
+  refreshing,
+  onRefresh,
   onRoleChange,
   onDelete,
 }: UserManagementPanelProps) {
@@ -252,9 +257,22 @@ export default function UserManagementPanel({
           </h2>
           <p className={styles.description}>이름, 아이디, 학교로 빠르게 찾고 회원 역할을 관리하세요.</p>
         </div>
-        <div className={styles.totalBadge}>
-          <Users size={18} aria-hidden="true" />
-          <strong>{users.length.toLocaleString()}</strong>명
+        <div className={styles.headingActions}>
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={() => void onRefresh()}
+            disabled={refreshing || updatingUserId !== null}
+            aria-label="회원 목록 새로고침"
+            title="회원 목록 새로고침"
+          >
+            <RefreshCw size={15} className={refreshing ? styles.refreshIconSpinning : ""} aria-hidden="true" />
+            {refreshing ? "새로고침 중..." : "새로고침"}
+          </button>
+          <div className={styles.totalBadge}>
+            <Users size={18} aria-hidden="true" />
+            <strong>{users.length.toLocaleString()}</strong>명
+          </div>
         </div>
       </div>
 

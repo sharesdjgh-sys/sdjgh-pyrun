@@ -3,13 +3,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { canOpenAdminPage, isAdministratorRole, isStudentRole } from "@/lib/roles";
 import StudentProfileModal from "@/components/account/StudentProfileModal";
 
 export default function Header() {
   const [profileOpen, setProfileOpen] = useState(false);
-  const { data: session } = useSession();
+  const [schoolBranding, setSchoolBranding] = useState<{ name: string; logoUrl: string | null; logoScale: number } | null>(null);
+  const { data: session, status } = useSession();
   const sessionUser = session?.user as { username?: string; nickname?: string; displayName?: string; role?: string } | undefined;
   const username = sessionUser?.username;
   const role = sessionUser?.role;
@@ -22,6 +23,39 @@ export default function Header() {
   const identityText = username
     ? isStudent ? studentRealName || "학생" : `@${username}`
     : null;
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      setSchoolBranding(null);
+      return;
+    }
+
+    let cancelled = false;
+    const loadBranding = () => {
+      fetch("/api/school-branding", { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : null)
+        .then((data) => {
+          if (!cancelled && data?.school) setSchoolBranding(data.school);
+        })
+        .catch(() => undefined);
+    };
+    const handleUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<{ name: string; logoUrl: string | null; logoScale: number }>).detail;
+      if (detail) setSchoolBranding(detail);
+      else loadBranding();
+    };
+
+    loadBranding();
+    window.addEventListener("school-branding-updated", handleUpdate);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("school-branding-updated", handleUpdate);
+    };
+  }, [status]);
+
+  const schoolLogoScale = Math.min(140, Math.max(70, schoolBranding?.logoScale ?? 100)) / 100;
+  const schoolLogoWidth = Math.round(142 * schoolLogoScale);
+  const schoolLogoHeight = Math.round(34 * schoolLogoScale);
 
   return (
     <header
@@ -46,32 +80,21 @@ export default function Header() {
 
       {/* Right side */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {/* School logo — a quiet affiliation mark beside the student profile */}
-        <div
-          role="img"
-          aria-label="서대전여자고등학교"
-          style={{
-            position: "relative", flex: "none", width: 142, aspectRatio: "2396 / 449",
-            pointerEvents: "none",
-          }}
-        >
-          <Image
-            src="/sdj-logo.png"
-            alt=""
-            width={2396}
-            height={449}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", clipPath: "inset(0 84.5% 0 0)" }}
-            priority
-          />
-          <Image
-            src="/sdj-logo.png"
-            alt=""
-            width={2396}
-            height={449}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", clipPath: "inset(27% 0 0 15.5%)" }}
-            priority
-          />
-        </div>
+        {/* The logo is resolved from the signed-in user's school. */}
+        {schoolBranding?.logoUrl ? (
+          schoolBranding.logoUrl === "/sdj-logo.png" ? (
+            <div role="img" aria-label={schoolBranding.name} style={{ position: "relative", flex: "none", width: schoolLogoWidth, aspectRatio: "2396 / 449", pointerEvents: "none" }}>
+              <Image src="/sdj-logo.png" alt="" width={2396} height={449} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", clipPath: "inset(0 84.5% 0 0)" }} priority />
+              <Image src="/sdj-logo.png" alt="" width={2396} height={449} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", clipPath: "inset(27% 0 0 15.5%)" }} priority />
+            </div>
+          ) : (
+            <Image src={schoolBranding.logoUrl} alt={`${schoolBranding.name} 로고`} width={300} height={90} unoptimized style={{ flex: "none", width: schoolLogoWidth, height: schoolLogoHeight, objectFit: "contain" }} />
+          )
+        ) : schoolBranding ? (
+          <div title={schoolBranding.name} style={{ maxWidth: 142, overflow: "hidden", color: "#77708B", fontSize: 12, fontWeight: 750, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {schoolBranding.name}
+          </div>
+        ) : null}
 
         {/* User badge */}
         <button

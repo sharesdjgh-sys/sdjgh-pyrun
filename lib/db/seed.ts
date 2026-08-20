@@ -26,6 +26,7 @@ async function seed() {
     id: DEFAULT_SCHOOL_ID,
     name: "서대전여자고등학교",
     code: "서대전여고",
+    logoUrl: "/sdj-logo.png",
   }).onConflictDoUpdate({
     target: schools.id,
     set: { name: "서대전여자고등학교", code: "서대전여고" },

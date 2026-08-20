@@ -25,7 +25,7 @@ import {
   groupCurriculumUnits,
   highestActiveCurriculumLevel,
 } from "../lib/curriculum-model";
-import { canImportStudents, canManageStudentClass, isStudentRole } from "../lib/roles";
+import { canImportStudents, canManageSchoolBranding, canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
 import {
   createStudentPracticeTemplate,
@@ -67,6 +67,13 @@ test("teachers and administrators can import students", () => {
   assert.equal(canImportStudents("teacher"), true);
   assert.equal(canImportStudents("admin"), true);
   assert.equal(canImportStudents("student"), false);
+});
+
+test("only teachers can manage school branding", () => {
+  assert.equal(canManageSchoolBranding("teacher"), true);
+  assert.equal(canManageSchoolBranding("admin"), false);
+  assert.equal(canManageSchoolBranding("administrator"), false);
+  assert.equal(canManageSchoolBranding("student"), false);
 });
 
 test("five-digit school student numbers contain grade, class and seat", () => {

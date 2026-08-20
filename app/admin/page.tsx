@@ -18,6 +18,12 @@ export default async function AdminPage() {
   const context = sessionTenant(session);
   if (!context) redirect("/login");
 
+  const [currentSchool] = await db
+    .select({ name: schools.name })
+    .from(schools)
+    .where(eq(schools.id, context.schoolId))
+    .limit(1);
+
   const defaultCurriculumId = await resolveCurriculumIdForUser(context);
   const rows = defaultCurriculumId
     ? await db
@@ -51,6 +57,7 @@ export default async function AdminPage() {
       users={userRows}
       currentRole={role}
       currentUserId={currentUserId}
+      currentSchoolName={currentSchool?.name ?? "소속 학교"}
     />
   );
 }

@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     const [school] = await db
       .insert(schools)
       .values({ name, code: loginName })
-      .returning({ id: schools.id, name: schools.name, loginName: schools.code });
+      .returning({ id: schools.id, name: schools.name, loginName: schools.code, logoScale: schools.logoScale });
     createdSchoolId = school.id;
 
     const [curriculum] = await db

@@ -18,6 +18,10 @@ export function canOpenAdminPage(role: unknown): boolean {
   return role === "teacher" || isAdministratorRole(role);
 }
 
+export function canManageSchoolBranding(role: unknown): boolean {
+  return role === "teacher";
+}
+
 export function canImportStudents(role: unknown): boolean {
   return role === "teacher" || isAdministratorRole(role);
 }

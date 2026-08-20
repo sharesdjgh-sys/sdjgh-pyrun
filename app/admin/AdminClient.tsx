@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
-import { isAdministratorRole, type UserRole } from "@/lib/roles";
-import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, BookOpenText, Database, GraduationCap, UsersRound, UserCog, School } from "lucide-react";
+import { canManageSchoolBranding, isAdministratorRole, type UserRole } from "@/lib/roles";
+import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, BookOpenText, Database, GraduationCap, UsersRound, UserCog, School, ImageIcon } from "lucide-react";
 import StudentProgressManager from "./StudentProgressManager";
 import ClassRosterManager from "./ClassRosterManager";
 import TeacherCurriculumManager from "./TeacherCurriculumManager";
 import SchoolManager from "./SchoolManager";
+import SchoolBrandingManager from "./SchoolBrandingManager";
 import UserManagementPanel from "./UserManagementPanel";
 import StudentCsvImport from "./StudentCsvImport";
 import styles from "./AdminClient.module.css";
@@ -32,6 +33,7 @@ interface AdminClientProps {
   users: UserSummary[];
   currentRole?: string;
   currentUserId: number;
+  currentSchoolName: string;
 }
 
 interface UserSummary {
@@ -58,6 +60,7 @@ export default function AdminClient({
   users: initialUsers,
   currentRole,
   currentUserId,
+  currentSchoolName,
 }: AdminClientProps) {
   const [concepts, setConcepts] = useState<Concept[]>(initialConcepts);
   const [selectedId, setSelectedId] = useState<number>(initialConcepts[0]?.id ?? 1);
@@ -75,7 +78,7 @@ export default function AdminClient({
   const [levelFilter, setLevelFilter] = useState<1 | 2 | 3>(1);
 
   const isAdministrator = isAdministratorRole(currentRole);
-  type AdminTab = "my-curricula" | "curriculum" | "data" | "students" | "student-import" | "classes" | "users" | "schools";
+  type AdminTab = "my-curricula" | "curriculum" | "data" | "students" | "student-import" | "school-branding" | "classes" | "users" | "schools";
   const [adminTab, setAdminTab] = useState<AdminTab>("my-curricula");
   const [csvFiles, setCsvFiles] = useState<Array<{filename: string; url: string}>>([]);
   const [csvUploading, setCsvUploading] = useState(false);
@@ -95,7 +98,7 @@ export default function AdminClient({
   }, []);
 
   const refreshUsers = useCallback(async () => {
-    if (!isAdministrator) return;
+    if (!isAdministrator) return false;
     setRefreshingUsers(true);
     setUserMessage("");
     try {
@@ -103,12 +106,19 @@ export default function AdminClient({
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error ?? "최신 회원 목록을 불러오지 못했습니다.");
       setUsers(data.users ?? []);
+      return true;
     } catch (error) {
       setUserMessage(error instanceof Error ? error.message : "최신 회원 목록을 불러오지 못했습니다.");
+      return false;
     } finally {
       setRefreshingUsers(false);
     }
   }, [isAdministrator]);
+
+  const refreshUsersWithFeedback = useCallback(async () => {
+    const refreshed = await refreshUsers();
+    if (refreshed) setUserMessage("회원 목록을 새로고침했습니다.");
+  }, [refreshUsers]);
 
   useEffect(() => {
     if (adminTab === "users" || adminTab === "classes") void refreshUsers();
@@ -284,6 +294,9 @@ export default function AdminClient({
     { id: "data", label: "데이터 파일 관리", description: "CSV 자료 관리", icon: Database },
     { id: "students", label: "학생 수업 관리", description: "진도·잠금 설정", icon: GraduationCap },
     { id: "student-import", label: "학생 계정 등록", description: "CSV 일괄 등록", icon: UsersRound },
+    ...(canManageSchoolBranding(currentRole)
+      ? ([{ id: "school-branding", label: "학교 로고", description: "상단 로고 설정", icon: ImageIcon }] as Array<{ id: AdminTab; label: string; description: string; icon: React.ElementType }>)
+      : []),
     ...(isAdministrator
       ? ([
           { id: "classes", label: "학급·계정 관리", description: "학급·계정 배정", icon: UsersRound },
@@ -459,13 +472,15 @@ export default function AdminClient({
         ) : adminTab === "students" ? (
           <StudentProgressManager />
         ) : adminTab === "student-import" ? (
-          <StudentCsvImport />
+          <StudentCsvImport schoolName={currentSchoolName} />
+        ) : adminTab === "school-branding" ? (
+          <SchoolBrandingManager />
         ) : adminTab === "classes" ? (
           <ClassRosterManager
             users={users}
             initialSchoolId={currentSchoolId}
             refreshingUsers={refreshingUsers}
-            onRefreshUsers={refreshUsers}
+            onRefreshUsers={async () => { await refreshUsers(); }}
           />
         ) : adminTab === "schools" ? (
           <SchoolManager />
@@ -475,6 +490,8 @@ export default function AdminClient({
             currentUserId={currentUserId}
             updatingUserId={updatingUserId}
             message={userMessage}
+            refreshing={refreshingUsers}
+            onRefresh={refreshUsersWithFeedback}
             onRoleChange={handleUserRoleChange}
             onDelete={handleUserDelete}
           />
