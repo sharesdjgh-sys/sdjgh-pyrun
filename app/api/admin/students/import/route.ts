@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { users } from "@/lib/db/schema";
-import { isAdministratorRole } from "@/lib/roles";
+import { canImportStudents } from "@/lib/roles";
 import { parseSchoolStudentNumber } from "@/lib/student-number";
 import { and, eq, inArray, or } from "drizzle-orm";
 import { sessionTenant } from "@/lib/curriculum-access";
@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
   if (!context) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
-  if (!isAdministratorRole(context.role)) {
-    return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
+  if (!canImportStudents(context.role)) {
+    return NextResponse.json({ error: "교사 또는 관리자 권한이 필요합니다." }, { status: 403 });
   }
 
   const formData = await req.formData();

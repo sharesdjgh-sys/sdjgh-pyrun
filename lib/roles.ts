@@ -18,6 +18,10 @@ export function canOpenAdminPage(role: unknown): boolean {
   return role === "teacher" || isAdministratorRole(role);
 }
 
+export function canImportStudents(role: unknown): boolean {
+  return role === "teacher" || isAdministratorRole(role);
+}
+
 export function canManageStudentClass(
   role: unknown,
   assignedClasses: Iterable<{ grade: number; classNumber: number }>,

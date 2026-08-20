@@ -9,6 +9,7 @@ import ClassRosterManager from "./ClassRosterManager";
 import TeacherCurriculumManager from "./TeacherCurriculumManager";
 import SchoolManager from "./SchoolManager";
 import UserManagementPanel from "./UserManagementPanel";
+import StudentCsvImport from "./StudentCsvImport";
 import styles from "./AdminClient.module.css";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
@@ -74,7 +75,7 @@ export default function AdminClient({
   const [levelFilter, setLevelFilter] = useState<1 | 2 | 3>(1);
 
   const isAdministrator = isAdministratorRole(currentRole);
-  type AdminTab = "my-curricula" | "curriculum" | "data" | "students" | "classes" | "users" | "schools";
+  type AdminTab = "my-curricula" | "curriculum" | "data" | "students" | "student-import" | "classes" | "users" | "schools";
   const [adminTab, setAdminTab] = useState<AdminTab>("my-curricula");
   const [csvFiles, setCsvFiles] = useState<Array<{filename: string; url: string}>>([]);
   const [csvUploading, setCsvUploading] = useState(false);
@@ -261,6 +262,7 @@ export default function AdminClient({
     { id: "my-curricula", label: "커리큘럼", description: "수업 과정 구성", icon: BookOpenText },
     { id: "data", label: "데이터 파일 관리", description: "CSV 자료 관리", icon: Database },
     { id: "students", label: "학생 수업 관리", description: "진도·잠금 설정", icon: GraduationCap },
+    { id: "student-import", label: "학생 계정 등록", description: "CSV 일괄 등록", icon: UsersRound },
     ...(isAdministrator
       ? ([
           { id: "classes", label: "학급·계정 관리", description: "학급·계정 배정", icon: UsersRound },
@@ -435,6 +437,8 @@ export default function AdminClient({
           </div>
         ) : adminTab === "students" ? (
           <StudentProgressManager />
+        ) : adminTab === "student-import" ? (
+          <StudentCsvImport />
         ) : adminTab === "classes" ? (
           <ClassRosterManager users={users.filter((user) => user.schoolId === currentSchoolId)} />
         ) : adminTab === "schools" ? (

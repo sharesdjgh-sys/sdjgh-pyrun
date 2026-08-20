@@ -25,7 +25,7 @@ import {
   groupCurriculumUnits,
   highestActiveCurriculumLevel,
 } from "../lib/curriculum-model";
-import { canManageStudentClass, isStudentRole } from "../lib/roles";
+import { canImportStudents, canManageStudentClass, isStudentRole } from "../lib/roles";
 import { parseSchoolStudentNumber } from "../lib/student-number";
 import {
   createStudentPracticeTemplate,
@@ -61,6 +61,12 @@ test("teachers can manage only students in their assigned classes", () => {
   assert.equal(canManageStudentClass("teacher", assignments, null, null), false);
   assert.equal(canManageStudentClass("admin", [], 6, 9), true);
   assert.equal(canManageStudentClass("student", assignments, 2, 3), false);
+});
+
+test("teachers and administrators can import students", () => {
+  assert.equal(canImportStudents("teacher"), true);
+  assert.equal(canImportStudents("admin"), true);
+  assert.equal(canImportStudents("student"), false);
 });
 
 test("five-digit school student numbers contain grade, class and seat", () => {

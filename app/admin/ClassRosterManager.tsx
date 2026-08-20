@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Eraser, LoaderCircle, School, Trash2, Upload, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Eraser, LoaderCircle, School, Trash2, Users } from "lucide-react";
 
 interface TeacherSummary {
   id: number;
@@ -24,17 +24,6 @@ interface ClassRosterManagerProps {
   users: TeacherSummary[];
 }
 
-const fieldStyle = {
-  padding: "9px 11px",
-  border: "1.5px solid #E0D9F5",
-  borderRadius: 10,
-  background: "#fff",
-  color: "#4B416A",
-  fontFamily: "inherit",
-  fontSize: 13,
-  outline: "none",
-};
-
 export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
   const teachers = users.filter((user) => user.role === "teacher");
   const schoolName = users.find((user) => user.schoolName)?.schoolName ?? "현재 학교";
@@ -46,9 +35,6 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
   const [savingAction, setSavingAction] = useState<"bulk" | number | null>(null);
   const [assignmentMessage, setAssignmentMessage] = useState("");
   const [cleaningEmptyClasses, setCleaningEmptyClasses] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importMessage, setImportMessage] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const classOptions = useMemo(() => {
     const options = [
       ...users.flatMap((user) => user.role === "student" && user.grade !== null && user.grade !== undefined && user.classNumber !== null && user.classNumber !== undefined
@@ -192,48 +178,8 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
     }
   }
 
-  async function importStudents(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file || importing) return;
-    setImporting(true);
-    setImportMessage("");
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/admin/students/import", { method: "POST", body: formData });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "학생 계정 등록에 실패했습니다.");
-      setImportMessage(`총 ${data.total}명 처리 완료 · 신규 ${data.created}명 · 정보 갱신 ${data.updated}명`);
-    } catch (error) {
-      setImportMessage(error instanceof Error ? error.message : "학생 계정 등록에 실패했습니다.");
-    } finally {
-      setImporting(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
   return (
     <div style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 18, alignItems: "start" }}>
-      <section style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 24, boxShadow: "0 8px 24px rgba(90,63,214,.06)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 16, fontWeight: 800, color: "#3D2E8A" }}>
-          <Upload size={19} color="#7B5CF0" /> 학생 계정 일괄 등록
-        </div>
-        <p style={{ margin: "7px 0 16px", fontSize: 13, lineHeight: 1.6, color: "#8B83A8" }}>
-          학교에서 제공한 학번을 로그인 아이디로 사용합니다. 기존 학번을 다시 올리면 비밀번호는 유지되고 학급 정보만 갱신됩니다.
-        </p>
-        <div style={{ padding: 13, borderRadius: 11, background: "#F8F5FF", color: "#62577F", fontSize: 12, lineHeight: 1.7 }}>
-          <strong>CSV 열:</strong> 학번, 이름, 초기비밀번호<br />
-          <strong>예시:</strong> 10501, 김파이, python1234<br />
-          <span style={{ color: "#8B83A8" }}>10501은 1학년 5반 1번으로 자동 저장됩니다.</span>
-        </div>
-        <input ref={fileInputRef} type="file" accept=".csv,text/csv" onChange={importStudents} style={{ display: "none" }} />
-        <button onClick={() => fileInputRef.current?.click()} disabled={importing} style={{ marginTop: 16, width: "100%", padding: 11, border: 0, borderRadius: 11, background: importing ? "#B8B0CB" : "linear-gradient(135deg,#9B7FFF,#7B5CF0)", color: "#fff", cursor: importing ? "wait" : "pointer", fontFamily: "inherit", fontWeight: 800 }}>
-          {importing ? "학생 계정 등록 중..." : "CSV 파일 선택"}
-        </button>
-        {importMessage && <div style={{ marginTop: 12, color: importMessage.includes("완료") ? "#168A68" : "#D93668", fontSize: 12.5, fontWeight: 700 }}>{importMessage}</div>}
-      </section>
-
       <section style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 24, boxShadow: "0 8px 24px rgba(90,63,214,.06)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 16, fontWeight: 800, color: "#3D2E8A" }}>

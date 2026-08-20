@@ -12,7 +12,7 @@
 
 .headingRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .eyebrow { margin-bottom: 6px; color: #81798e; font-size: 10px; font-weight: 800; letter-spacing: .13em; }
-.title { margin: 0; color: #28232f; font-size: 24px; line-height: 1.25; letter-spacing: -.035em; }
+.title { margin: 0; color: #28232f; font-size: 24px; font-weight: 900; line-height: 1.25; letter-spacing: -.035em; }
 .description { margin: 7px 0 0; color: #7a7384; font-size: 13px; line-height: 1.55; }
 .totalBadge { display: flex; align-items: center; gap: 6px; flex: none; padding: 9px 12px; border: 1px solid #e5e0e9; border-radius: 12px; background: #faf9fb; color: #6b6375; font-size: 12px; font-variant-numeric: tabular-nums; }
 .totalBadge strong { color: #302a38; font-size: 15px; }
