@@ -4,7 +4,7 @@ import { db } from "@/lib/db/index";
 import { teacherClassAssignments, users } from "@/lib/db/schema";
 import { sessionTenant } from "@/lib/curriculum-access";
 import { isAdministratorRole } from "@/lib/roles";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 
 async function requireAdministrator() {
   const context = sessionTenant(await auth());
@@ -19,9 +19,13 @@ async function requireAdministrator() {
   return context;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const authResult = await requireAdministrator();
   if ("denied" in authResult) return authResult.denied;
+  const schoolId = Number(req.nextUrl.searchParams.get("schoolId"));
+  if (!Number.isInteger(schoolId) || schoolId <= 0) {
+    return NextResponse.json({ error: "관리할 학교를 선택해 주세요." }, { status: 400 });
+  }
 
   const assignments = await db
     .select({
@@ -32,7 +36,7 @@ export async function GET() {
     })
     .from(teacherClassAssignments)
     .innerJoin(users, eq(teacherClassAssignments.teacherUserId, users.id))
-    .where(eq(users.schoolId, authResult.schoolId))
+    .where(eq(users.schoolId, schoolId))
     .orderBy(asc(teacherClassAssignments.grade), asc(teacherClassAssignments.classNumber));
 
   return NextResponse.json({ assignments });
@@ -54,7 +58,7 @@ export async function POST(req: NextRequest) {
   const [teacher] = await db
     .select({ id: users.id, role: users.role })
     .from(users)
-    .where(and(eq(users.id, teacherUserId), eq(users.schoolId, authResult.schoolId)))
+    .where(eq(users.id, teacherUserId))
     .limit(1);
   if (!teacher || teacher.role !== "teacher") {
     return NextResponse.json({ error: "교사 계정을 찾을 수 없습니다." }, { status: 404 });
@@ -108,7 +112,7 @@ export async function PUT(req: NextRequest) {
   const [teacher] = await db
     .select({ id: users.id, role: users.role })
     .from(users)
-    .where(and(eq(users.id, teacherUserId), eq(users.schoolId, authResult.schoolId)))
+    .where(eq(users.id, teacherUserId))
     .limit(1);
   if (!teacher || teacher.role !== "teacher") {
     return NextResponse.json({ error: "교사 계정을 찾을 수 없습니다." }, { status: 404 });
@@ -162,10 +166,7 @@ export async function DELETE(req: NextRequest) {
     .select({ id: teacherClassAssignments.id })
     .from(teacherClassAssignments)
     .innerJoin(users, eq(teacherClassAssignments.teacherUserId, users.id))
-    .where(and(
-      eq(teacherClassAssignments.id, assignmentId),
-      eq(users.schoolId, authResult.schoolId)
-    ))
+    .where(eq(teacherClassAssignments.id, assignmentId))
     .limit(1);
 
   if (!ownedAssignment) {

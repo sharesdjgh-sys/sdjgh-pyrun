@@ -30,6 +30,10 @@ export async function GET() {
       username: users.username,
       role: users.role,
       displayName: users.displayName,
+      studentNumber: users.studentNumber,
+      grade: users.grade,
+      classNumber: users.classNumber,
+      seatNumber: users.seatNumber,
       schoolId: users.schoolId,
       schoolName: schools.name,
     })
@@ -56,11 +60,22 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "유효하지 않은 등급입니다." }, { status: 400 });
   }
 
-  if (targetUserId === authResult.userId && role !== "admin") {
-    return NextResponse.json(
-      { error: "현재 로그인한 관리자 계정은 관리자 등급을 해제할 수 없습니다." },
-      { status: 400 }
-    );
+  if (role === "admin") {
+    return NextResponse.json({ error: "일반 회원이나 교사를 관리자로 변경할 수 없습니다." }, { status: 400 });
+  }
+
+  const [targetUser] = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(eq(users.id, targetUserId))
+    .limit(1);
+
+  if (!targetUser) {
+    return NextResponse.json({ error: "사용자를 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  if (isAdministratorRole(targetUser.role)) {
+    return NextResponse.json({ error: "관리자 계정의 등급은 변경할 수 없습니다." }, { status: 400 });
   }
 
   const [updatedUser] = await db
@@ -73,10 +88,6 @@ export async function PATCH(req: NextRequest) {
       role: users.role,
       displayName: users.displayName,
     });
-
-  if (!updatedUser) {
-    return NextResponse.json({ error: "사용자를 찾을 수 없습니다." }, { status: 404 });
-  }
 
   return NextResponse.json({ user: updatedUser });
 }

@@ -41,6 +41,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   teacher: "교사",
   admin: "관리자",
 };
+const EDITABLE_USER_ROLES: UserRole[] = ["student", "teacher"];
 
 type SortOption = "recent" | "name" | "school" | "class";
 
@@ -406,10 +407,10 @@ export default function UserManagementPanel({
                     <select
                       value={role}
                       onChange={(event) => handleRoleSelection(user, role, event.target.value as UserRole)}
-                      disabled={updatingUserId !== null || isSelf}
+                      disabled={updatingUserId !== null || isSelf || role === "admin"}
                       aria-label={`${displayName} 역할 변경`}
                     >
-                      {USER_ROLES.map((nextRole) => (
+                      {(role === "admin" ? (["admin"] as UserRole[]) : EDITABLE_USER_ROLES).map((nextRole) => (
                         <option key={nextRole} value={nextRole}>{ROLE_LABELS[nextRole]}</option>
                       ))}
                     </select>

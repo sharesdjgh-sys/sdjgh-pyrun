@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Eraser, LoaderCircle, School, Trash2, Users } from "lucide-react";
+import { Check, Eraser, LoaderCircle, RefreshCw, School, Trash2, Users } from "lucide-react";
 
 interface TeacherSummary {
   id: number;
   username: string;
   displayName: string | null;
   role: string;
+  schoolId: number;
   grade?: number | null;
   classNumber?: number | null;
   schoolName?: string;
@@ -22,11 +23,19 @@ interface Assignment {
 
 interface ClassRosterManagerProps {
   users: TeacherSummary[];
+  initialSchoolId?: number;
+  refreshingUsers?: boolean;
+  onRefreshUsers?: () => Promise<void>;
 }
 
-export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
-  const teachers = users.filter((user) => user.role === "teacher");
-  const schoolName = users.find((user) => user.schoolName)?.schoolName ?? "현재 학교";
+export default function ClassRosterManager({ users, initialSchoolId, refreshingUsers = false, onRefreshUsers }: ClassRosterManagerProps) {
+  const schoolOptions = useMemo(() => Array.from(new Map(users.map((user) => [user.schoolId, user.schoolName ?? `학교 ${user.schoolId}`])).entries())
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "ko")), [users]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState(initialSchoolId ?? schoolOptions[0]?.id ?? 0);
+  const schoolUsers = users.filter((user) => user.schoolId === selectedSchoolId);
+  const teachers = schoolUsers.filter((user) => user.role === "teacher");
+  const schoolName = schoolOptions.find((school) => school.id === selectedSchoolId)?.name ?? "학교 선택";
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [teacherUserId, setTeacherUserId] = useState<number>(teachers[0]?.id ?? 0);
   const [selectedClassKeys, setSelectedClassKeys] = useState<string[]>([]);
@@ -37,7 +46,7 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
   const [cleaningEmptyClasses, setCleaningEmptyClasses] = useState(false);
   const classOptions = useMemo(() => {
     const options = [
-      ...users.flatMap((user) => user.role === "student" && user.grade !== null && user.grade !== undefined && user.classNumber !== null && user.classNumber !== undefined
+      ...schoolUsers.flatMap((user) => user.role === "student" && user.grade !== null && user.grade !== undefined && user.classNumber !== null && user.classNumber !== undefined
         ? [{ grade: user.grade, classNumber: user.classNumber }]
         : []),
       ...assignments.map(({ grade, classNumber }) => ({ grade, classNumber })),
@@ -45,7 +54,7 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
     return options
       .filter((item, index, items) => items.findIndex((candidate) => candidate.grade === item.grade && candidate.classNumber === item.classNumber) === index)
       .sort((a, b) => a.grade - b.grade || a.classNumber - b.classNumber);
-  }, [assignments, users]);
+  }, [assignments, schoolUsers]);
   const classesByGrade = useMemo(() => classOptions.reduce<Record<number, typeof classOptions>>((groups, item) => {
     (groups[item.grade] ??= []).push(item);
     return groups;
@@ -63,7 +72,11 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
     .filter((group) => group.items.length > 0);
 
   useEffect(() => {
-    fetch("/api/admin/teacher-classes")
+    if (!selectedSchoolId) return;
+    setLoading(true);
+    setAssignments([]);
+    setAssignmentMessage("");
+    fetch(`/api/admin/teacher-classes?schoolId=${selectedSchoolId}`)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error ?? "담당 학급 정보를 불러오지 못했습니다.");
@@ -71,7 +84,13 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
       })
       .catch((error) => setAssignmentMessage(error instanceof Error ? error.message : "담당 학급 정보를 불러오지 못했습니다."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedSchoolId]);
+
+  useEffect(() => {
+    if (!schoolOptions.some((school) => school.id === selectedSchoolId)) {
+      setSelectedSchoolId(initialSchoolId ?? schoolOptions[0]?.id ?? 0);
+    }
+  }, [initialSchoolId, schoolOptions, selectedSchoolId]);
 
   useEffect(() => {
     if (!teachers.some((teacher) => teacher.id === teacherUserId)) {
@@ -161,7 +180,11 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
     setCleaningEmptyClasses(true);
     setAssignmentMessage("");
     try {
-      const res = await fetch("/api/admin/classes/cleanup", { method: "POST" });
+      const res = await fetch("/api/admin/classes/cleanup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schoolId: selectedSchoolId }),
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "빈 학급 정리에 실패했습니다.");
       const removedKeys = new Set<string>((data.removedClasses ?? []).map(
@@ -186,9 +209,22 @@ export default function ClassRosterManager({ users }: ClassRosterManagerProps) {
             <School size={19} color="#18A67A" /> 교사 담당 학급 배정
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", gap: 7 }}>
-            <span style={{ maxWidth: 190, overflow: "hidden", padding: "5px 9px", border: "1px solid #CDEDE4", borderRadius: 99, background: "#F0FFF9", color: "#11785B", fontSize: 10.5, fontWeight: 850, textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={schoolName}>
-              {schoolName}
-            </span>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 7px", border: "1px solid #CDEDE4", borderRadius: 9, background: "#F0FFF9", color: "#11785B", fontSize: 10.5, fontWeight: 850 }}>
+              학교
+              <select value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(Number(event.target.value))} disabled={saving || loading} style={{ maxWidth: 190, border: 0, outline: 0, background: "transparent", color: "inherit", font: "inherit", cursor: saving || loading ? "wait" : "pointer" }}>
+                {schoolOptions.map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}
+              </select>
+            </label>
+            <button
+              className="active:translate-y-px active:scale-[.98]"
+              type="button"
+              onClick={() => void onRefreshUsers?.()}
+              disabled={refreshingUsers || saving}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 9px", border: "1px solid #D8CFF0", borderRadius: 9, background: "#F7F4FD", color: "#67558F", cursor: refreshingUsers || saving ? "wait" : "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 800, transition: "transform .1s ease, background .1s ease" }}
+            >
+              <RefreshCw size={13} className={refreshingUsers ? "animate-spin" : ""} />
+              {refreshingUsers ? "새로고침 중..." : "교사 목록 새로고침"}
+            </button>
             <button
               type="button"
               onClick={cleanupEmptyClasses}

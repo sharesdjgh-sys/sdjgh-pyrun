@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { UNIT_GROUPS_LV1, UNIT_GROUPS_LV2, UNIT_GROUPS_LV3 } from "@/lib/curriculum";
 import { isAdministratorRole, type UserRole } from "@/lib/roles";
 import { Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, Upload, Trash2, FileSpreadsheet, BarChart2, TrendingUp, Filter, Cpu, BookOpenText, Database, GraduationCap, UsersRound, UserCog, School } from "lucide-react";
@@ -83,6 +83,7 @@ export default function AdminClient({
   const [users, setUsers] = useState<UserSummary[]>(initialUsers);
   const [userMessage, setUserMessage] = useState("");
   const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+  const [refreshingUsers, setRefreshingUsers] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentSchoolId = users.find((user) => user.id === currentUserId)?.schoolId;
 
@@ -92,6 +93,26 @@ export default function AdminClient({
       .then(({ files }) => setCsvFiles(files ?? [] as Array<{filename: string; url: string}>))
       .catch(() => {});
   }, []);
+
+  const refreshUsers = useCallback(async () => {
+    if (!isAdministrator) return;
+    setRefreshingUsers(true);
+    setUserMessage("");
+    try {
+      const response = await fetch("/api/admin/users", { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error ?? "최신 회원 목록을 불러오지 못했습니다.");
+      setUsers(data.users ?? []);
+    } catch (error) {
+      setUserMessage(error instanceof Error ? error.message : "최신 회원 목록을 불러오지 못했습니다.");
+    } finally {
+      setRefreshingUsers(false);
+    }
+  }, [isAdministrator]);
+
+  useEffect(() => {
+    if (adminTab === "users" || adminTab === "classes") void refreshUsers();
+  }, [adminTab, refreshUsers]);
 
   async function handleCsvUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -440,7 +461,12 @@ export default function AdminClient({
         ) : adminTab === "student-import" ? (
           <StudentCsvImport />
         ) : adminTab === "classes" ? (
-          <ClassRosterManager users={users.filter((user) => user.schoolId === currentSchoolId)} />
+          <ClassRosterManager
+            users={users}
+            initialSchoolId={currentSchoolId}
+            refreshingUsers={refreshingUsers}
+            onRefreshUsers={refreshUsers}
+          />
         ) : adminTab === "schools" ? (
           <SchoolManager />
         ) : adminTab === "users" ? (
