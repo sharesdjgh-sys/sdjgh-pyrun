@@ -192,8 +192,127 @@ export async function POST(req: NextRequest) {
   if ("denied" in authResult) return authResult.denied;
 
   const body = await req.json().catch(() => null);
+  const action = body?.action === "resetPassword"
+    ? "resetPassword"
+    : body?.action === "unlockClassConcept"
+      ? "unlockClassConcept"
+      : "unlockConcept";
+
+  if (action === "unlockClassConcept") {
+    const rate = rateLimit(req, `teacher-class-unlock:${authResult.userId}`, 30, 10 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json({ error: "학급 잠금 해제 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfter) },
+      });
+    }
+
+    const grade = Number(body?.grade);
+    const classNumber = Number(body?.classNumber);
+    const conceptId = Number(body?.conceptId);
+    if (![grade, classNumber, conceptId].every((value) => Number.isInteger(value) && value > 0)) {
+      return NextResponse.json({ error: "학급과 단원을 올바르게 선택해주세요." }, { status: 400 });
+    }
+
+    if (!isAdministratorRole(authResult.role)) {
+      const assignments = await db
+        .select({ grade: teacherClassAssignments.grade, classNumber: teacherClassAssignments.classNumber })
+        .from(teacherClassAssignments)
+        .where(eq(teacherClassAssignments.teacherUserId, authResult.userId));
+      if (!canManageStudentClass(authResult.role, assignments, grade, classNumber)) {
+        return NextResponse.json({ error: "담당 학급만 관리할 수 있습니다." }, { status: 403 });
+      }
+    }
+
+    const [classCurriculum] = await db
+      .select({ curriculumId: classCurriculumAssignments.curriculumId })
+      .from(classCurriculumAssignments)
+      .innerJoin(curriculumSets, eq(classCurriculumAssignments.curriculumId, curriculumSets.id))
+      .where(and(
+        eq(classCurriculumAssignments.schoolId, authResult.schoolId),
+        eq(classCurriculumAssignments.grade, grade),
+        eq(classCurriculumAssignments.classNumber, classNumber),
+        eq(curriculumSets.schoolId, authResult.schoolId)
+      ))
+      .limit(1);
+    const [defaultCurriculum] = classCurriculum
+      ? []
+      : await db
+          .select({ curriculumId: curriculumSets.id })
+          .from(curriculumSets)
+          .where(and(eq(curriculumSets.schoolId, authResult.schoolId), eq(curriculumSets.isDefault, true)))
+          .orderBy(asc(curriculumSets.id))
+          .limit(1);
+    const curriculumId = classCurriculum?.curriculumId ?? defaultCurriculum?.curriculumId;
+    const [concept] = curriculumId
+      ? await db
+          .select({ id: concepts.id })
+          .from(concepts)
+          .where(and(
+            eq(concepts.id, conceptId),
+            eq(concepts.curriculumId, curriculumId),
+            eq(concepts.isActive, true)
+          ))
+          .limit(1)
+      : [];
+    if (!concept) {
+      return NextResponse.json({ error: "선택한 학급에 배정된 커리큘럼의 단원이 아닙니다." }, { status: 400 });
+    }
+
+    const schoolStudents = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        studentNumber: users.studentNumber,
+        grade: users.grade,
+        classNumber: users.classNumber,
+      })
+      .from(users)
+      .where(and(eq(users.schoolId, authResult.schoolId), eq(users.role, "student")));
+    const classStudentIds = schoolStudents
+      .filter((student) => {
+        const parsed = parseSchoolStudentNumber(student.studentNumber ?? student.username);
+        return (parsed?.grade ?? student.grade) === grade &&
+          (parsed?.classNumber ?? student.classNumber) === classNumber;
+      })
+      .map((student) => student.id);
+    if (classStudentIds.length === 0) {
+      return NextResponse.json({ error: "선택한 학급에 등록된 학생이 없습니다." }, { status: 404 });
+    }
+
+    const completed = await db
+      .select({ userId: userConceptClears.userId })
+      .from(userConceptClears)
+      .where(and(
+        inArray(userConceptClears.userId, classStudentIds),
+        eq(userConceptClears.conceptId, conceptId)
+      ));
+    const completedIds = new Set(completed.map((item) => item.userId));
+    const targetStudentIds = classStudentIds.filter((id) => !completedIds.has(id));
+    const inserted = targetStudentIds.length > 0
+      ? await db
+          .insert(userConceptUnlocks)
+          .values(targetStudentIds.map((userId) => ({
+            userId,
+            conceptId,
+            unlockedByUserId: authResult.userId,
+          })))
+          .onConflictDoNothing()
+          .returning({ userId: userConceptUnlocks.userId })
+      : [];
+
+    return NextResponse.json({
+      ok: true,
+      grade,
+      classNumber,
+      conceptId,
+      studentCount: classStudentIds.length,
+      eligibleCount: targetStudentIds.length,
+      unlockedCount: inserted.length,
+    });
+  }
+
   const studentId = Number(body?.studentId);
-  const action = body?.action === "resetPassword" ? "resetPassword" : "unlockConcept";
 
   if (!Number.isInteger(studentId) || studentId <= 0) {
     return NextResponse.json({ error: "유효하지 않은 학생입니다." }, { status: 400 });

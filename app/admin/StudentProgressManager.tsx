@@ -6,7 +6,7 @@ import {
   effectiveConceptAccessIdsForOrders,
   isConceptUnlockedInOrders,
 } from "@/lib/progress";
-import { Check, Clock3, Lock, LockOpen, PlayCircle, RotateCcw, Search, Users, X } from "lucide-react";
+import { Check, Clock3, LoaderCircle, Lock, LockOpen, PlayCircle, RotateCcw, Search, Users, X } from "lucide-react";
 
 interface StudentStatus {
   id: number;
@@ -56,6 +56,12 @@ export default function StudentProgressManager() {
   const [assignedClasses, setAssignedClasses] = useState<Array<{ grade: number; classNumber: number }>>([]);
   const [unrestricted, setUnrestricted] = useState(false);
   const [selectedClassKey, setSelectedClassKey] = useState("all");
+  const [bulkClassKey, setBulkClassKey] = useState("");
+  const [bulkLevel, setBulkLevel] = useState<1 | 2 | 3>(1);
+  const [bulkConceptId, setBulkConceptId] = useState<number | "">("");
+  const [bulkUnlocking, setBulkUnlocking] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [bulkMessageIsError, setBulkMessageIsError] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [studentQuery, setStudentQuery] = useState("");
   const [progressFilter, setProgressFilter] = useState<"all" | "notStarted" | "inProgress" | "completed">("all");
@@ -81,6 +87,17 @@ export default function StudentProgressManager() {
       setCurricula(data.curricula ?? []);
       setAssignedClasses(nextAssignedClasses);
       setUnrestricted(Boolean(data.unrestricted));
+      const nextClassKeys = [...new Set([
+        ...nextAssignedClasses.map((item) => `${item.grade}:${item.classNumber}`),
+        ...nextStudents
+          .filter((student) => student.grade !== null && student.classNumber !== null)
+          .map((student) => `${student.grade}:${student.classNumber}`),
+      ])].sort((a, b) => {
+        const [aGrade, aClass] = a.split(":").map(Number);
+        const [bGrade, bClass] = b.split(":").map(Number);
+        return aGrade - bGrade || aClass - bClass;
+      });
+      setBulkClassKey((current) => nextClassKeys.includes(current) ? current : nextClassKeys[0] ?? "");
       setSelectedClassKey((current) => current || "all");
       setSelectedStudentId((current) => current && nextStudents.some((student) => student.id === current)
         ? current
@@ -189,6 +206,28 @@ export default function StudentProgressManager() {
   }, [progressFilter, progressForStudent, selectedClassKey, studentQuery, studentSort, students]);
   const hasActiveStudentFilters = selectedClassKey !== "all" || studentQuery.trim() !== "" || progressFilter !== "all" || studentSort !== "classSeat";
 
+  const bulkClassStudents = useMemo(() => {
+    const [grade, classNumber] = bulkClassKey.split(":").map(Number);
+    if (!grade || !classNumber) return [];
+    return students.filter((student) => student.grade === grade && student.classNumber === classNumber);
+  }, [bulkClassKey, students]);
+  const bulkCurriculum = useMemo(() => {
+    const [grade, classNumber] = bulkClassKey.split(":").map(Number);
+    if (!grade || !classNumber) return null;
+    return curricula.find((item) => item.assignments.some((assignment) =>
+      assignment.grade === grade && assignment.classNumber === classNumber
+    )) ?? curricula.find((item) => item.isDefault) ?? null;
+  }, [bulkClassKey, curricula]);
+  const bulkUnits = useMemo(() => (bulkCurriculum?.units ?? [])
+    .filter((unit) => unit.level === bulkLevel && unit.sourceConceptId !== 0)
+    .sort((a, b) => a.orderIndex - b.orderIndex), [bulkCurriculum, bulkLevel]);
+
+  useEffect(() => {
+    setBulkConceptId((current) => bulkUnits.some((unit) => unit.id === current)
+      ? current
+      : bulkUnits[0]?.id ?? "");
+  }, [bulkUnits]);
+
   useEffect(() => {
     if (filteredStudents.length === 0) {
       setSelectedStudentId(null);
@@ -248,6 +287,53 @@ export default function StudentProgressManager() {
     }
   }
 
+  async function unlockClassConcept() {
+    if (!bulkClassKey || !bulkConceptId || bulkUnlocking) return;
+    const [grade, classNumber] = bulkClassKey.split(":").map(Number);
+    const concept = bulkUnits.find((unit) => unit.id === bulkConceptId);
+    if (!grade || !classNumber || !concept) return;
+    if (!confirm(`${grade}학년 ${classNumber}반 전체에 '${concept.nameKo}' 단원을 잠금 해제할까요? 배지는 지급되지 않습니다.`)) return;
+
+    setBulkUnlocking(true);
+    setBulkMessage("");
+    setBulkMessageIsError(false);
+    try {
+      const res = await fetch("/api/admin/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "unlockClassConcept",
+          grade,
+          classNumber,
+          conceptId: bulkConceptId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "학급 일괄 잠금 해제에 실패했습니다.");
+
+      setStudents((current) => current.map((student) => (
+        student.grade === grade && student.classNumber === classNumber &&
+        !student.clearedConceptIds.includes(Number(bulkConceptId))
+          ? {
+              ...student,
+              manuallyUnlockedConceptIds: [...new Set([
+                ...student.manuallyUnlockedConceptIds,
+                Number(bulkConceptId),
+              ])],
+            }
+          : student
+      )));
+      setBulkMessage(
+        `${grade}학년 ${classNumber}반 ${data.studentCount ?? bulkClassStudents.length}명에게 '${concept.nameKo}' 단원을 적용했습니다. 새로 잠금 해제된 학생은 ${data.unlockedCount ?? 0}명입니다.`
+      );
+    } catch (unlockError) {
+      setBulkMessageIsError(true);
+      setBulkMessage(unlockError instanceof Error ? unlockError.message : "학급 일괄 잠금 해제에 실패했습니다.");
+    } finally {
+      setBulkUnlocking(false);
+    }
+  }
+
   async function resetStudentPassword() {
     if (!selectedStudent || resettingPassword) return;
     if (temporaryPassword.length < 8) {
@@ -293,7 +379,7 @@ export default function StudentProgressManager() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 17, fontWeight: 800, color: "#3D2E8A" }}>
             <Users size={20} color="#7B5CF0" /> 학생 수업 관리
           </div>
-          <div style={{ marginTop: 5, fontSize: 13, color: "#8B83A8" }}>학생별 학습 현황을 확인하고 필요한 단원을 직접 열어줄 수 있습니다.</div>
+          <div style={{ marginTop: 5, fontSize: 13, color: "#8B83A8" }}>학생별 학습 현황을 확인하고 개인 또는 학급 전체에 필요한 단원을 열어줄 수 있습니다.</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <button onClick={() => void loadStudents()} title="새로고침" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", border: "1px solid #DCD3F3", borderRadius: 10, background: "#fff", color: "#7B5CF0", cursor: "pointer", fontWeight: 700 }}>
@@ -306,9 +392,16 @@ export default function StudentProgressManager() {
         <div style={{ padding: 50, textAlign: "center", background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, color: "#9A93B5" }}>담당 학급에 등록된 학생 계정이 없습니다.</div>
       ) : (
         <>
-          <div style={{ marginBottom: 12, padding: 12, border: "1px solid #E9E3F3", borderRadius: 15, background: "#fff", boxShadow: "0 6px 18px rgba(90,63,214,.04)" }}>
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.6fr)_repeat(3,minmax(130px,.8fr))_auto]">
-              <label style={{ position: "relative", minWidth: 0 }}>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2" style={{ alignItems: "stretch", marginBottom: 12 }}>
+          <section style={{ display: "flex", height: "100%", flexDirection: "column", padding: 15, border: "1px solid #E9E3F3", borderRadius: 15, background: "#fff", boxShadow: "0 6px 18px rgba(90,63,214,.04)" }} aria-labelledby="student-filter-title">
+            <div style={{ marginBottom: 11 }}>
+              <div id="student-filter-title" style={{ display: "flex", alignItems: "center", gap: 6, color: "#4B416A", fontSize: 13.5, fontWeight: 850 }}>
+                <Search size={15} /> 학생 검색 및 필터
+              </div>
+              <div style={{ marginTop: 3, color: "#8B83A8", fontSize: 11.5 }}>이름과 학급, 학습 상태를 기준으로 학생을 찾아보세요.</div>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label className="sm:col-span-2" style={{ position: "relative", minWidth: 0 }}>
                 <span style={{ position: "absolute", left: 11, top: "50%", display: "grid", placeItems: "center", color: "#9187A8", transform: "translateY(-50%)", pointerEvents: "none" }}><Search size={15} /></span>
                 <input
                   type="search"
@@ -356,25 +449,117 @@ export default function StudentProgressManager() {
               <span>담당 범위 내 학생만 검색됩니다.</span>
               <strong style={{ color: "#6C4BEF" }}>전체 {students.length}명 중 {filteredStudents.length}명</strong>
             </div>
+          </section>
+
+          <section style={{ display: "flex", height: "100%", flexDirection: "column", padding: 15, border: "1px solid #D8CDF7", borderRadius: 15, background: "linear-gradient(135deg,#FCFAFF,#F5F1FF)", boxShadow: "0 6px 18px rgba(90,63,214,.05)" }} aria-labelledby="class-unlock-title">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 11 }}>
+              <div>
+                <div id="class-unlock-title" style={{ display: "flex", alignItems: "center", gap: 6, color: "#4B378F", fontSize: 13.5, fontWeight: 850 }}>
+                  <LockOpen size={15} /> 학급 일괄 잠금 해제
+                </div>
+                <div style={{ marginTop: 3, color: "#8B83A8", fontSize: 11.5 }}>선택한 반 전체에 단원만 열어주며 완료 배지는 지급하지 않습니다.</div>
+              </div>
+              {bulkClassKey && <strong style={{ color: "#6C4BEF", fontSize: 11.5 }}>{bulkClassStudents.length}명 대상</strong>}
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <select
+                value={bulkClassKey}
+                onChange={(event) => {
+                  setBulkClassKey(event.target.value);
+                  setBulkMessage("");
+                }}
+                disabled={bulkUnlocking}
+                aria-label="일괄 잠금 해제 대상 학급"
+                style={{ padding: "9px 10px", border: "1px solid #D5C9F4", borderRadius: 10, background: "#fff", color: "#514574", fontFamily: "inherit", fontSize: 12, fontWeight: 750 }}
+              >
+                {classOptions.filter((classKey) => classKey !== "unassigned").map((classKey) => {
+                  const [grade, classNumber] = classKey.split(":");
+                  const count = students.filter((student) => `${student.grade}:${student.classNumber}` === classKey).length;
+                  return <option key={classKey} value={classKey}>{grade}학년 {classNumber}반 ({count}명)</option>;
+                })}
+              </select>
+
+              <select
+                value={bulkLevel}
+                onChange={(event) => {
+                  setBulkLevel(Number(event.target.value) as 1 | 2 | 3);
+                  setBulkMessage("");
+                }}
+                disabled={bulkUnlocking}
+                aria-label="일괄 잠금 해제 레벨"
+                style={{ padding: "9px 10px", border: "1px solid #D5C9F4", borderRadius: 10, background: "#fff", color: "#514574", fontFamily: "inherit", fontSize: 12, fontWeight: 750 }}
+              >
+                <option value={1}>Lv.1</option>
+                <option value={2}>Lv.2</option>
+                <option value={3}>Lv.3</option>
+              </select>
+
+              <select
+                className="sm:col-span-2"
+                value={bulkConceptId}
+                onChange={(event) => {
+                  setBulkConceptId(event.target.value ? Number(event.target.value) : "");
+                  setBulkMessage("");
+                }}
+                disabled={bulkUnlocking || bulkUnits.length === 0}
+                aria-label="일괄 잠금 해제 단원"
+                style={{ padding: "9px 10px", border: "1px solid #D5C9F4", borderRadius: 10, background: "#fff", color: "#514574", fontFamily: "inherit", fontSize: 12, fontWeight: 750 }}
+              >
+                {bulkUnits.length === 0
+                  ? <option value="">이 레벨에는 단원이 없습니다</option>
+                  : bulkUnits.map((unit) => <option key={unit.id} value={unit.id}>{unit.groupName} · {unit.nameKo}</option>)}
+              </select>
+
+              <button
+                className="sm:col-span-2"
+                type="button"
+                onClick={() => void unlockClassConcept()}
+                disabled={bulkUnlocking || !bulkClassKey || !bulkConceptId || bulkClassStudents.length === 0}
+                aria-busy={bulkUnlocking}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 38, padding: "8px 13px", border: 0, borderRadius: 10, background: "#6C4BEF", color: "#fff", cursor: bulkUnlocking ? "wait" : "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 850, whiteSpace: "nowrap" }}
+              >
+                {bulkUnlocking ? <><LoaderCircle className="animate-spin" size={14} /> 적용 중...</> : <><LockOpen size={14} /> 반 전체 잠금 해제</>}
+              </button>
+            </div>
+
+            {bulkMessage && (
+              <div role={bulkMessageIsError ? "alert" : "status"} aria-live="polite" style={{ marginTop: 10, padding: "8px 10px", borderRadius: 9, background: bulkMessageIsError ? "#FFF0F3" : "#EAF9F4", color: bulkMessageIsError ? "#D93668" : "#168A68", fontSize: 11.5, fontWeight: 750 }}>
+                {bulkMessage}
+              </div>
+            )}
+          </section>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "260px minmax(0, 1fr)", gap: 16, alignItems: "start" }}>
-          <aside style={{ maxHeight: "calc(100vh - 240px)", overflowY: "auto", background: "#fff", border: "1px solid #EFEAF8", borderRadius: 18, padding: 10, boxShadow: "0 8px 24px rgba(90,63,214,.05)" }}>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[310px_minmax(0,1fr)]" style={{ alignItems: "start" }}>
+          <aside aria-label="학생 목록" style={{ height: 650, minHeight: 540, overflowY: "auto", background: "#fff", border: "1px solid #E4DCF1", borderRadius: 18, padding: "0 10px 10px", boxShadow: "0 8px 24px rgba(90,63,214,.07)" }}>
+            <div style={{ position: "sticky", top: 0, zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "0 -2px 8px", padding: "13px 4px 10px", borderBottom: "1px solid #EEE8F6", background: "rgba(255,255,255,.96)", backdropFilter: "blur(8px)" }}>
+              <strong style={{ color: "#493D69", fontSize: 12.5 }}>학생 목록</strong>
+              <span style={{ padding: "3px 7px", borderRadius: 99, background: "#F0EBFC", color: "#6C4BEF", fontSize: 10.5, fontWeight: 850 }}>{filteredStudents.length}명</span>
+            </div>
             {filteredStudents.length === 0 ? (
               <div style={{ padding: "38px 12px", textAlign: "center", color: "#9A93B5", fontSize: 12.5, lineHeight: 1.6 }}>
                 조건에 맞는 학생이 없습니다.<br />검색어나 필터를 변경해 주세요.
               </div>
-            ) : filteredStudents.map((student) => {
+            ) : filteredStudents.map((student, index) => {
               const active = student.id === selectedStudentId;
               const studentProgress = progressForStudent(student);
               return (
-                <button key={student.id} aria-pressed={active} onClick={() => { setSelectedStudentId(student.id); setMessage(""); }} style={{ width: "100%", textAlign: "left", padding: "12px 13px", marginBottom: 5, border: active ? "1px solid #CFC2F5" : "1px solid transparent", borderRadius: 12, background: active ? "#F3EFFE" : "transparent", cursor: "pointer", fontFamily: "inherit" }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: active ? "#6C4BEF" : "#443B63" }}>{student.displayName || student.username}</div>
-                  <div style={{ marginTop: 2, fontSize: 11.5, color: "#9A93B5" }}>{student.grade && student.classNumber ? `${student.grade}-${student.classNumber} · ` : ""}{student.seatNumber ? `${student.seatNumber}번 · ` : ""}학번 {student.studentNumber || student.username}</div>
-                  <div style={{ marginTop: 8, height: 5, borderRadius: 99, background: "#EDE8F8", overflow: "hidden" }}>
-                    <div style={{ width: `${studentProgress.percent}%`, height: "100%", background: "linear-gradient(90deg,#9B7FFF,#18C99A)" }} />
-                  </div>
-                  <div style={{ marginTop: 4, fontSize: 11, color: "#7A7198" }}>{studentProgress.completed}/{studentProgress.total} 완료</div>
+                <button key={student.id} aria-pressed={active} onClick={() => { setSelectedStudentId(student.id); setMessage(""); }} style={{ display: "grid", gridTemplateColumns: "38px minmax(0,1fr)", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "11px 12px", marginBottom: 8, border: active ? "1.5px solid #A992EE" : "1px solid #E9E3F2", borderRadius: 13, background: active ? "linear-gradient(135deg,#F3EFFE,#FAF8FF)" : "#FCFBFE", boxShadow: active ? "0 5px 14px rgba(108,75,239,.12)" : "0 2px 7px rgba(72,53,110,.04)", cursor: "pointer", fontFamily: "inherit" }}>
+                  <span aria-hidden="true" style={{ display: "grid", width: 38, height: 38, placeItems: "center", borderRadius: 12, background: active ? "#6C4BEF" : "#EEE9F8", color: active ? "#fff" : "#746A91", fontSize: 12, fontWeight: 900 }}>
+                    {student.seatNumber ?? index + 1}
+                  </span>
+                  <span style={{ display: "block", minWidth: 0 }}>
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 7 }}>
+                      <strong style={{ overflow: "hidden", color: active ? "#5E3FD2" : "#443B63", fontSize: 13.5, fontWeight: 850, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{student.displayName || student.username}</strong>
+                      <small style={{ flex: "none", color: active ? "#6C4BEF" : "#8C82A3", fontSize: 9.5, fontWeight: 800 }}>{studentProgress.percent}%</small>
+                    </span>
+                    <span style={{ display: "block", overflow: "hidden", marginTop: 2, color: "#938BA7", fontSize: 10.5, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{student.grade && student.classNumber ? `${student.grade}학년 ${student.classNumber}반 · ` : ""}{student.seatNumber ? `${student.seatNumber}번` : `학번 ${student.studentNumber || student.username}`}</span>
+                    <span style={{ display: "block", marginTop: 7, height: 5, borderRadius: 99, background: "#E9E3F3", overflow: "hidden" }}>
+                      <span style={{ display: "block", width: `${studentProgress.percent}%`, height: "100%", background: "linear-gradient(90deg,#8C6AF0,#18C99A)" }} />
+                    </span>
+                    <span style={{ display: "block", marginTop: 4, color: "#756C8E", fontSize: 10 }}>{studentProgress.completed}/{studentProgress.total}개 단원 완료</span>
+                  </span>
                 </button>
               );
             })}
