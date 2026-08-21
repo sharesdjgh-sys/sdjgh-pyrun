@@ -853,6 +853,20 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
 
   const selectedMechdogExample = MECDOG_EXAMPLES.find(e => e.id === selectedMechdogId);
 
+  const selectedExampleCode = mode === "mechdog"
+    ? selectedMechdogExample?.code
+    : mode === "lv3"
+      ? curriculum[selectedLv3ConceptId]?.exampleCode
+      : curriculum[selectedConceptId]?.exampleCode;
+  const selectedPracticeCode = mode === "mechdog"
+    ? undefined
+    : mode === "lv3"
+      ? curriculum[selectedLv3ConceptId]?.practiceCode
+      : curriculum[selectedConceptId]?.practiceCode;
+  const exampleIsApplied = Boolean(selectedExampleCode) && code === selectedExampleCode;
+  const practiceIsApplied = Boolean(selectedPracticeCode) && code === selectedPracticeCode;
+  const resetIsApplied = code === INITIAL_CODE && !hasRun;
+
   const displayConcept = mode === "mechdog"
     ? {
         nameKo: selectedMechdogExample?.label ?? "mechdog 시뮬레이션",
@@ -1283,12 +1297,14 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                 <div style={{ display: "flex", alignItems: "center", gap: 3, background: "#F4F0FE", borderRadius: 8, padding: "2px 4px" }}>
                   <button
                     onClick={() => setFontSize(s => Math.max(7, s - 1))}
+                    disabled={fontSize <= 7}
                     title="글자 크기 줄이기"
                     style={{ width: 22, height: 22, border: "none", background: "transparent", cursor: "pointer", color: "#7B5CF0", fontWeight: 700, fontSize: 14, lineHeight: 1, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}
                   >−</button>
                   <span style={{ fontSize: 11, fontWeight: 600, color: "#7B5CF0", minWidth: 28, textAlign: "center" }}>{fontSize}pt</span>
                   <button
                     onClick={() => setFontSize(s => Math.min(16, s + 1))}
+                    disabled={fontSize >= 16}
                     title="글자 크기 키우기"
                     style={{ width: 22, height: 22, border: "none", background: "transparent", cursor: "pointer", color: "#7B5CF0", fontWeight: 700, fontSize: 14, lineHeight: 1, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}
                   >+</button>
@@ -1411,6 +1427,8 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
               {/* Load example */}
               <button
                 onClick={handleLoadExample}
+                disabled={exampleIsApplied}
+                aria-pressed={exampleIsApplied}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1433,12 +1451,15 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                   <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
                   <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
                 </svg>
-                예제 불러오기
+                {exampleIsApplied ? "예제 적용됨" : "예제 불러오기"}
               </button>
 
               {/* Load practice */}
               <button
                 onClick={handleLoadPractice}
+                disabled={mode === "mechdog" || practiceIsApplied || !selectedPracticeCode}
+                aria-pressed={practiceIsApplied}
+                title={mode === "mechdog" ? "Mechdog 모드에서는 문제 코드를 제공하지 않습니다." : undefined}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1461,7 +1482,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
-                문제 풀기
+                {practiceIsApplied ? "문제 적용됨" : "문제 풀기"}
               </button>
 
               {/* Generate extra AI practice */}
@@ -1529,6 +1550,8 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
               {/* Reset */}
               <button
                 onClick={handleReset}
+                disabled={resetIsApplied}
+                aria-pressed={resetIsApplied}
                 style={{
                   marginLeft: "auto",
                   display: "flex",
@@ -1558,7 +1581,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                   <polyline points="1 4 1 10 7 10" />
                   <path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10" />
                 </svg>
-                초기화
+                {resetIsApplied ? "초기 상태" : "초기화"}
               </button>
 
               {pyLoading && (

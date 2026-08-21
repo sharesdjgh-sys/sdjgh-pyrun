@@ -9,6 +9,8 @@ import StudentProfileModal from "@/components/account/StudentProfileModal";
 
 export default function Header() {
   const [profileOpen, setProfileOpen] = useState(false);
+  const [progressNavigating, setProgressNavigating] = useState(false);
+  const [managementNavigating, setManagementNavigating] = useState(false);
   const [schoolBranding, setSchoolBranding] = useState<{ name: string; logoUrl: string | null; logoScale: number } | null>(null);
   const { data: session, status } = useSession();
   const sessionUser = session?.user as { username?: string; nickname?: string; displayName?: string; role?: string } | undefined;
@@ -121,30 +123,46 @@ export default function Header() {
         {canManage && (
           <Link
             href="/admin"
+            className={`header-management-link${managementNavigating ? " is-navigating" : ""}`}
             title={isAdmin ? "관리자 설정" : "관리"}
+            aria-busy={managementNavigating}
+            aria-disabled={managementNavigating}
+            onClick={(event) => {
+              if (managementNavigating) {
+                event.preventDefault();
+                return;
+              }
+              setManagementNavigating(true);
+            }}
             style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #C9BFEE", borderRadius: 99, padding: "8px 14px", fontSize: 13.5, fontWeight: 700, color: "#7B5CF0", textDecoration: "none", whiteSpace: "nowrap" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#F6F2FE")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
           >
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
-            {isAdmin ? "관리자 설정" : "관리"}
+            {managementNavigating ? "이동 중..." : isAdmin ? "관리자 설정" : "관리"}
           </Link>
         )}
 
         {/* Progress link */}
         <Link
           href="/progress"
+          className={`header-growth-record-link${progressNavigating ? " is-navigating" : ""}`}
+          aria-busy={progressNavigating}
+          aria-disabled={progressNavigating}
+          onClick={(event) => {
+            if (progressNavigating) {
+              event.preventDefault();
+              return;
+            }
+            setProgressNavigating(true);
+          }}
           style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #ECE7F8", borderRadius: 99, padding: "8px 14px", fontSize: 13.5, fontWeight: 700, color: "#7B5CF0", textDecoration: "none", whiteSpace: "nowrap" }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#F6F2FE")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
             <polyline points="16 7 22 7 22 13" />
           </svg>
-          성장 기록
+          {progressNavigating ? "이동 중..." : "성장 기록"}
         </Link>
 
         {/* Logout */}

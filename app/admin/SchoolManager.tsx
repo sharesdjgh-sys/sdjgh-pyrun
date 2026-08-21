@@ -97,8 +97,8 @@ export default function SchoolManager() {
             <div style={{ color: "#3D2E8A", fontWeight: 900, fontSize: 17 }}>등록 학교</div>
             <div style={{ marginTop: 3, color: "#8B83A8", fontSize: 12.5 }}>총 {schools.length}개 학교</div>
           </div>
-          <button onClick={() => void loadSchools()} title="새로고침" style={{ marginLeft: "auto", padding: 8, border: "1px solid #E0D9F5", borderRadius: 9, background: "#fff", color: "#7B5CF0", cursor: "pointer" }}>
-            <RefreshCw size={15} />
+          <button onClick={() => void loadSchools()} disabled={loading} aria-busy={loading} title="새로고침" style={{ marginLeft: "auto", padding: 8, border: "1px solid #E0D9F5", borderRadius: 9, background: "#fff", color: "#7B5CF0", cursor: loading ? "wait" : "pointer" }}>
+            <RefreshCw size={15} className={loading ? "button-loading-spinner" : undefined} />
           </button>
         </div>
         {loading ? (

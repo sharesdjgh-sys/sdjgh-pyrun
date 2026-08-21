@@ -5,6 +5,7 @@ import { SessionProvider } from "next-auth/react";
 import { auth } from "@/lib/auth";
 import PwaRegister from "@/components/PwaRegister";
 import MobileWarningModal from "@/components/MobileWarningModal";
+import InteractionFeedback from "@/components/InteractionFeedback";
 
 const jua = Jua({
   weight: "400",
@@ -56,6 +57,7 @@ export default async function RootLayout({
         style={{ fontFamily: "'Pretendard Variable', Pretendard, sans-serif" }}
       >
         <SessionProvider session={session}>
+          <InteractionFeedback />
           {children}
           <PwaRegister />
           <MobileWarningModal />
