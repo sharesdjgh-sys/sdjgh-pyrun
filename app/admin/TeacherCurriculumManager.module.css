@@ -129,6 +129,13 @@
   --level-tint: #fff1d5;
 }
 
+.levelTabs button[data-activity="mechdog"],
+.unitRow[data-activity="mechdog"] {
+  --level-color: #b96820;
+  --level-light: #e99a50;
+  --level-tint: #fff1e2;
+}
+
 .levelTabs button strong {
   font-size: 10.5px;
 }
@@ -142,6 +149,33 @@
   background: linear-gradient(135deg, var(--level-light), var(--level-color));
   color: #fff;
   box-shadow: 0 3px 9px color-mix(in srgb, var(--level-color) 24%, transparent);
+}
+
+.levelActions {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 1px 9px;
+}
+
+.levelActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid #f0c8cf;
+  border-radius: 8px;
+  background: #fff7f8;
+  color: #b23b50;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.levelActions button:hover:not(:disabled) {
+  border-color: #e6a7b2;
+  background: #fff0f2;
 }
 
 .unitList {
@@ -299,6 +333,7 @@
 
 .editorHeading > span[data-level="1"] { background: #e2f8f6; color: #087f8c; }
 .editorHeading > span[data-level="3"] { background: #fff1d5; color: #ad6209; }
+.editorHeading > span[data-activity="mechdog"] { background: #fff1e2; color: #b96820; }
 
 .basicFields {
   display: grid;

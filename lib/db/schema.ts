@@ -113,6 +113,34 @@ export const concepts = pgTable(
   })
 );
 
+export const mechdogUnits = pgTable(
+  "mechdog_units",
+  {
+    id: serial("id").primaryKey(),
+    curriculumId: integer("curriculum_id")
+      .notNull()
+      .references(() => curriculumSets.id, { onDelete: "cascade" }),
+    createdByUserId: integer("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    nameKo: varchar("name_ko", { length: 50 }).notNull(),
+    nameEn: varchar("name_en", { length: 50 }).notNull(),
+    groupName: varchar("group_name", { length: 80 }).notNull().default("기타"),
+    orderIndex: integer("order_index").notNull(),
+    description: text("description"),
+    exampleCode: text("example_code"),
+    isActive: boolean("is_active").notNull().default(true),
+  },
+  (table) => ({
+    curriculumOrderIndex: index("mechdog_units_curriculum_order_index").on(
+      table.curriculumId,
+      table.orderIndex
+    ),
+    curriculumNameUnique: uniqueIndex("mechdog_units_curriculum_name_unique").on(
+      table.curriculumId,
+      table.nameEn
+    ),
+  })
+);
+
 export const badges = pgTable("badges", {
   id: serial("id").primaryKey(),
   conceptId: integer("concept_id")

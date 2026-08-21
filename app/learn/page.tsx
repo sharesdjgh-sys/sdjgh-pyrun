@@ -9,6 +9,7 @@ import { isStudentRole } from "@/lib/roles";
 import { createStudentPracticeTemplate } from "@/lib/practice-template";
 import { getCurriculumUnits, resolveCurriculumIdForUser, sessionTenant } from "@/lib/curriculum-access";
 import type { CurriculumView } from "@/lib/curriculum-model";
+import { ensureDefaultMechdogUnits, getMechdogUnits } from "@/lib/mechdog-access";
 
 export default async function LearnPage() {
   const session = await auth();
@@ -17,7 +18,10 @@ export default async function LearnPage() {
   if (!context) redirect("/login");
 
   const curriculumId = await resolveCurriculumIdForUser(context);
-  const rows = curriculumId ? await getCurriculumUnits(curriculumId) : [];
+  if (curriculumId) await ensureDefaultMechdogUnits(curriculumId, context.userId);
+  const [rows, mechdogRows] = curriculumId
+    ? await Promise.all([getCurriculumUnits(curriculumId), getMechdogUnits(curriculumId)])
+    : [[], []];
   const [curriculumSet] = curriculumId
     ? await db
         .select({ id: curriculumSets.id, name: curriculumSets.name })
@@ -49,6 +53,15 @@ export default async function LearnPage() {
       badgeNameKo: row.badgeNameKo ?? `${row.nameKo} 완료`,
       iconName: row.iconName ?? "Award",
       colorClass: row.colorClass ?? "text-purple-500",
+    })),
+    mechdogUnits: mechdogRows.map((row) => ({
+      id: row.id,
+      nameKo: row.nameKo,
+      nameEn: row.nameEn,
+      groupName: row.groupName,
+      orderIndex: row.orderIndex,
+      description: row.description ?? "",
+      exampleCode: row.exampleCode ?? "",
     })),
   };
 

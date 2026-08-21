@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { canManageCurriculum, getCurriculumUnits, sessionTenant } from "@/lib/curriculum-access";
 import { db } from "@/lib/db/index";
+import { ensureDefaultMechdogUnits, getMechdogUnits } from "@/lib/mechdog-access";
 import {
   badges,
   classCurriculumAssignments,
@@ -29,7 +30,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ cur
     .from(curriculumSets)
     .where(and(eq(curriculumSets.id, curriculumId), eq(curriculumSets.schoolId, context.schoolId)))
     .limit(1);
-  return NextResponse.json({ curriculum, units: await getCurriculumUnits(curriculumId) });
+  await ensureDefaultMechdogUnits(curriculumId, context.userId);
+  const [units, mechdogUnits] = await Promise.all([
+    getCurriculumUnits(curriculumId),
+    getMechdogUnits(curriculumId),
+  ]);
+  return NextResponse.json({ curriculum, units, mechdogUnits });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ curriculumId: string }> }) {

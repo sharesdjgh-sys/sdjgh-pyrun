@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq, inArray, isNull, or } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
-import { badges, classCurriculumAssignments, concepts, curriculumSets, teacherClassAssignments, users } from "@/lib/db/schema";
+import { badges, classCurriculumAssignments, concepts, curriculumSets, mechdogUnits, teacherClassAssignments, users } from "@/lib/db/schema";
 import { getCurriculumUnits, sessionTenant } from "@/lib/curriculum-access";
+import { ensureDefaultMechdogUnits, getMechdogUnits } from "@/lib/mechdog-access";
 import { canOpenAdminPage, isAdministratorRole } from "@/lib/roles";
 
 export async function GET() {
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
   if (!name) return NextResponse.json({ error: "커리큘럼 이름을 입력해주세요." }, { status: 400 });
 
   let sourceUnits: Awaited<ReturnType<typeof getCurriculumUnits>> = [];
+  let sourceMechdogUnits: Awaited<ReturnType<typeof getMechdogUnits>> = [];
   if (Number.isInteger(cloneFromId) && cloneFromId > 0) {
     const [source] = await db
       .select({ id: curriculumSets.id })
@@ -89,7 +91,11 @@ export async function POST(req: NextRequest) {
       .where(and(eq(curriculumSets.id, cloneFromId), eq(curriculumSets.schoolId, context.schoolId)))
       .limit(1);
     if (!source) return NextResponse.json({ error: "복제할 커리큘럼을 찾을 수 없습니다." }, { status: 404 });
-    sourceUnits = await getCurriculumUnits(source.id);
+    await ensureDefaultMechdogUnits(source.id, context.userId);
+    [sourceUnits, sourceMechdogUnits] = await Promise.all([
+      getCurriculumUnits(source.id),
+      getMechdogUnits(source.id, true),
+    ]);
   }
 
   const [created] = await db
@@ -126,6 +132,19 @@ export async function POST(req: NextRequest) {
         iconName: source.iconName ?? "Award",
         colorClass: source.colorClass ?? "text-purple-500",
       });
+    }
+    if (sourceMechdogUnits.length > 0) {
+      await db.insert(mechdogUnits).values(sourceMechdogUnits.map((source) => ({
+        curriculumId: created.id,
+        createdByUserId: context.userId,
+        nameKo: source.nameKo,
+        nameEn: source.nameEn,
+        groupName: source.groupName,
+        orderIndex: source.orderIndex,
+        description: source.description,
+        exampleCode: source.exampleCode,
+        isActive: source.isActive,
+      })));
     }
   } catch (error) {
     await db.delete(curriculumSets).where(eq(curriculumSets.id, created.id));

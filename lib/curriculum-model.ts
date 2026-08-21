@@ -14,6 +14,15 @@ export type CurriculumView = {
   id: number;
   name: string;
   units: LearningUnitMeta[];
+  mechdogUnits: Array<{
+    id: number;
+    nameKo: string;
+    nameEn: string;
+    groupName: string;
+    orderIndex: number;
+    description: string;
+    exampleCode: string;
+  }>;
 };
 
 type OrderableLearningUnit = {

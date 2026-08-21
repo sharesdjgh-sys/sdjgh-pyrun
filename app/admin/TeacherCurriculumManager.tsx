@@ -19,6 +19,7 @@ type CurriculumSummary = {
 
 type Unit = {
   id: number;
+  activityType: "python" | "mechdog";
   nameKo: string;
   nameEn: string;
   groupName: string;
@@ -29,12 +30,27 @@ type Unit = {
   practiceCode: string | null;
 };
 
+type UnitLevelFilter = 1 | 2 | 3 | "mechdog";
+
+type UnitForm = {
+  activityType: "python" | "mechdog";
+  nameKo: string;
+  nameEn: string;
+  groupName: string;
+  level: number;
+  orderIndex: number;
+  description: string;
+  exampleCode: string;
+  practiceCode: string;
+};
+
 type AssignableClass = {
   grade: number;
   classNumber: number;
 };
 
-const emptyUnit = {
+const emptyUnit: UnitForm = {
+  activityType: "python",
   nameKo: "",
   nameEn: "",
   groupName: "기타",
@@ -65,7 +81,7 @@ export default function TeacherCurriculumManager() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
   const [unitForm, setUnitForm] = useState(emptyUnit);
-  const [unitLevelFilter, setUnitLevelFilter] = useState(1);
+  const [unitLevelFilter, setUnitLevelFilter] = useState<UnitLevelFilter>(1);
   const [activeCodeTab, setActiveCodeTab] = useState<"example" | "practice">("example");
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [runningCode, setRunningCode] = useState(false);
@@ -81,15 +97,21 @@ export default function TeacherCurriculumManager() {
   const [message, setMessage] = useState("");
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"create" | "assign" | "add-unit" | "save-unit" | "delete-unit" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"create" | "assign" | "add-unit" | "save-unit" | "delete-unit" | "delete-level" | null>(null);
 
   const selectedCurriculum = curricula.find((item) => item.id === selectedCurriculumId);
-  const selectedUnit = units.find((item) => item.id === selectedUnitId);
+  const selectedUnit = units.find((item) =>
+    item.id === selectedUnitId && (unitLevelFilter === "mechdog"
+      ? item.activityType === "mechdog"
+      : item.activityType === "python" && item.level === unitLevelFilter)
+  );
   const assignmentGroups = assignableClasses.reduce<Record<number, AssignableClass[]>>((groups, item) => {
     (groups[item.grade] ??= []).push(item);
     return groups;
   }, {});
-  const visibleUnits = units.filter((item) => item.level === unitLevelFilter);
+  const visibleUnits = units.filter((item) => unitLevelFilter === "mechdog"
+    ? item.activityType === "mechdog"
+    : item.activityType === "python" && item.level === unitLevelFilter);
   const activeCode = activeCodeTab === "example" ? unitForm.exampleCode : unitForm.practiceCode;
   const { loading: pyLoading, error: pyError, lv3Loading, initLv3, executeCode } = usePyodide();
 
@@ -111,9 +133,24 @@ export default function TeacherCurriculumManager() {
     const response = await fetch(`/api/admin/curricula/${curriculumId}`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.error ?? "단원을 불러오지 못했습니다.");
-    setUnits(data.units ?? []);
-    setSelectedUnitId((current) => data.units?.some((item: Unit) => item.id === current) ? current : data.units?.[0]?.id ?? null);
-  }, []);
+    const nextUnits: Unit[] = [
+      ...(data.units ?? []).map((item: Omit<Unit, "activityType">) => ({ ...item, activityType: "python" as const })),
+      ...(data.mechdogUnits ?? []).map((item: Omit<Unit, "activityType" | "level" | "practiceCode">) => ({
+        ...item,
+        activityType: "mechdog" as const,
+        level: 1,
+        practiceCode: null,
+      })),
+    ];
+    setUnits(nextUnits);
+    setSelectedUnitId((current) => nextUnits.some((item) =>
+      item.id === current && (unitLevelFilter === "mechdog"
+        ? item.activityType === "mechdog"
+        : item.activityType === "python" && item.level === unitLevelFilter)
+    ) ? current : nextUnits.find((item) => unitLevelFilter === "mechdog"
+      ? item.activityType === "mechdog"
+      : item.activityType === "python" && item.level === unitLevelFilter)?.id ?? null);
+  }, [unitLevelFilter]);
 
   useEffect(() => {
     loadCurricula().catch((error) => setMessage(error instanceof Error ? error.message : "조회 오류"));
@@ -132,8 +169,10 @@ export default function TeacherCurriculumManager() {
       setUnitForm(emptyUnit);
       return;
     }
-    setUnitLevelFilter(selectedUnit.level);
+    if (selectedUnit.activityType === "mechdog") setActiveCodeTab("example");
+    setUnitLevelFilter(selectedUnit.activityType === "mechdog" ? "mechdog" : selectedUnit.level as 1 | 2 | 3);
     setUnitForm({
+      activityType: selectedUnit.activityType,
       nameKo: selectedUnit.nameKo,
       nameEn: selectedUnit.nameEn,
       groupName: selectedUnit.groupName,
@@ -233,24 +272,25 @@ export default function TeacherCurriculumManager() {
     setBusy(true);
     setPendingAction("add-unit");
     try {
-      const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/units`, {
+      const isMechdog = unitLevelFilter === "mechdog";
+      const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/${isMechdog ? "mechdog-units" : "units"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nameKo: "새 단원",
-          nameEn: "new_unit",
-          groupName: "새 단원",
-          level: 1,
+          nameKo: isMechdog ? "새 Mechdog 단원" : `새 Lv.${unitLevelFilter} 단원`,
+          nameEn: isMechdog ? "" : `new_unit_${Date.now()}`,
+          groupName: isMechdog ? "Mechdog 실습" : "새 단원",
+          level: isMechdog ? 1 : unitLevelFilter,
           description: "단원 설명을 입력하세요.",
-          exampleCode: "# 예제 코드를 입력하세요.",
-          practiceCode: "# 문제를 입력하세요.",
+          exampleCode: isMechdog ? "from HW_MechDog import MechDog\n\nmechdog = MechDog()\n" : "# 예제 코드를 입력하세요.",
+          practiceCode: isMechdog ? "" : "# 문제를 입력하세요.",
         }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "단원 추가에 실패했습니다.");
       await loadUnits(selectedCurriculumId);
       setSelectedUnitId(data.unit.id);
-      setMessage("새 단원을 추가했습니다.");
+      setMessage(isMechdog ? "새 Mechdog 단원을 추가했습니다." : `Lv.${unitLevelFilter}에 새 단원을 추가했습니다.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "추가 오류");
     } finally {
@@ -264,7 +304,8 @@ export default function TeacherCurriculumManager() {
     setBusy(true);
     setPendingAction("save-unit");
     try {
-      const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/units/${selectedUnitId}`, {
+      const path = selectedUnit?.activityType === "mechdog" ? "mechdog-units" : "units";
+      const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/${path}/${selectedUnitId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(unitForm),
@@ -286,7 +327,8 @@ export default function TeacherCurriculumManager() {
     setBusy(true);
     setPendingAction("delete-unit");
     try {
-      const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/units/${selectedUnitId}`, { method: "DELETE" });
+      const path = selectedUnit?.activityType === "mechdog" ? "mechdog-units" : "units";
+      const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/${path}/${selectedUnitId}`, { method: "DELETE" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "단원 삭제에 실패했습니다.");
       setSelectedUnitId(null);
@@ -294,6 +336,31 @@ export default function TeacherCurriculumManager() {
       setMessage("단원을 삭제했습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "삭제 오류");
+    } finally {
+      setPendingAction(null);
+      setBusy(false);
+    }
+  }
+
+  async function deleteCurrentLevel() {
+    if (!selectedCurriculumId || visibleUnits.length === 0 || busy) return;
+    const label = unitLevelFilter === "mechdog" ? "Mechdog" : `Lv.${unitLevelFilter}`;
+    if (!confirm(`${label}의 단원 ${visibleUnits.length}개를 모두 삭제할까요? 기존 학생 기록은 보존됩니다.`)) return;
+
+    setBusy(true);
+    setPendingAction("delete-level");
+    try {
+      const path = unitLevelFilter === "mechdog"
+        ? "mechdog-units"
+        : `units?level=${unitLevelFilter}`;
+      const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/${path}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? `${label} 전체 삭제에 실패했습니다.`);
+      setSelectedUnitId(null);
+      await loadUnits(selectedCurriculumId);
+      setMessage(`${label} 단원 ${data.deletedCount ?? visibleUnits.length}개를 삭제했습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "레벨 전체 삭제 오류");
     } finally {
       setPendingAction(null);
       setBusy(false);
@@ -452,40 +519,55 @@ export default function TeacherCurriculumManager() {
                     <h3 id="curriculum-map-title">단원 구성</h3>
                   </div>
                   <button type="button" onClick={addUnit} disabled={busy} className={styles.addUnitButton}>
-                    {pendingAction === "add-unit" ? <><LoaderCircle size={14} className={styles.spin} /> 추가 중...</> : <><Plus size={14} /> 단원 추가</>}
+                    {pendingAction === "add-unit" ? <><LoaderCircle size={14} className={styles.spin} /> 추가 중...</> : <><Plus size={14} /> {unitLevelFilter === "mechdog" ? "Mechdog 단원 추가" : `Lv.${unitLevelFilter} 단원 추가`}</>}
                   </button>
                 </div>
 
                 <div className={styles.levelTabs} role="tablist" aria-label="편집할 레벨 선택">
-                  {([1, 2, 3] as const).map((level) => {
-                    const count = units.filter((unit) => unit.level === level).length;
+                  {([1, 2, 3, "mechdog"] as const).map((level) => {
+                    const count = units.filter((unit) => level === "mechdog"
+                      ? unit.activityType === "mechdog"
+                      : unit.activityType === "python" && unit.level === level).length;
                     return (
                       <button
                         key={level}
                         type="button"
                         role="tab"
                         aria-selected={unitLevelFilter === level}
-                        data-level={level}
+                        data-level={level === "mechdog" ? undefined : level}
+                        data-activity={level === "mechdog" ? "mechdog" : "python"}
                         className={unitLevelFilter === level ? styles.levelTabActive : ""}
                         onClick={() => {
                           setUnitLevelFilter(level);
-                          const firstUnit = units.find((unit) => unit.level === level);
-                          if (firstUnit) setSelectedUnitId(firstUnit.id);
+                          const firstUnit = units.find((unit) => level === "mechdog"
+                            ? unit.activityType === "mechdog"
+                            : unit.activityType === "python" && unit.level === level);
+                          setSelectedUnitId(firstUnit?.id ?? null);
                         }}
                       >
-                        <strong>Lv.{level}</strong>
+                        <strong>{level === "mechdog" ? "Mechdog" : `Lv.${level}`}</strong>
                         <span>{count}개</span>
                       </button>
                     );
                   })}
                 </div>
 
+                {visibleUnits.length > 0 && (
+                  <div className={styles.levelActions}>
+                    <button type="button" onClick={deleteCurrentLevel} disabled={busy} aria-busy={pendingAction === "delete-level"}>
+                      {pendingAction === "delete-level"
+                        ? <><LoaderCircle size={13} className={styles.spin} /> 전체 삭제 중...</>
+                        : <><Trash2 size={13} /> {unitLevelFilter === "mechdog" ? "Mechdog 전체 삭제" : `Lv.${unitLevelFilter} 전체 삭제`}</>}
+                    </button>
+                  </div>
+                )}
+
                 <div className={styles.unitList}>
                   {visibleUnits.length === 0 ? (
                     <div className={styles.emptyLevel}>
                       <Sparkles size={20} />
                       <strong>아직 단원이 없습니다</strong>
-                      <span>단원을 추가한 뒤 레벨을 설정해 주세요.</span>
+                      <span>{unitLevelFilter === "mechdog" ? "Mechdog 단원을 추가해 주세요." : `Lv.${unitLevelFilter} 단원을 추가해 주세요.`}</span>
                     </div>
                   ) : visibleUnits.map((unit, index) => {
                     const active = selectedUnitId === unit.id;
@@ -494,7 +576,8 @@ export default function TeacherCurriculumManager() {
                         key={unit.id}
                         type="button"
                         aria-pressed={active}
-                        data-level={unit.level}
+                        data-level={unit.activityType === "mechdog" ? undefined : unit.level}
+                        data-activity={unit.activityType}
                         className={`${styles.unitRow} ${active ? styles.unitRowActive : ""}`}
                         onClick={() => setSelectedUnitId(unit.id)}
                       >
@@ -519,9 +602,11 @@ export default function TeacherCurriculumManager() {
                     <div>
                       <div className={styles.sectionKicker}><PencilLine size={14} /> UNIT EDITOR</div>
                       <h3 id="unit-editor-title">{selectedUnit.nameKo}</h3>
-                      <p>학생 대시보드에 표시될 단원 정보와 코드를 편집합니다.</p>
+                      <p>{unitForm.activityType === "mechdog" ? "학생 Mechdog 시뮬레이션에 표시될 단원과 코드를 편집합니다." : "학생 대시보드에 표시될 단원 정보와 코드를 편집합니다."}</p>
                     </div>
-                    <span data-level={unitForm.level}>Lv.{unitForm.level}</span>
+                    <span data-level={unitForm.activityType === "mechdog" ? undefined : unitForm.level} data-activity={unitForm.activityType}>
+                      {unitForm.activityType === "mechdog" ? "Mechdog" : `Lv.${unitForm.level}`}
+                    </span>
                   </div>
 
                   <div className={styles.basicFields}>
@@ -537,10 +622,16 @@ export default function TeacherCurriculumManager() {
                       <span>그룹</span>
                       <input style={inputStyle} value={unitForm.groupName} onChange={(e) => setUnitForm({ ...unitForm, groupName: e.target.value })} placeholder="그룹명" />
                     </label>
-                    <label>
-                      <span>레벨</span>
-                      <input style={inputStyle} type="number" min={1} max={3} value={unitForm.level} onChange={(e) => setUnitForm({ ...unitForm, level: Number(e.target.value) })} />
-                    </label>
+                    {unitForm.activityType === "python" && (
+                      <label>
+                        <span>레벨</span>
+                        <select style={inputStyle} value={unitForm.level} onChange={(e) => setUnitForm({ ...unitForm, level: Number(e.target.value) })}>
+                          <option value={1}>Lv.1</option>
+                          <option value={2}>Lv.2</option>
+                          <option value={3}>Lv.3</option>
+                        </select>
+                      </label>
+                    )}
                     <label>
                       <span>표시 순서</span>
                       <input style={inputStyle} type="number" min={0} value={unitForm.orderIndex} onChange={(e) => setUnitForm({ ...unitForm, orderIndex: Number(e.target.value) })} />
@@ -567,15 +658,17 @@ export default function TeacherCurriculumManager() {
                         >
                           <Code2 size={13} /> 예제 코드
                         </button>
-                        <button
-                          type="button"
-                          role="tab"
-                          aria-selected={activeCodeTab === "practice"}
-                          className={activeCodeTab === "practice" ? styles.codeTabActive : ""}
-                          onClick={() => setActiveCodeTab("practice")}
-                        >
-                          <Code2 size={13} /> 문제 코드
-                        </button>
+                        {unitForm.activityType === "python" && (
+                          <button
+                            type="button"
+                            role="tab"
+                            aria-selected={activeCodeTab === "practice"}
+                            className={activeCodeTab === "practice" ? styles.codeTabActive : ""}
+                            onClick={() => setActiveCodeTab("practice")}
+                          >
+                            <Code2 size={13} /> 문제 코드
+                          </button>
+                        )}
                       </div>
                       <button
                         type="button"
@@ -623,7 +716,7 @@ export default function TeacherCurriculumManager() {
                       {pendingAction === "save-unit" ? <><LoaderCircle size={14} className={styles.spin} /> 저장 중...</> : <><Save size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 저장</>}
                     </button>
                     <button onClick={deleteUnit} disabled={busy} className={styles.deleteButton}>
-                      {pendingAction === "delete-unit" ? <><LoaderCircle size={14} className={styles.spin} /> 삭제 중...</> : <><Trash2 size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 삭제</>}
+                      {pendingAction === "delete-unit" ? <><LoaderCircle size={14} className={styles.spin} /> 삭제 중...</> : <><Trash2 size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 선택 단원 삭제</>}
                     </button>
                   </div>
                 </section>
