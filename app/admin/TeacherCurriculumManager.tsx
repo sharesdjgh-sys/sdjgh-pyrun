@@ -81,7 +81,7 @@ export default function TeacherCurriculumManager() {
   const [message, setMessage] = useState("");
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"create" | "assign" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"create" | "assign" | "add-unit" | "save-unit" | "delete-unit" | null>(null);
 
   const selectedCurriculum = curricula.find((item) => item.id === selectedCurriculumId);
   const selectedUnit = units.find((item) => item.id === selectedUnitId);
@@ -231,6 +231,7 @@ export default function TeacherCurriculumManager() {
   async function addUnit() {
     if (!selectedCurriculumId || busy) return;
     setBusy(true);
+    setPendingAction("add-unit");
     try {
       const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/units`, {
         method: "POST",
@@ -253,6 +254,7 @@ export default function TeacherCurriculumManager() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "추가 오류");
     } finally {
+      setPendingAction(null);
       setBusy(false);
     }
   }
@@ -260,6 +262,7 @@ export default function TeacherCurriculumManager() {
   async function saveUnit() {
     if (!selectedCurriculumId || !selectedUnitId || busy) return;
     setBusy(true);
+    setPendingAction("save-unit");
     try {
       const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/units/${selectedUnitId}`, {
         method: "PUT",
@@ -273,6 +276,7 @@ export default function TeacherCurriculumManager() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "저장 오류");
     } finally {
+      setPendingAction(null);
       setBusy(false);
     }
   }
@@ -280,6 +284,7 @@ export default function TeacherCurriculumManager() {
   async function deleteUnit() {
     if (!selectedCurriculumId || !selectedUnitId || busy || !confirm("이 단원을 삭제할까요? 기존 학생 기록은 보존됩니다.")) return;
     setBusy(true);
+    setPendingAction("delete-unit");
     try {
       const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/units/${selectedUnitId}`, { method: "DELETE" });
       const data = await response.json();
@@ -290,6 +295,7 @@ export default function TeacherCurriculumManager() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "삭제 오류");
     } finally {
+      setPendingAction(null);
       setBusy(false);
     }
   }
@@ -364,6 +370,7 @@ export default function TeacherCurriculumManager() {
           {curricula.map((item) => (
             <button
               key={item.id}
+              aria-pressed={selectedCurriculumId === item.id}
               disabled={!item.canEdit}
               onClick={() => item.canEdit && setSelectedCurriculumId(item.id)}
               style={{
@@ -445,7 +452,7 @@ export default function TeacherCurriculumManager() {
                     <h3 id="curriculum-map-title">단원 구성</h3>
                   </div>
                   <button type="button" onClick={addUnit} disabled={busy} className={styles.addUnitButton}>
-                    <Plus size={14} /> 단원 추가
+                    {pendingAction === "add-unit" ? <><LoaderCircle size={14} className={styles.spin} /> 추가 중...</> : <><Plus size={14} /> 단원 추가</>}
                   </button>
                 </div>
 
@@ -613,10 +620,10 @@ export default function TeacherCurriculumManager() {
 
                   <div className={styles.editorActions}>
                     <button onClick={saveUnit} disabled={busy} className={styles.saveButton}>
-                      <Save size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 저장
+                      {pendingAction === "save-unit" ? <><LoaderCircle size={14} className={styles.spin} /> 저장 중...</> : <><Save size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 저장</>}
                     </button>
                     <button onClick={deleteUnit} disabled={busy} className={styles.deleteButton}>
-                      <Trash2 size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 삭제
+                      {pendingAction === "delete-unit" ? <><LoaderCircle size={14} className={styles.spin} /> 삭제 중...</> : <><Trash2 size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 삭제</>}
                     </button>
                   </div>
                 </section>

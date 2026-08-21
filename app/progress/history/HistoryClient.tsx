@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import PendingLink from "@/components/PendingLink";
+import ReloadButton from "@/components/ReloadButton";
 import {
   AlertCircle,
   ArrowLeft,
@@ -64,6 +65,8 @@ export default function HistoryClient({ userName }: { userName: string }) {
   const [filter, setFilter] = useState<HistoryFilter>("all");
   const [visibleCount, setVisibleCount] = useState(8);
   const [copiedHistoryId, setCopiedHistoryId] = useState<number | null>(null);
+  const [copyingHistoryId, setCopyingHistoryId] = useState<number | null>(null);
+  const [copyErrorHistoryId, setCopyErrorHistoryId] = useState<number | null>(null);
   const [reviewFocus, setReviewFocus] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -148,12 +151,19 @@ export default function HistoryClient({ userName }: { userName: string }) {
   };
 
   const copySubmittedCode = async (item: FeedbackItem) => {
+    if (copyingHistoryId !== null) return;
+    setCopyingHistoryId(item.id);
+    setCopyErrorHistoryId(null);
     try {
       await navigator.clipboard.writeText(item.codeSubmitted);
       setCopiedHistoryId(item.id);
       window.setTimeout(() => setCopiedHistoryId(null), 1600);
     } catch {
       setCopiedHistoryId(null);
+      setCopyErrorHistoryId(item.id);
+      window.setTimeout(() => setCopyErrorHistoryId(null), 1600);
+    } finally {
+      setCopyingHistoryId(null);
     }
   };
 
@@ -178,7 +188,7 @@ export default function HistoryClient({ userName }: { userName: string }) {
     return (
       <main className="status-page" role="alert">
         <p>{error}</p>
-        <button onClick={() => location.reload()}>다시 시도</button>
+        <ReloadButton />
       </main>
     );
   }
@@ -193,9 +203,9 @@ export default function HistoryClient({ userName }: { userName: string }) {
   return (
     <div className="history-page">
       <header className="history-topbar">
-        <Link href="/progress"><ArrowLeft size={17} /> 성장 기록으로</Link>
+        <PendingLink href="/progress" pendingLabel="이동 중..."><ArrowLeft size={17} /> 성장 기록으로</PendingLink>
         <div><BookOpen size={18} /> 코딩 학습 일지</div>
-        <Link href="/learn" className="history-study-link">코딩하러 가기 <ChevronRight size={16} /></Link>
+        <PendingLink href="/learn" pendingLabel="학습 화면 여는 중..." className="history-study-link">코딩하러 가기 <ChevronRight size={16} /></PendingLink>
       </header>
 
       <main className="history-shell">
@@ -268,7 +278,7 @@ export default function HistoryClient({ userName }: { userName: string }) {
               <div><Sparkles size={34} /></div>
               <h3>{filter === "review" ? "지금은 복습할 기록이 없어!" : "아직 해당 기록이 없어"}</h3>
               <p>{filter === "review" ? "멋져! 새로운 문제에 도전해볼까?" : "코드를 실행하면 이곳에 학습 과정이 쌓여."}</p>
-              <Link href="/learn">새로운 문제 풀기 <ChevronRight size={16} /></Link>
+              <PendingLink href="/learn" pendingLabel="문제 여는 중...">새로운 문제 풀기 <ChevronRight size={16} /></PendingLink>
             </div>
           ) : (
             <div className="history-timeline">
@@ -339,20 +349,21 @@ export default function HistoryClient({ userName }: { userName: string }) {
                       </div>
 
                       <div className="history-entry-actions">
-                        <button type="button" onClick={() => copySubmittedCode(item)}>
-                          {copiedHistoryId === item.id ? <Check size={15} /> : <Copy size={15} />}
-                          {copiedHistoryId === item.id ? "복사했어!" : "내 코드 복사"}
+                        <button type="button" onClick={() => void copySubmittedCode(item)} disabled={copyingHistoryId !== null} aria-busy={copyingHistoryId === item.id}>
+                          {copyingHistoryId === item.id ? <span className="button-loading-spinner" style={{ width: 13, height: 13, border: "2px solid currentColor", borderTopColor: "transparent", borderRadius: "50%" }} /> : copiedHistoryId === item.id ? <Check size={15} /> : copyErrorHistoryId === item.id ? <AlertCircle size={15} /> : <Copy size={15} />}
+                          {copyingHistoryId === item.id ? "복사 중..." : copiedHistoryId === item.id ? "복사했어!" : copyErrorHistoryId === item.id ? "복사 실패" : "내 코드 복사"}
                         </button>
                         {item.practiceConceptId !== null && (
-                          <Link
+                          <PendingLink
                             href={learningReviewHref(item.practiceConceptId)}
                             className="is-primary"
                             onClick={() => saveReviewAttempt(item)}
+                            pendingLabel="코드 불러오는 중..."
                           >
                             <RotateCcw size={15} />
                             {status === "solved" ? "한 번 더 풀기" : "이 코드 이어서 고치기"}
                             <ChevronRight size={15} />
-                          </Link>
+                          </PendingLink>
                         )}
                       </div>
                     </div>

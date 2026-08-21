@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
+import PendingLink from "@/components/PendingLink";
+import ReloadButton from "@/components/ReloadButton";
 import { COLOR_HEX } from "@/components/badges/colorMap";
 import { getBadgeImagePath } from "@/lib/badge-images";
 import { getStudentCallName } from "@/lib/student-name";
@@ -100,7 +101,7 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
   }
 
   if (error) {
-    return <main className="status-page" role="alert"><p>{error}</p><button onClick={() => location.reload()}>다시 시도</button></main>;
+    return <main className="status-page" role="alert"><p>{error}</p><ReloadButton /></main>;
   }
 
   const cardStyle: React.CSSProperties = {
@@ -150,8 +151,9 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)" }}>
       {/* Header */}
       <div style={{ height: 66, display: "flex", alignItems: "center", padding: "0 22px", background: "rgba(255,255,255,.82)", backdropFilter: "blur(10px)", borderBottom: "1px solid #EDE7F8", position: "sticky", top: 0, zIndex: 5 }}>
-        <Link
+        <PendingLink
           href="/learn"
+          pendingLabel="학습 화면 여는 중..."
           style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", border: "1.5px solid #ECE7F8", borderRadius: 99, padding: "9px 16px", fontSize: 14, fontWeight: 700, color: "#544D70", textDecoration: "none", whiteSpace: "nowrap" }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#F6F2FE"; (e.currentTarget as HTMLAnchorElement).style.color = "#7B5CF0"; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#fff"; (e.currentTarget as HTMLAnchorElement).style.color = "#544D70"; }}
@@ -160,7 +162,7 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
           </svg>
           학습으로 돌아가기
-        </Link>
+        </PendingLink>
         <div style={{ marginLeft: 18, fontFamily: "var(--font-jua), 'Jua', sans-serif", fontSize: 18, color: "#2C2747", whiteSpace: "nowrap" }}>성장 기록</div>
       </div>
 
@@ -176,11 +178,11 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
               <h1 id="player-status-title" className="player-name">{playerName}의 코딩 프로필</h1>
               <div className="player-profile-meta">
                 <div className="player-rank"><Crown size={15} fill="#FFD86B" /> Level {currentLevel} · {currentRankName}</div>
-                <Link href="/progress/history" className="player-history-link">
+                <PendingLink href="/progress/history" pendingLabel="기록 여는 중..." className="player-history-link">
                   <BookOpen size={15} />
                   최근 학습 기록
                   <ChevronRight size={15} />
-                </Link>
+                </PendingLink>
               </div>
             </div>
             <div className="player-total-progress">
@@ -247,10 +249,10 @@ export default function ProgressClient({ userName }: ProgressClientProps) {
                 <div className="next-reward-hint">
                   {nextBadgePracticed ? "조금만 더! 문제를 해결하면 바로 획득해." : "문제 하나를 해결하고 새로운 뱃지를 획득해보자."}
                 </div>
-                <Link href="/learn" className="progress-action-button">
+                <PendingLink href="/learn" pendingLabel="학습 화면 여는 중..." className="progress-action-button">
                   {nextBadgePracticed ? "계속 도전하기" : "퀘스트 시작하기"}
                   <ChevronRight size={18} />
-                </Link>
+                </PendingLink>
               </>
             ) : (
               <div className="all-clear-state">

@@ -898,7 +898,9 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
             <strong>Python 실행 환경 오류</strong>
             <pre>{pyError}</pre>
           </div>
-          <button type="button" onClick={restartPyodide}>실행 환경 다시 시작</button>
+          <button type="button" onClick={restartPyodide} disabled={pyLoading} aria-busy={pyLoading}>
+            {pyLoading ? "다시 시작 중..." : "실행 환경 다시 시작"}
+          </button>
         </section>
       )}
 
@@ -994,6 +996,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                     return (
                       <button
                         key={id}
+                        aria-pressed={selected}
                         disabled={!unlocked}
                         title={unlocked ? undefined : "이전 문제를 풀면 잠금 해제!"}
                         onClick={() => {
@@ -1042,6 +1045,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                       return (
                         <button
                           key={ex.id}
+                          aria-pressed={selected}
                           onClick={() => { setSelectedMechdogId(ex.id); setCode(ex.code); }}
                           style={{
                             width: "100%",
@@ -1100,6 +1104,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                     return (
                       <button
                         key={id}
+                        aria-pressed={selected}
                         disabled={!unlocked}
                         title={unlocked ? undefined : "이전 문제를 풀면 잠금 해제!"}
                         onClick={() => {
@@ -1163,6 +1168,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
           >
             <button
               onClick={() => setConceptExpanded(!conceptExpanded)}
+              aria-expanded={conceptExpanded}
               style={{
                 width: "100%",
                 display: "flex",

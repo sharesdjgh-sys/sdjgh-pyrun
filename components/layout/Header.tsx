@@ -1,16 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { canOpenAdminPage, isAdministratorRole, isStudentRole } from "@/lib/roles";
 import StudentProfileModal from "@/components/account/StudentProfileModal";
+import PendingLink from "@/components/PendingLink";
 
 export default function Header() {
   const [profileOpen, setProfileOpen] = useState(false);
-  const [progressNavigating, setProgressNavigating] = useState(false);
-  const [managementNavigating, setManagementNavigating] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [schoolBranding, setSchoolBranding] = useState<{ name: string; logoUrl: string | null; logoScale: number } | null>(null);
   const { data: session, status } = useSession();
   const sessionUser = session?.user as { username?: string; nickname?: string; displayName?: string; role?: string } | undefined;
@@ -69,7 +68,7 @@ export default function Header() {
       }}
     >
       {/* Logo */}
-      <Link href="/learn" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+      <PendingLink href="/learn" pendingLabel="학습 화면 여는 중..." style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
         <Image
           src="/pyrun_studio-logo.png"
           alt="PyRun Studio"
@@ -78,7 +77,7 @@ export default function Header() {
           style={{ objectFit: "contain" }}
           priority
         />
-      </Link>
+      </PendingLink>
 
       {/* Right side */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -121,63 +120,54 @@ export default function Header() {
 
         {/* Admin link — teacher/admin only */}
         {canManage && (
-          <Link
+          <PendingLink
             href="/admin"
-            className={`header-management-link${managementNavigating ? " is-navigating" : ""}`}
+            className="header-management-link"
             title={isAdmin ? "관리자 설정" : "관리"}
-            aria-busy={managementNavigating}
-            aria-disabled={managementNavigating}
-            onClick={(event) => {
-              if (managementNavigating) {
-                event.preventDefault();
-                return;
-              }
-              setManagementNavigating(true);
-            }}
+            pendingLabel="이동 중..."
             style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #C9BFEE", borderRadius: 99, padding: "8px 14px", fontSize: 13.5, fontWeight: 700, color: "#7B5CF0", textDecoration: "none", whiteSpace: "nowrap" }}
           >
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
-            {managementNavigating ? "이동 중..." : isAdmin ? "관리자 설정" : "관리"}
-          </Link>
+            {isAdmin ? "관리자 설정" : "관리"}
+          </PendingLink>
         )}
 
         {/* Progress link */}
-        <Link
+        <PendingLink
           href="/progress"
-          className={`header-growth-record-link${progressNavigating ? " is-navigating" : ""}`}
-          aria-busy={progressNavigating}
-          aria-disabled={progressNavigating}
-          onClick={(event) => {
-            if (progressNavigating) {
-              event.preventDefault();
-              return;
-            }
-            setProgressNavigating(true);
-          }}
+          className="header-growth-record-link"
+          pendingLabel="이동 중..."
           style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #ECE7F8", borderRadius: 99, padding: "8px 14px", fontSize: 13.5, fontWeight: 700, color: "#7B5CF0", textDecoration: "none", whiteSpace: "nowrap" }}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
             <polyline points="16 7 22 7 22 13" />
           </svg>
-          {progressNavigating ? "이동 중..." : "성장 기록"}
-        </Link>
+          성장 기록
+        </PendingLink>
 
         {/* Logout */}
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          title="로그아웃"
+          onClick={() => {
+            if (signingOut) return;
+            setSigningOut(true);
+            void signOut({ callbackUrl: "/login" }).catch(() => setSigningOut(false));
+          }}
+          disabled={signingOut}
+          aria-busy={signingOut}
+          aria-label={signingOut ? "로그아웃 중" : "로그아웃"}
+          title={signingOut ? "로그아웃 중..." : "로그아웃"}
           style={{ width: 38, height: 38, borderRadius: "50%", background: "#fff", border: "1.5px solid #ECE7F8", display: "flex", alignItems: "center", justifyContent: "center", color: "#9A93B5", cursor: "pointer" }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#FF5C8A"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#FFD3E0"; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#9A93B5"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#ECE7F8"; }}
         >
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          {signingOut ? <span className="button-loading-spinner" style={{ width: 15, height: 15, border: "2px solid currentColor", borderTopColor: "transparent", borderRadius: "50%" }} /> : <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
+          </svg>}
         </button>
       </div>
       <StudentProfileModal open={profileOpen && isStudent} onClose={() => setProfileOpen(false)} />

@@ -32,6 +32,7 @@ interface UserManagementPanelProps {
   users: ManagedUser[];
   currentUserId: number;
   updatingUserId: number | null;
+  updatingUserAction: "role" | "delete" | null;
   message: string;
   refreshing: boolean;
   onRefresh: () => Promise<void>;
@@ -52,6 +53,7 @@ export default function UserManagementPanel({
   users,
   currentUserId,
   updatingUserId,
+  updatingUserAction,
   message,
   refreshing,
   onRefresh,
@@ -441,9 +443,13 @@ export default function UserManagementPanel({
                     aria-label={`${displayName} 회원 삭제`}
                     title={isSelf ? "현재 로그인한 계정은 삭제할 수 없습니다" : "회원 삭제"}
                   >
-                    <Trash2 size={16} />
-                    삭제
+                    {updatingUserId === user.id && updatingUserAction === "delete"
+                      ? <><LoaderCircle size={16} className={styles.refreshIconSpinning} /> 삭제 중...</>
+                      : <><Trash2 size={16} /> 삭제</>}
                   </button>
+                  {updatingUserId === user.id && updatingUserAction === "role" && (
+                    <span role="status" style={{ color: "#6C579F", fontSize: 10.5, fontWeight: 750 }}>등급 변경 중...</span>
+                  )}
                 </div>
               </article>
             );

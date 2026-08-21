@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import PendingLink from "@/components/PendingLink";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -125,15 +125,15 @@ export default function RegisterPage() {
               onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = ""; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 0 #0FA37C,0 12px 22px rgba(24,201,154,.32)"; }}
             >
               {loading ? (
-                <span style={{ width: 18, height: 18, border: "2.5px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block" }} />
+                <span className="button-loading-spinner" style={{ width: 18, height: 18, border: "2.5px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block" }} />
               ) : null}
-              가입하고 시작하기
+              {loading ? "가입 처리 중..." : "가입하고 시작하기"}
             </button>
           </form>
 
           <div style={{ textAlign: "center", marginTop: 18, fontSize: 14, color: "#8B83A8" }}>
             이미 계정이 있나요?{" "}
-            <Link href="/login" style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>로그인</Link>
+            <PendingLink href="/login" pendingLabel="화면 여는 중..." style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>로그인</PendingLink>
           </div>
         </div>
       </div>

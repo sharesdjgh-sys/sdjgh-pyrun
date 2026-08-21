@@ -12,6 +12,7 @@ import SchoolBrandingManager from "./SchoolBrandingManager";
 import UserManagementPanel from "./UserManagementPanel";
 import StudentCsvImport from "./StudentCsvImport";
 import styles from "./AdminClient.module.css";
+import PendingLink from "@/components/PendingLink";
 
 const GROUP_ICON_MAP: Record<string, React.ElementType> = {
   Bot, Layers, Calculator, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu,
@@ -82,10 +83,12 @@ export default function AdminClient({
   const [adminTab, setAdminTab] = useState<AdminTab>("my-curricula");
   const [csvFiles, setCsvFiles] = useState<Array<{filename: string; url: string}>>([]);
   const [csvUploading, setCsvUploading] = useState(false);
+  const [deletingCsvFilename, setDeletingCsvFilename] = useState<string | null>(null);
   const [csvMessage, setCsvMessage] = useState("");
   const [users, setUsers] = useState<UserSummary[]>(initialUsers);
   const [userMessage, setUserMessage] = useState("");
   const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+  const [updatingUserAction, setUpdatingUserAction] = useState<"role" | "delete" | null>(null);
   const [refreshingUsers, setRefreshingUsers] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentSchoolId = users.find((user) => user.id === currentUserId)?.schoolId;
@@ -152,21 +155,31 @@ export default function AdminClient({
   }
 
   async function handleCsvDelete(file: {filename: string; url: string}) {
+    if (deletingCsvFilename !== null) return;
     if (!confirm(`'${file.filename}'을(를) 삭제할까요?`)) return;
-    const res = await fetch("/api/admin/data", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.filename }),
-    });
-    if (res.ok) {
+    setDeletingCsvFilename(file.filename);
+    setCsvMessage("");
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.filename }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "파일을 삭제하지 못했습니다.");
       setCsvFiles((prev) => prev.filter((f) => f.filename !== file.filename));
       setCsvMessage(`✓ '${file.filename}' 삭제 완료`);
+    } catch (error) {
+      setCsvMessage(`✗ ${error instanceof Error ? error.message : "파일을 삭제하지 못했습니다."}`);
+    } finally {
+      setDeletingCsvFilename(null);
     }
   }
 
   async function handleUserRoleChange(userId: number, role: UserRole) {
     if (updatingUserId !== null) return false;
     setUpdatingUserId(userId);
+    setUpdatingUserAction("role");
     setUserMessage("");
 
     try {
@@ -189,6 +202,7 @@ export default function AdminClient({
       setUserMessage("네트워크 오류가 발생했습니다.");
       return false;
     } finally {
+      setUpdatingUserAction(null);
       setUpdatingUserId(null);
     }
   }
@@ -205,6 +219,7 @@ export default function AdminClient({
     if (!confirm(`'${user.username}' 계정과 학습 기록을 모두 삭제할까요?${emptyClassNotice}`)) return;
 
     setUpdatingUserId(user.id);
+    setUpdatingUserAction("delete");
     setUserMessage("");
 
     try {
@@ -228,6 +243,7 @@ export default function AdminClient({
     } catch {
       setUserMessage("네트워크 오류가 발생했습니다.");
     } finally {
+      setUpdatingUserAction(null);
       setUpdatingUserId(null);
     }
   }
@@ -345,8 +361,9 @@ export default function AdminClient({
           <div style={{ fontSize: 16, fontWeight: 800, color: "#3D2E8A" }}>커리큘럼 관리</div>
           <div style={{ fontSize: 12, color: "#A39CC0" }}>선생님 전용 개념 편집 페이지</div>
         </div>
-        <a
+        <PendingLink
           href="/learn"
+          pendingLabel="학습 화면 여는 중..."
           style={{
             marginLeft: "auto",
             fontSize: 13,
@@ -361,7 +378,7 @@ export default function AdminClient({
           }}
         >
           ← 학습 페이지로
-        </a>
+        </PendingLink>
       </header>
 
       {/* Tab selector */}
@@ -423,11 +440,16 @@ export default function AdminClient({
 
             {/* 업로드 영역 */}
             <div
-              style={{ border: "2px dashed #C9BFEE", borderRadius: 16, padding: "28px 24px", textAlign: "center", marginBottom: 24, background: "#FDFAFF", cursor: "pointer" }}
-              onClick={() => fileInputRef.current?.click()}
+              role="button"
+              tabIndex={csvUploading ? -1 : 0}
+              aria-disabled={csvUploading}
+              aria-busy={csvUploading}
+              style={{ border: "2px dashed #C9BFEE", borderRadius: 16, padding: "28px 24px", textAlign: "center", marginBottom: 24, background: "#FDFAFF", cursor: csvUploading ? "wait" : "pointer", opacity: csvUploading ? .58 : 1 }}
+              onClick={() => { if (!csvUploading) fileInputRef.current?.click(); }}
+              onKeyDown={(event) => { if (!csvUploading && (event.key === "Enter" || event.key === " ")) fileInputRef.current?.click(); }}
             >
               <Upload size={32} color="#C9BFEE" style={{ marginBottom: 10 }} />
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#7B5CF0", marginBottom: 4 }}>CSV 파일 클릭하여 업로드</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#7B5CF0", marginBottom: 4 }}>{csvUploading ? "CSV 업로드 중..." : "CSV 파일 클릭하여 업로드"}</div>
               <div style={{ fontSize: 12, color: "#B0A8CC" }}>.csv 파일만 가능합니다</div>
               <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvUpload} />
             </div>
@@ -459,10 +481,14 @@ export default function AdminClient({
                     </div>
                     <button
                       onClick={() => handleCsvDelete(file)}
+                      disabled={deletingCsvFilename !== null || csvUploading}
+                      aria-busy={deletingCsvFilename === file.filename}
                       style={{ background: "transparent", border: "none", cursor: "pointer", color: "#D93668", padding: 6, borderRadius: 8, display: "flex", alignItems: "center" }}
-                      title="삭제"
+                      title={deletingCsvFilename === file.filename ? "삭제 중..." : "삭제"}
                     >
-                      <Trash2 size={16} />
+                      {deletingCsvFilename === file.filename
+                        ? <span className="button-loading-spinner" style={{ width: 14, height: 14, border: "2px solid currentColor", borderTopColor: "transparent", borderRadius: "50%" }} />
+                        : <Trash2 size={16} />}
                     </button>
                   </div>
                 ))}
@@ -489,6 +515,7 @@ export default function AdminClient({
             users={users}
             currentUserId={currentUserId}
             updatingUserId={updatingUserId}
+            updatingUserAction={updatingUserAction}
             message={userMessage}
             refreshing={refreshingUsers}
             onRefresh={refreshUsersWithFeedback}
@@ -530,6 +557,7 @@ export default function AdminClient({
               <button
                 key={lv}
                 onClick={() => setLevelFilter(lv)}
+                aria-pressed={levelFilter === lv}
                 style={{
                   flex: 1,
                   padding: "5px 0",
@@ -572,6 +600,7 @@ export default function AdminClient({
                     <button
                       key={id}
                       onClick={() => handleSelectConcept(concept)}
+                      aria-pressed={selected}
                       style={{
                         width: "100%",
                         textAlign: "left",

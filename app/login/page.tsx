@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import PasswordRecoveryModal from "@/components/account/PasswordRecoveryModal";
+import PendingLink from "@/components/PendingLink";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -172,7 +172,7 @@ export default function LoginPage() {
 
           <div style={{ textAlign: "center", marginTop: 14, fontSize: 14, color: "#5D507A", fontWeight: 500 }}>
             아직 계정이 없나요?{" "}
-            <Link href="/register" style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>회원가입</Link>
+            <PendingLink href="/register" pendingLabel="화면 여는 중..." style={{ color: "#7B5CF0", fontWeight: 700, textDecoration: "none" }}>회원가입</PendingLink>
           </div>
 
           <div style={{ display: "flex", justifyContent: "center", marginTop: 22 }}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   Terminal, Variable, Calculator, Scale, Equal, GitBranch, Hash, Type,
@@ -40,6 +40,7 @@ export default function BadgeCelebration({
 }: BadgeCelebrationProps) {
   const confettiRef = useRef<{ style: Record<string, string> }[] | null>(null);
   const sparkleRef = useRef<{ style: Record<string, string> }[] | null>(null);
+  const [advancing, setAdvancing] = useState(false);
 
   if (!confettiRef.current) {
     const cc = ["#FFE58A", "#FFC23C", "#A98BFF", "#FF77AC", "#62E7C1", "#7FB2FF"];
@@ -241,17 +242,24 @@ export default function BadgeCelebration({
           <>
             <button
               type="button"
-              onClick={() => onNext(nextBadge.id)}
+              onClick={() => {
+                if (advancing) return;
+                setAdvancing(true);
+                onNext(nextBadge.id);
+              }}
+              disabled={advancing}
+              aria-busy={advancing}
               autoFocus
               className="reward-primary-button"
               style={{ marginTop: 18 }}
             >
-              다음 단계 도전하기
+              {advancing ? "다음 단계 여는 중..." : "다음 단계 도전하기"}
               <ChevronRight size={18} strokeWidth={2.6} />
             </button>
             <button
               type="button"
               onClick={onClose}
+              disabled={advancing}
               className="reward-secondary-button"
             >
               조금 더 연습하기

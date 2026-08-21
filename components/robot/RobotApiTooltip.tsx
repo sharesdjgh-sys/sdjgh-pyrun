@@ -9,6 +9,7 @@ export default function RobotApiTooltip() {
     <div style={{ position: "relative" }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
         style={{
           border: "1.5px solid #ECE7F8",
           background: isOpen ? "#F2ECFD" : "#fff",

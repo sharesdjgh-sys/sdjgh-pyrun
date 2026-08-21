@@ -96,6 +96,7 @@ export default function MechdogApiTooltip() {
     <div style={{ position: "relative" }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
         style={{
           border: `1.5px solid #F5DEB8`,
           background: isOpen ? ACCENT_LIGHT : "#fff",
@@ -173,6 +174,7 @@ export default function MechdogApiTooltip() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
+                aria-pressed={tab === t.id}
                 style={{
                   flex: 1,
                   padding: "5px 4px",

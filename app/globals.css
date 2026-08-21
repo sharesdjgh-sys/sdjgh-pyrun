@@ -2669,6 +2669,23 @@ a:focus-visible {
   user-select: none;
 }
 
+.pending-navigation-link {
+  -webkit-tap-highlight-color: transparent;
+  transition: filter 120ms ease, opacity 160ms ease, transform 90ms ease;
+}
+
+.pending-navigation-link:active:not(.is-navigating) {
+  filter: brightness(.86) saturate(.92);
+  transform: translateY(2px) scale(.97);
+}
+
+.pending-navigation-link.is-navigating {
+  pointer-events: none;
+  cursor: wait !important;
+  filter: saturate(.78);
+  opacity: .68;
+}
+
 .header-growth-record-link:hover:not(.is-navigating),
 .header-management-link:hover:not(.is-navigating) {
   background: #f6f2fe !important;

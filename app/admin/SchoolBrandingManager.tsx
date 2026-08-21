@@ -24,6 +24,7 @@ export default function SchoolBrandingManager() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"save" | "delete" | "scale-down" | "scale-up" | null>(null);
   const [message, setMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +66,7 @@ export default function SchoolBrandingManager() {
   async function saveLogo() {
     if (!selectedFile || saving) return;
     setSaving(true);
+    setPendingAction("save");
     setMessage("");
     const form = new FormData();
     form.append("logo", selectedFile);
@@ -81,6 +83,7 @@ export default function SchoolBrandingManager() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로고를 등록하지 못했습니다.");
     } finally {
+      setPendingAction(null);
       setSaving(false);
     }
   }
@@ -88,6 +91,7 @@ export default function SchoolBrandingManager() {
   async function deleteLogo() {
     if (!school?.logoUrl || saving || !confirm("등록된 학교 로고를 삭제할까요?")) return;
     setSaving(true);
+    setPendingAction("delete");
     setMessage("");
     try {
       const response = await fetch("/api/school-branding", { method: "DELETE" });
@@ -101,6 +105,7 @@ export default function SchoolBrandingManager() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로고를 삭제하지 못했습니다.");
     } finally {
+      setPendingAction(null);
       setSaving(false);
     }
   }
@@ -108,6 +113,7 @@ export default function SchoolBrandingManager() {
   async function updateLogoScale(logoScale: number) {
     if (!school || saving || logoScale < 70 || logoScale > 140) return;
     setSaving(true);
+    setPendingAction(logoScale < school.logoScale ? "scale-down" : "scale-up");
     setMessage("");
     try {
       const response = await fetch("/api/school-branding", {
@@ -123,6 +129,7 @@ export default function SchoolBrandingManager() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로고 크기를 변경하지 못했습니다.");
     } finally {
+      setPendingAction(null);
       setSaving(false);
     }
   }
@@ -156,7 +163,7 @@ export default function SchoolBrandingManager() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18 }}>
           <button type="button" onClick={() => void saveLogo()} disabled={!selectedFile || saving} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 18px", border: 0, borderRadius: 11, background: !selectedFile || saving ? "#C6BEDA" : "#7B5CF0", color: "#fff", cursor: !selectedFile || saving ? "not-allowed" : "pointer", fontFamily: "inherit", fontWeight: 800 }}>
-            <Upload size={15} /> {saving ? "저장 중..." : "이 로고 저장"}
+            {pendingAction === "save" ? <span className="button-loading-spinner" style={{ width: 14, height: 14, border: "2px solid currentColor", borderTopColor: "transparent", borderRadius: "50%" }} /> : <Upload size={15} />} {pendingAction === "save" ? "저장 중..." : "이 로고 저장"}
           </button>
           {selectedFile && <span style={{ overflow: "hidden", color: "#6F668C", fontSize: 12.5, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedFile.name}</span>}
         </div>
@@ -183,15 +190,15 @@ export default function SchoolBrandingManager() {
             <div style={{ display: "flex", alignItems: "center", gap: 6 }} aria-label="학교 로고 표시 크기">
               <span style={{ marginRight: 2, color: "#7D748C", fontSize: 11.5, fontWeight: 750 }}>표시 크기</span>
               <button type="button" onClick={() => void updateLogoScale(school.logoScale - 10)} disabled={saving || school.logoScale <= 70} aria-label="로고 작게" title="로고 작게" style={{ width: 30, height: 30, display: "grid", placeItems: "center", border: "1px solid #DED7E9", borderRadius: 8, background: "#fff", color: "#675B77", cursor: saving || school.logoScale <= 70 ? "not-allowed" : "pointer" }}>
-                <Minus size={14} />
+                {pendingAction === "scale-down" ? <span className="button-loading-spinner" style={{ width: 12, height: 12, border: "2px solid currentColor", borderTopColor: "transparent", borderRadius: "50%" }} /> : <Minus size={14} />}
               </button>
               <strong style={{ minWidth: 42, color: "#4F435E", fontSize: 12, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>{school.logoScale}%</strong>
               <button type="button" onClick={() => void updateLogoScale(school.logoScale + 10)} disabled={saving || school.logoScale >= 140} aria-label="로고 크게" title="로고 크게" style={{ width: 30, height: 30, display: "grid", placeItems: "center", border: "1px solid #DED7E9", borderRadius: 8, background: "#fff", color: "#675B77", cursor: saving || school.logoScale >= 140 ? "not-allowed" : "pointer" }}>
-                <Plus size={14} />
+                {pendingAction === "scale-up" ? <span className="button-loading-spinner" style={{ width: 12, height: 12, border: "2px solid currentColor", borderTopColor: "transparent", borderRadius: "50%" }} /> : <Plus size={14} />}
               </button>
             </div>
             <button type="button" onClick={() => void deleteLogo()} disabled={saving} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 11px", border: "1px solid #F3CDDA", borderRadius: 9, background: "#FFF7FA", color: "#BD456B", cursor: saving ? "wait" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 750 }}>
-              <Trash2 size={14} /> 등록 로고 삭제
+              {pendingAction === "delete" ? <span className="button-loading-spinner" style={{ width: 13, height: 13, border: "2px solid currentColor", borderTopColor: "transparent", borderRadius: "50%" }} /> : <Trash2 size={14} />} {pendingAction === "delete" ? "삭제 중..." : "등록 로고 삭제"}
             </button>
           </div>
         )}
