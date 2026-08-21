@@ -1,7 +1,7 @@
 .managerLayout {
   display: grid;
   flex: 1;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: minmax(340px, 380px) minmax(0, 1fr);
   gap: 16px;
   font-size: 13px;
   word-break: keep-all;
@@ -9,9 +9,18 @@
 
 .workspaceGrid {
   display: grid;
-  grid-template-columns: minmax(255px, 0.72fr) minmax(0, 1.55fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   align-items: start;
+}
+
+.curriculumSidebar {
+  min-width: 0;
+}
+
+.curriculumSidebar .unitMapCard {
+  position: static;
+  margin-top: 18px;
 }
 
 .unitMapCard,

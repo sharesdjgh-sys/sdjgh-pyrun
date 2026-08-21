@@ -55,7 +55,7 @@ const emptyUnit: UnitForm = {
   nameEn: "",
   groupName: "기타",
   level: 1,
-  orderIndex: 0,
+  orderIndex: 1,
   description: "",
   exampleCode: "",
   practiceCode: "",
@@ -113,6 +113,7 @@ export default function TeacherCurriculumManager() {
     ? item.activityType === "mechdog"
     : item.activityType === "python" && item.level === unitLevelFilter);
   const activeCode = activeCodeTab === "example" ? unitForm.exampleCode : unitForm.practiceCode;
+  const displayOrderIsValid = Number.isInteger(unitForm.orderIndex) && unitForm.orderIndex >= 1;
   const { loading: pyLoading, error: pyError, lv3Loading, initLv3, executeCode } = usePyodide();
 
   const loadCurricula = useCallback(async () => {
@@ -177,7 +178,7 @@ export default function TeacherCurriculumManager() {
       nameEn: selectedUnit.nameEn,
       groupName: selectedUnit.groupName,
       level: selectedUnit.level,
-      orderIndex: selectedUnit.orderIndex,
+      orderIndex: selectedUnit.orderIndex + 1,
       description: selectedUnit.description ?? "",
       exampleCode: selectedUnit.exampleCode ?? "",
       practiceCode: selectedUnit.practiceCode ?? "",
@@ -300,7 +301,7 @@ export default function TeacherCurriculumManager() {
   }
 
   async function saveUnit() {
-    if (!selectedCurriculumId || !selectedUnitId || busy) return;
+    if (!selectedCurriculumId || !selectedUnitId || busy || !displayOrderIsValid) return;
     setBusy(true);
     setPendingAction("save-unit");
     try {
@@ -308,7 +309,11 @@ export default function TeacherCurriculumManager() {
       const response = await fetch(`/api/admin/curricula/${selectedCurriculumId}/${path}/${selectedUnitId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(unitForm),
+        body: JSON.stringify({
+          ...unitForm,
+          // 화면에서는 1번째부터 표시하고 DB 정렬값은 기존처럼 0부터 유지한다.
+          orderIndex: unitForm.orderIndex - 1,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "단원 저장에 실패했습니다.");
@@ -431,7 +436,7 @@ export default function TeacherCurriculumManager() {
           {toast}
         </div>
       )}
-      <aside style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 16, alignSelf: "start" }}>
+      <aside className={styles.curriculumSidebar} style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 16, alignSelf: "start" }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: "#3D2E8A", marginBottom: 12 }}>내 커리큘럼</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           {curricula.map((item) => (
@@ -478,41 +483,8 @@ export default function TeacherCurriculumManager() {
               : <><BookCopy size={14} /> 내 커리큘럼 만들기</>}
           </button>
         </div>
-      </aside>
-
-      <main style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-        {message && <div role="status" aria-live="polite" style={{ padding: "10px 14px", borderRadius: 12, background: "#F4F0FE", color: "#5B4B99", fontWeight: 700, fontSize: 13 }}>{message}</div>}
-        {!selectedCurriculum ? (
-          <div style={{ background: "#fff", borderRadius: 20, padding: 30, color: "#8B83A8" }}>기본 커리큘럼을 복제하거나 새 커리큘럼을 만드세요.</div>
-        ) : (
-          <>
-            <section style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 18, display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.35, color: "#3D2E8A" }}>{selectedCurriculum.name}</div>
-                <div style={{ fontSize: 12.5, color: "#8B83A8", marginTop: 3 }}>{units.length}개 단원 · 삭제한 단원의 학생 기록은 유지됩니다.</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
-                  {selectedCurriculum.assignments.length > 0
-                    ? selectedCurriculum.assignments.map((assignment) => (
-                        <span key={`${assignment.grade}:${assignment.classNumber}`} style={{ padding: "3px 7px", borderRadius: 99, background: "#F1ECFD", color: "#6C4BEF", fontSize: 11, fontWeight: 700 }}>
-                          {assignment.grade}학년 {assignment.classNumber}반
-                        </span>
-                      ))
-                    : <span style={{ color: "#A39CC0", fontSize: 11.5 }}>아직 배정된 학급이 없습니다.</span>}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={openAssignmentModal}
-                disabled={busy}
-                className={styles.actionButton}
-                style={{ padding: "10px 14px", border: "none", borderRadius: 10, background: "#7B5CF0", color: "#fff", fontWeight: 800 }}
-              >
-                <School size={14} /> 학급 배정 관리
-              </button>
-            </section>
-
-            <div className={styles.workspaceGrid}>
-              <section className={styles.unitMapCard} aria-labelledby="curriculum-map-title">
+        {selectedCurriculum && (
+          <section className={styles.unitMapCard} aria-labelledby="curriculum-map-title">
                 <div className={styles.unitMapHeading}>
                   <div>
                     <div className={styles.sectionKicker}><Map size={14} /> CURRICULUM MAP</div>
@@ -595,6 +567,41 @@ export default function TeacherCurriculumManager() {
                   })}
                 </div>
               </section>
+        )}
+      </aside>
+
+      <main style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+        {message && <div role="status" aria-live="polite" style={{ padding: "10px 14px", borderRadius: 12, background: "#F4F0FE", color: "#5B4B99", fontWeight: 700, fontSize: 13 }}>{message}</div>}
+        {!selectedCurriculum ? (
+          <div style={{ background: "#fff", borderRadius: 20, padding: 30, color: "#8B83A8" }}>기본 커리큘럼을 복제하거나 새 커리큘럼을 만드세요.</div>
+        ) : (
+          <>
+            <section style={{ background: "#fff", border: "1px solid #EFEAF8", borderRadius: 20, padding: 18, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.35, color: "#3D2E8A" }}>{selectedCurriculum.name}</div>
+                <div style={{ fontSize: 12.5, color: "#8B83A8", marginTop: 3 }}>{units.length}개 단원 · 삭제한 단원의 학생 기록은 유지됩니다.</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
+                  {selectedCurriculum.assignments.length > 0
+                    ? selectedCurriculum.assignments.map((assignment) => (
+                        <span key={`${assignment.grade}:${assignment.classNumber}`} style={{ padding: "3px 7px", borderRadius: 99, background: "#F1ECFD", color: "#6C4BEF", fontSize: 11, fontWeight: 700 }}>
+                          {assignment.grade}학년 {assignment.classNumber}반
+                        </span>
+                      ))
+                    : <span style={{ color: "#A39CC0", fontSize: 11.5 }}>아직 배정된 학급이 없습니다.</span>}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={openAssignmentModal}
+                disabled={busy}
+                className={styles.actionButton}
+                style={{ padding: "10px 14px", border: "none", borderRadius: 10, background: "#7B5CF0", color: "#fff", fontWeight: 800 }}
+              >
+                <School size={14} /> 학급 배정 관리
+              </button>
+            </section>
+
+            <div className={styles.workspaceGrid}>
 
               {selectedUnit && (
                 <section className={styles.editorCard} aria-labelledby="unit-editor-title">
@@ -633,8 +640,8 @@ export default function TeacherCurriculumManager() {
                       </label>
                     )}
                     <label>
-                      <span>표시 순서</span>
-                      <input style={inputStyle} type="number" min={0} value={unitForm.orderIndex} onChange={(e) => setUnitForm({ ...unitForm, orderIndex: Number(e.target.value) })} />
+                      <span>표시 순서 (1부터)</span>
+                      <input style={inputStyle} type="number" min={1} step={1} value={unitForm.orderIndex} onChange={(e) => setUnitForm({ ...unitForm, orderIndex: Number(e.target.value) })} />
                     </label>
                   </div>
 
@@ -712,7 +719,7 @@ export default function TeacherCurriculumManager() {
                   )}
 
                   <div className={styles.editorActions}>
-                    <button onClick={saveUnit} disabled={busy} className={styles.saveButton}>
+                    <button onClick={saveUnit} disabled={busy || !displayOrderIsValid} className={styles.saveButton}>
                       {pendingAction === "save-unit" ? <><LoaderCircle size={14} className={styles.spin} /> 저장 중...</> : <><Save size={14} style={{ verticalAlign: "middle", marginRight: 5 }} /> 저장</>}
                     </button>
                     <button onClick={deleteUnit} disabled={busy} className={styles.deleteButton}>
