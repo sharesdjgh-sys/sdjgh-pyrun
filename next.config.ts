@@ -19,6 +19,12 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "no-cache" },
         ],
       },
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors https://platform.sdjgh-ai.kr" },
+        ],
+      },
     ];
   },
   webpack: (config) => {
