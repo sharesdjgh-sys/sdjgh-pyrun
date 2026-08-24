@@ -34,11 +34,27 @@ export default function SsoGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // `settled` only dedupes which single token attempt "owns" the flow (so a
+    // duplicate sso:token message, or the 8s deadline firing after we've
+    // already committed to an attempt, can't step on it). It must NOT also
+    // gate whether a failure *within* that attempt gets reported — that was
+    // the bug: once verify succeeded, `settled` flipped true before signIn()
+    // even ran, so when signIn() itself rejected, fail()'s own `if (settled)
+    // return` swallowed it silently and the screen was stuck on "연결 확인
+    // 중..." forever instead of showing the expired message.
     let settled = false;
 
     function fail() {
       if (settled) return;
       settled = true;
+      clearTimeout(timeout);
+      setStatus("expired");
+      window.parent.postMessage({ type: "sso:expired" }, PLATFORM_ORIGIN);
+    }
+
+    // Unlike fail(), this always reports — it only ever runs after we've
+    // already committed to one token attempt, so there's nothing left to dedupe.
+    function reportFailure() {
       setStatus("expired");
       window.parent.postMessage({ type: "sso:expired" }, PLATFORM_ORIGIN);
     }
@@ -47,6 +63,9 @@ export default function SsoGuard({ children }: { children: React.ReactNode }) {
       if (event.origin !== PLATFORM_ORIGIN || event.source !== window.parent) return;
       const data = event.data as { type?: string; token?: string };
       if (data?.type !== "sso:token" || !data.token) return;
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
 
       fetch(VERIFY_URL, {
         method: "POST",
@@ -55,21 +74,21 @@ export default function SsoGuard({ children }: { children: React.ReactNode }) {
       })
         .then((res) => (res.ok ? res.json() : Promise.reject()))
         .then((result: { valid?: boolean }) => {
-          if (!result?.valid || settled) return;
-          settled = true;
+          if (!result?.valid) return Promise.reject(new Error("token invalid"));
           ssoToken = data.token as string;
           setStatus("signing-in");
-          return signIn("sso", { ssoToken: data.token, redirect: false }).then((signInResult) => {
-            if (!signInResult || signInResult.error) throw new Error("sso sign-in failed");
-            setStatus("done");
-            // The registered iframe entry point is /login, which has no
-            // session-awareness of its own (unlike the root page.tsx) — without
-            // this, a successful SSO sign-in just leaves the login form on
-            // screen forever, looking like SSO did nothing.
-            router.replace("/learn");
-          });
+          return signIn("sso", { ssoToken: data.token, redirect: false });
         })
-        .catch(fail);
+        .then((signInResult) => {
+          if (!signInResult || signInResult.error) throw new Error("sso sign-in failed");
+          setStatus("done");
+          // The registered iframe entry point is /login, which has no
+          // session-awareness of its own (unlike the root page.tsx) — without
+          // this, a successful SSO sign-in just leaves the login form on
+          // screen forever, looking like SSO did nothing.
+          router.replace("/learn");
+        })
+        .catch(reportFailure);
     }
 
     window.addEventListener("message", onMessage);

@@ -7,6 +7,12 @@ import { verifySsoToken } from "@/lib/ssoVerify";
 import { parseSchoolStudentNumber } from "@/lib/student-number";
 
 // This deployment serves a single school (matches lib/db/seed.ts's seeded row).
+// SSO auto-login runs inside a third-party iframe (embedded under
+// platform.sdjgh-ai.kr); SameSite=Lax cookies (NextAuth's default) are not
+// sent in that cross-site ancestor context, so signIn("sso", ...) always
+// failed the CSRF check when embedded. See the `cookies` override below.
+const useSecureCookies = process.env.NODE_ENV === "production";
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
 const SSO_SCHOOL_ID = 1;
 const SSO_ROLE_MAP: Record<string, string> = { 학생: "student", 교사: "teacher", 관리자: "admin" };
 
@@ -174,4 +180,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   trustHost: true,
+  cookies: {
+    sessionToken: {
+      name: `${cookiePrefix}authjs.session-token`,
+      options: { httpOnly: true, sameSite: "none", path: "/", secure: useSecureCookies },
+    },
+    callbackUrl: {
+      name: `${cookiePrefix}authjs.callback-url`,
+      options: { httpOnly: true, sameSite: "none", path: "/", secure: useSecureCookies },
+    },
+    csrfToken: {
+      name: `${useSecureCookies ? "__Host-" : ""}authjs.csrf-token`,
+      options: { httpOnly: true, sameSite: "none", path: "/", secure: useSecureCookies },
+    },
+  },
 });
