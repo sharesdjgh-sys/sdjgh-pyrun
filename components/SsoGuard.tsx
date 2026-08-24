@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const PLATFORM_ORIGIN = "https://platform.sdjgh-ai.kr";
 const VERIFY_URL = `${PLATFORM_ORIGIN}/api/auth/verify`;
@@ -19,6 +20,7 @@ type Status = "skipped" | "pending" | "signing-in" | "done" | "expired";
 
 export default function SsoGuard({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("pending");
+  const router = useRouter();
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") {
@@ -60,6 +62,11 @@ export default function SsoGuard({ children }: { children: React.ReactNode }) {
           return signIn("sso", { ssoToken: data.token, redirect: false }).then((signInResult) => {
             if (!signInResult || signInResult.error) throw new Error("sso sign-in failed");
             setStatus("done");
+            // The registered iframe entry point is /login, which has no
+            // session-awareness of its own (unlike the root page.tsx) — without
+            // this, a successful SSO sign-in just leaves the login form on
+            // screen forever, looking like SSO did nothing.
+            router.replace("/learn");
           });
         })
         .catch(fail);
@@ -74,7 +81,7 @@ export default function SsoGuard({ children }: { children: React.ReactNode }) {
       window.removeEventListener("message", onMessage);
       clearTimeout(timeout);
     };
-  }, []);
+  }, [router]);
 
   if (status === "pending" || status === "signing-in") {
     return <div style={overlayStyle}>연결 확인 중...</div>;
