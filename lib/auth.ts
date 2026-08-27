@@ -13,6 +13,7 @@ import { parseSchoolStudentNumber } from "@/lib/student-number";
 // failed the CSRF check when embedded. See the `cookies` override below.
 const useSecureCookies = process.env.NODE_ENV === "production";
 const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+const cookieSameSite = useSecureCookies ? "none" : "lax";
 const SSO_SCHOOL_ID = 1;
 const SSO_ROLE_MAP: Record<string, string> = { 학생: "student", 교사: "teacher", 관리자: "admin" };
 
@@ -183,15 +184,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   cookies: {
     sessionToken: {
       name: `${cookiePrefix}authjs.session-token`,
-      options: { httpOnly: true, sameSite: "none", path: "/", secure: useSecureCookies },
+      options: { httpOnly: true, sameSite: cookieSameSite, path: "/", secure: useSecureCookies },
     },
     callbackUrl: {
       name: `${cookiePrefix}authjs.callback-url`,
-      options: { httpOnly: true, sameSite: "none", path: "/", secure: useSecureCookies },
+      options: { httpOnly: true, sameSite: cookieSameSite, path: "/", secure: useSecureCookies },
     },
     csrfToken: {
       name: `${useSecureCookies ? "__Host-" : ""}authjs.csrf-token`,
-      options: { httpOnly: true, sameSite: "none", path: "/", secure: useSecureCookies },
+      options: { httpOnly: true, sameSite: cookieSameSite, path: "/", secure: useSecureCookies },
     },
   },
 });

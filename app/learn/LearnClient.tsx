@@ -30,6 +30,8 @@ const GROUP_ICON_MAP: Record<string, React.ElementType> = {
 };
 
 type AppMode = "lv1" | "lv2" | "lv3" | "mechdog";
+type EditorLoadSource = "example" | "practice" | "ai" | null;
+type FeedbackStatus = "grading" | "feedback" | null;
 
 const MODE_THEME: Record<AppMode, {
   primary: string;
@@ -73,6 +75,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   const [execError, setExecError] = useState("");
   const [hasRun, setHasRun] = useState(false);
   const [running, setRunning] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>(null);
   const [speechText, setSpeechText] = useState("");
   const [showSpeech, setShowSpeech] = useState(false);
   const [newBadgeIds, setNewBadgeIds] = useState<number[]>([]);
@@ -81,6 +84,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   // 지금 에디터에 로드된 연습문제의 개념 ID. 문제 풀이 중일 때만 서버 채점을 요청한다.
   const [practiceConceptId, setPracticeConceptId] = useState<number | null>(null);
   const [generatingAiPractice, setGeneratingAiPractice] = useState(false);
+  const [editorLoadSource, setEditorLoadSource] = useState<EditorLoadSource>(null);
   // 클리어(뱃지 획득)한 개념 목록. 순차 잠금 해제의 기준.
   const [clearedConceptIds, setClearedConceptIds] = useState<Set<number>>(new Set());
   const [manuallyUnlockedConceptIds, setManuallyUnlockedConceptIds] = useState<Set<number>>(new Set());
@@ -192,6 +196,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       const first = mechdogExamples[0];
       setSelectedMechdogId(first?.id ?? null);
       setCode(first?.code ?? "");
+      setEditorLoadSource(first?.code ? "example" : null);
       return;
     }
     if (mode === "lv3") {
@@ -200,7 +205,9 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
         .sort((a, b) => a.orderIndex - b.orderIndex)[0]?.id;
       if (firstId !== undefined) {
         setSelectedLv3ConceptId(firstId);
-        setCode(curriculum[firstId]?.exampleCode ?? "");
+        const exampleCode = curriculum[firstId]?.exampleCode;
+        setCode(exampleCode ?? "");
+        setEditorLoadSource(exampleCode ? "example" : null);
       }
       setPlots([]);
       (async () => {
@@ -226,11 +233,17 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       .sort((a, b) => a.orderIndex - b.orderIndex)[0]?.id;
     if (firstId === undefined) {
       setCode("");
+      setEditorLoadSource(null);
       return;
     }
     setSelectedConceptId(firstId);
     const example = curriculum[firstId];
-    if (example?.exampleCode) setCode(example.exampleCode);
+    if (example?.exampleCode) {
+      setCode(example.exampleCode);
+      setEditorLoadSource("example");
+    } else {
+      setEditorLoadSource(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
@@ -270,6 +283,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     }
     setCode(savedCode || curriculum[conceptId].practiceCode);
     setPracticeConceptId(conceptId);
+    setEditorLoadSource("practice");
     setOutput("");
     setExecError("");
     setHasRun(false);
@@ -286,6 +300,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     if (runningRef.current || pyLoading) return;
     runningRef.current = true;
     setRunning(true);
+    setFeedbackStatus(null);
     setHasRun(true);
     setShowSpeech(false);
     setCommands([]);
@@ -296,8 +311,11 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     let stdout = "", stderr = "", success = false, newPlots: string[] = [];
     try {
       ({ stdout, stderr, success, plots: newPlots = [] } = await executeCode(code, mode === "lv3" ? "lv3" : undefined));
+    } catch (error) {
+      stderr = error instanceof Error ? error.message : "코드를 실행하는 중 문제가 발생했어요.";
+      success = false;
     } finally {
-      runningRef.current = false;
+      setRunning(false);
     }
     if (mode === "lv3") setPlots(newPlots);
     setOutput(stdout);
@@ -317,6 +335,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     const queueCommands = animationQueue.get();
     animationDoneRef.current = queueCommands.length === 0;
     setCommands(queueCommands);
+    setFeedbackStatus(mode !== "mechdog" && practiceConceptId !== null ? "grading" : "feedback");
 
     try {
       const res = await fetch("/api/feedback", {
@@ -373,9 +392,10 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
         setPendingFeedback(null);
         showSpeechBubble(fallback);
       }
+    } finally {
+      setFeedbackStatus(null);
+      runningRef.current = false;
     }
-
-    setRunning(false);
   }, [pyLoading, code, mode, practiceConceptId, executeCode, showSpeechBubble]);
 
   const handleAnimationComplete = useCallback(() => {
@@ -412,23 +432,37 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       setSelectedConceptId(id);
     }
     const example = curriculum[id];
-    if (example?.exampleCode) setCode(example.exampleCode);
+    if (example?.exampleCode) {
+      setCode(example.exampleCode);
+      setEditorLoadSource("example");
+    } else {
+      setEditorLoadSource(null);
+    }
   }, [curriculum, curriculumView.units]);
 
   const handleLoadExample = useCallback(() => {
     setPracticeConceptId(null);
     if (mode === "mechdog") {
       const ex = mechdogExamples.find(e => e.id === selectedMechdogId);
-      if (ex) setCode(ex.code);
+      if (ex) {
+        setCode(ex.code);
+        setEditorLoadSource("example");
+      }
       return;
     }
     if (mode === "lv3") {
       const ex = curriculum[selectedLv3ConceptId];
-      if (ex) setCode(ex.exampleCode);
+      if (ex) {
+        setCode(ex.exampleCode);
+        setEditorLoadSource("example");
+      }
       return;
     }
     const example = curriculum[selectedConceptId];
-    if (example) setCode(example.exampleCode);
+    if (example) {
+      setCode(example.exampleCode);
+      setEditorLoadSource("example");
+    }
   }, [mode, selectedMechdogId, selectedConceptId, selectedLv3ConceptId, curriculum, mechdogExamples]);
 
   const handleLoadPractice = useCallback(() => {
@@ -438,6 +472,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       if (ex?.practiceCode) {
         setCode(ex.practiceCode);
         setPracticeConceptId(selectedLv3ConceptId);
+        setEditorLoadSource("practice");
       }
       return;
     }
@@ -445,6 +480,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     if (example?.practiceCode) {
       setCode(example.practiceCode);
       setPracticeConceptId(selectedConceptId);
+      setEditorLoadSource("practice");
     }
   }, [mode, selectedConceptId, selectedLv3ConceptId, curriculum]);
 
@@ -470,6 +506,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       setCode(data.starterCode);
       // AI 추가 문제는 자유 연습이며 필수 문제의 뱃지 판정과 분리한다.
       setPracticeConceptId(null);
+      setEditorLoadSource("ai");
       setOutput("");
       setExecError("");
       setHasRun(false);
@@ -502,6 +539,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
 
   const handleReset = useCallback(() => {
     setPracticeConceptId(null);
+    setEditorLoadSource(null);
     setCode(INITIAL_CODE);
     setOutput("");
     setExecError("");
@@ -518,19 +556,18 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
 
   const selectedMechdogExample = mechdogExamples.find(e => e.id === selectedMechdogId);
 
-  const selectedExampleCode = mode === "mechdog"
-    ? selectedMechdogExample?.code
-    : mode === "lv3"
-      ? curriculum[selectedLv3ConceptId]?.exampleCode
-      : curriculum[selectedConceptId]?.exampleCode;
   const selectedPracticeCode = mode === "mechdog"
     ? undefined
     : mode === "lv3"
       ? curriculum[selectedLv3ConceptId]?.practiceCode
       : curriculum[selectedConceptId]?.practiceCode;
-  const exampleIsApplied = Boolean(selectedExampleCode) && code === selectedExampleCode;
-  const practiceIsApplied = Boolean(selectedPracticeCode) && code === selectedPracticeCode;
+  const exampleIsApplied = editorLoadSource === "example";
+  const practiceIsApplied = editorLoadSource === "practice";
+  const aiPracticeIsApplied = editorLoadSource === "ai";
   const resetIsApplied = code === INITIAL_CODE && !hasRun;
+  const feedbackInProgress = feedbackStatus !== null;
+  const feedbackStatusLabel = feedbackStatus === "grading" ? "AI 채점 중" : "AI 피드백 준비 중";
+  const runIsBusy = running || feedbackInProgress || pyLoading;
 
   const displayConcept = mode === "mechdog"
     ? {
@@ -668,6 +705,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                           setSelectedLv3ConceptId(id);
                           setPracticeConceptId(null);
                           setCode(curriculum[id]?.exampleCode ?? "");
+                          setEditorLoadSource(curriculum[id]?.exampleCode ? "example" : null);
                         }}
                         style={{
                           width: "100%", textAlign: "left",
@@ -711,7 +749,11 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                         <button
                           key={ex.id}
                           aria-pressed={selected}
-                          onClick={() => { setSelectedMechdogId(ex.id); setCode(ex.code); }}
+                          onClick={() => {
+                            setSelectedMechdogId(ex.id);
+                            setCode(ex.code);
+                            setEditorLoadSource("example");
+                          }}
                           style={{
                             width: "100%",
                             textAlign: "left",
@@ -776,7 +818,12 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                           setSelectedConceptId(id);
                           setPracticeConceptId(null);
                           const example = curriculum[id];
-                          if (example?.exampleCode) setCode(example.exampleCode);
+                          if (example?.exampleCode) {
+                            setCode(example.exampleCode);
+                            setEditorLoadSource("example");
+                          } else {
+                            setEditorLoadSource(null);
+                          }
                         }}
                         style={{
                           width: "100%",
@@ -1012,7 +1059,15 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
               }}
             >
               <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#3776AB", fontWeight: 750 }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: running ? "#F2B134" : "#22B88A", boxShadow: `0 0 0 3px ${running ? "#FFF2D5" : "#DDF7EE"}` }} />
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: feedbackInProgress ? "#7B5CF0" : running ? "#F2B134" : "#22B88A",
+                    boxShadow: `0 0 0 3px ${feedbackInProgress ? "#EEE9FF" : running ? "#FFF2D5" : "#DDF7EE"}`,
+                  }}
+                />
                 Python 3
               </span>
               <span>{code.split(/\r?\n/).length} lines</span>
@@ -1035,41 +1090,48 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
               {/* Run */}
               <button
                 onClick={handleRun}
-                disabled={running || pyLoading}
+                disabled={runIsBusy}
+                aria-busy={running || feedbackInProgress}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 7,
                   padding: "11px 0",
-                  width: 110,
+                  minWidth: feedbackInProgress ? 138 : 110,
                   border: "none",
                   borderRadius: 13,
-                  background: running || pyLoading
-                    ? "linear-gradient(180deg,#5EC4A0,#3DAF88)"
-                    : "linear-gradient(180deg,#34D9A6,#18C99A)",
+                  background: feedbackInProgress
+                    ? "linear-gradient(180deg,#8A70E8,#7257CF)"
+                    : running || pyLoading
+                      ? "linear-gradient(180deg,#5EC4A0,#3DAF88)"
+                      : "linear-gradient(180deg,#34D9A6,#18C99A)",
                   color: "#fff",
                   fontFamily: "var(--font-jua), 'Jua', sans-serif",
                   fontSize: 15,
-                  cursor: running || pyLoading ? "not-allowed" : "pointer",
-                  boxShadow: running || pyLoading
-                    ? "0 3px 0 #2A8A68"
-                    : "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)",
-                  opacity: running || pyLoading ? 0.8 : 1,
-                  transition: "transform .12s,box-shadow .12s,opacity .15s",
-                  animation: !hasRun && !running && !pyLoading ? "runPulse 1.8s ease-in-out infinite" : undefined,
+                  cursor: runIsBusy ? "not-allowed" : "pointer",
+                  boxShadow: feedbackInProgress
+                    ? "0 3px 0 #573CA9,0 7px 14px rgba(87,60,169,.2)"
+                    : running || pyLoading
+                      ? "0 3px 0 #2A8A68"
+                      : "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)",
+                  opacity: runIsBusy ? 0.88 : 1,
+                  transition: "min-width .18s,transform .12s,box-shadow .12s,opacity .15s",
+                  animation: !hasRun && !runIsBusy ? "runPulse 1.8s ease-in-out infinite" : undefined,
                 }}
                 onMouseDown={(e) => {
-                  if (!running && !pyLoading) {
+                  if (!runIsBusy) {
                     (e.currentTarget as HTMLButtonElement).style.transform = "translateY(3px)";
                     (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 0 #0FA37C";
                   }
                 }}
                 onMouseUp={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.transform = "";
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = running || pyLoading
-                    ? "0 3px 0 #2A8A68"
-                    : "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)";
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = feedbackInProgress
+                    ? "0 3px 0 #573CA9,0 7px 14px rgba(87,60,169,.2)"
+                    : running || pyLoading
+                      ? "0 3px 0 #2A8A68"
+                      : "0 5px 0 #0FA37C,0 8px 16px rgba(24,201,154,.28)";
                 }}
               >
                 {running ? (
@@ -1084,6 +1146,22 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                       ))}
                     </span>
                     실행 중
+                  </>
+                ) : feedbackInProgress ? (
+                  <>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 15,
+                        height: 15,
+                        border: "2px solid rgba(255,255,255,.45)",
+                        borderTopColor: "#fff",
+                        borderRadius: "50%",
+                        display: "inline-block",
+                        animation: "spin .8s linear infinite",
+                      }}
+                    />
+                    {feedbackStatusLabel}
                   </>
                 ) : (
                   <>
@@ -1105,23 +1183,36 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                   alignItems: "center",
                   gap: 6,
                   padding: "11px 16px",
-                  border: "1.5px solid #ECE7F8",
+                  border: `1.5px solid ${exampleIsApplied ? "#6D50C7" : "#ECE7F8"}`,
                   borderRadius: 13,
-                  background: "#fff",
-                  color: "#7B5CF0",
+                  background: exampleIsApplied
+                    ? "linear-gradient(180deg,#8A70E8,#7257CF)"
+                    : "#fff",
+                  color: exampleIsApplied ? "#fff" : "#7B5CF0",
                   fontWeight: 700,
                   fontSize: 13.5,
-                  cursor: "pointer",
+                  cursor: exampleIsApplied ? "default" : "pointer",
                   fontFamily: "inherit",
-                  transition: "background .13s",
+                  boxShadow: exampleIsApplied
+                    ? "0 3px 0 #573CA9,0 6px 12px rgba(87,60,169,.2)"
+                    : "none",
+                  transition: "all .13s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#F6F2FE")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                onMouseEnter={(e) => {
+                  if (!exampleIsApplied) e.currentTarget.style.background = "#F6F2FE";
+                }}
+                onMouseLeave={(e) => {
+                  if (!exampleIsApplied) e.currentTarget.style.background = "#fff";
+                }}
               >
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                </svg>
+                {exampleIsApplied ? (
+                  <Check size={16} strokeWidth={3} aria-hidden="true" />
+                ) : (
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                  </svg>
+                )}
                 {exampleIsApplied ? "예제 적용됨" : "예제 불러오기"}
               </button>
 
@@ -1136,23 +1227,39 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                   alignItems: "center",
                   gap: 6,
                   padding: "11px 16px",
-                  border: "1.5px solid #E8F5E9",
+                  border: `1.5px solid ${practiceIsApplied ? "#0FA37C" : "#E8F5E9"}`,
                   borderRadius: 13,
-                  background: "#fff",
-                  color: "#18C99A",
+                  background: practiceIsApplied
+                    ? "linear-gradient(180deg,#34D9A6,#18C99A)"
+                    : "#fff",
+                  color: practiceIsApplied ? "#fff" : mode === "mechdog" ? "#B8B0CA" : "#18C99A",
                   fontWeight: 700,
                   fontSize: 13.5,
-                  cursor: "pointer",
+                  cursor: mode === "mechdog" || practiceIsApplied || !selectedPracticeCode ? "default" : "pointer",
                   fontFamily: "inherit",
-                  transition: "background .13s",
+                  boxShadow: practiceIsApplied
+                    ? "0 3px 0 #0FA37C,0 6px 12px rgba(15,163,124,.2)"
+                    : "none",
+                  opacity: mode === "mechdog" || !selectedPracticeCode ? 0.58 : 1,
+                  transition: "all .13s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#F0FDF4")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                onMouseEnter={(e) => {
+                  if (!practiceIsApplied && mode !== "mechdog" && selectedPracticeCode) {
+                    e.currentTarget.style.background = "#F0FDF4";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!practiceIsApplied) e.currentTarget.style.background = "#fff";
+                }}
               >
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
+                {practiceIsApplied ? (
+                  <Check size={16} strokeWidth={3} aria-hidden="true" />
+                ) : (
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                )}
                 {practiceIsApplied ? "문제 적용됨" : "문제 풀기"}
               </button>
 
@@ -1160,34 +1267,48 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
               <button
                 onClick={() => void handleGenerateAiPractice()}
                 disabled={mode === "mechdog" || generatingAiPractice}
+                aria-pressed={aiPracticeIsApplied}
                 title={mode === "mechdog" ? "파이썬 단원에서 사용할 수 있어요." : "현재 단원의 새로운 추가 문제 만들기"}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
                   padding: "11px 16px",
-                  border: "1.5px solid #E4DBFF",
+                  border: `1.5px solid ${aiPracticeIsApplied ? "#BD4FCB" : "#E4DBFF"}`,
                   borderRadius: 13,
-                  background: generatingAiPractice ? "#F4F0FC" : "#fff",
-                  color: mode === "mechdog" ? "#B8B0CA" : "#7B5CF0",
+                  background: generatingAiPractice
+                    ? "#F4F0FC"
+                    : aiPracticeIsApplied
+                      ? "linear-gradient(180deg,#D96BE2,#B84FC8)"
+                      : "#fff",
+                  color: mode === "mechdog" ? "#B8B0CA" : aiPracticeIsApplied ? "#fff" : "#7B5CF0",
                   fontWeight: 700,
                   fontSize: 13.5,
                   cursor: mode === "mechdog" || generatingAiPractice ? "not-allowed" : "pointer",
                   fontFamily: "inherit",
-                  transition: "background .13s",
+                  boxShadow: aiPracticeIsApplied && !generatingAiPractice
+                    ? "0 3px 0 #9638A6,0 6px 12px rgba(150,56,166,.2)"
+                    : "none",
+                  transition: "all .13s",
                   opacity: mode === "mechdog" ? 0.65 : 1,
                 }}
                 onMouseEnter={(event) => {
-                  if (mode !== "mechdog" && !generatingAiPractice) {
+                  if (mode !== "mechdog" && !generatingAiPractice && !aiPracticeIsApplied) {
                     event.currentTarget.style.background = "#F6F2FE";
                   }
                 }}
                 onMouseLeave={(event) => {
-                  event.currentTarget.style.background = generatingAiPractice ? "#F4F0FC" : "#fff";
+                  if (!aiPracticeIsApplied) {
+                    event.currentTarget.style.background = generatingAiPractice ? "#F4F0FC" : "#fff";
+                  }
                 }}
               >
-                <Sparkles size={15} strokeWidth={2.2} />
-                {generatingAiPractice ? "문제 만드는 중..." : "AI 추가 문제"}
+                {aiPracticeIsApplied && !generatingAiPractice ? (
+                  <Check size={16} strokeWidth={3} aria-hidden="true" />
+                ) : (
+                  <Sparkles size={15} strokeWidth={2.2} aria-hidden="true" />
+                )}
+                {generatingAiPractice ? "문제 만드는 중..." : aiPracticeIsApplied ? "AI 문제 적용됨" : "AI 추가 문제"}
               </button>
 
               {/* Output toggle */}
@@ -1318,11 +1439,44 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                   {execError ? "코드를 다시 확인해 주세요" : "코드가 정상적으로 실행됐어요"}
                 </span>
               </div>
+              {feedbackInProgress && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  style={{
+                    marginLeft: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "7px 11px",
+                    border: "1px solid #D9CEFA",
+                    borderRadius: 999,
+                    background: "#F3EFFE",
+                    color: "#6546C4",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 13,
+                      height: 13,
+                      border: "2px solid #CFC2F5",
+                      borderTopColor: "#7257CF",
+                      borderRadius: "50%",
+                      animation: "spin .8s linear infinite",
+                    }}
+                  />
+                  {feedbackStatusLabel}...
+                </div>
+              )}
               <button
                 onClick={() => setShowOutput(false)}
                 aria-label="실행 결과 닫기"
                 style={{
-                  marginLeft: "auto",
+                  marginLeft: feedbackInProgress ? 0 : "auto",
                   width: 30,
                   height: 30,
                   display: "grid",
