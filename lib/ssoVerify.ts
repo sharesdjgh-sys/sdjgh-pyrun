@@ -9,12 +9,16 @@ export async function verifySsoToken(
   try {
     const res = await fetch(PLATFORM_VERIFY_URL, {
       method: "POST",
+      signal: AbortSignal.timeout(8000),
+      cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return data?.valid ? data.user ?? null : null;
+    const user = data?.user;
+    return data?.valid === true && typeof user?.uid === "string" && user.uid.length > 0
+      && typeof user.name === "string" && typeof user.role === "string" ? user : null;
   } catch {
     return null;
   }

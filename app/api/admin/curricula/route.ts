@@ -146,6 +146,7 @@ export async function POST(req: NextRequest) {
         isActive: source.isActive,
       })));
     }
+    await ensureDefaultMechdogUnits(created.id, context.userId);
   } catch (error) {
     await db.delete(curriculumSets).where(eq(curriculumSets.id, created.id));
     throw error;

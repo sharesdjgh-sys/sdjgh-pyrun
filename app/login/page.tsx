@@ -33,7 +33,7 @@ export default function LoginPage() {
 
     try {
       const result = await signIn("credentials", { schoolCode, username, password, redirect: false });
-      if (result?.error) {
+      if (!result?.ok || result.error) {
         setError("학번 또는 비밀번호가 올바르지 않습니다.");
         submitLockRef.current = false;
         setLoading(false);

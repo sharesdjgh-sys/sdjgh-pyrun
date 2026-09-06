@@ -1,3 +1,4 @@
+import { ensureDefaultMechdogUnits } from "../mechdog-access";
 import { db } from "./index";
 import { concepts, badges, curriculumSets, schools } from "./schema";
 import { sql } from "drizzle-orm";
@@ -42,6 +43,8 @@ async function seed() {
     target: curriculumSets.id,
     set: { name: "기본 Python 커리큘럼", isDefault: true },
   });
+
+  await ensureDefaultMechdogUnits(DEFAULT_CURRICULUM_ID);
 
   // Robot API 소개 (id=0) 시딩
   const robotIntro = CONCEPT_EXAMPLES[0];

@@ -36,7 +36,7 @@ export async function resolveCurriculumIdForUser(context: SessionTenant): Promis
       .where(and(eq(users.id, context.userId), eq(users.schoolId, context.schoolId)))
       .limit(1);
 
-    if (student?.grade !== null && student?.classNumber !== null) {
+    if (student && student.grade !== null && student.classNumber !== null) {
       const [assignment] = await db
         .select({ curriculumId: classCurriculumAssignments.curriculumId })
         .from(classCurriculumAssignments)

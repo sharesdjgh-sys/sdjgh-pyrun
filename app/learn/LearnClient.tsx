@@ -57,12 +57,20 @@ robot.dance()
 
 interface LearnClientProps {
   userName: string;
-  curriculum: Record<number, CurriculumItem>;
-  curriculumView: CurriculumView;
   isStudent: boolean;
 }
 
-export default function LearnClient({ userName, curriculum, curriculumView, isStudent }: LearnClientProps) {
+export default function LearnClient({ userName, isStudent }: LearnClientProps) {
+  const [curriculum, setCurriculum] = useState<Record<number, CurriculumItem>>({});
+  const [curriculumView, setCurriculumView] = useState<CurriculumView>({ id: 0, name: "학습 자료 준비 중", units: [], mechdogUnits: [] });
+  const [dataReady, setDataReady] = useState(false);
+  const [dataError, setDataError] = useState("");
+  const [dataAttempt, setDataAttempt] = useState(0);
+  const [progressReady, setProgressReady] = useState(!isStudent);
+  const [progressError, setProgressError] = useState("");
+  const [progressAttempt, setProgressAttempt] = useState(0);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
   const mechdogExamples = useMemo(() => curriculumView.mechdogUnits.map((unit) => ({
       id: unit.id,
       category: unit.groupName,
@@ -71,6 +79,8 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       code: unit.exampleCode,
     })), [curriculumView.mechdogUnits]);
   const [code, setCode] = useState(INITIAL_CODE);
+  const draftEditedRef = useRef(false);
+  const initializedModeRef = useRef<AppMode | null>(null);
   const [output, setOutput] = useState("");
   const [execError, setExecError] = useState("");
   const [hasRun, setHasRun] = useState(false);
@@ -171,18 +181,49 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   }, []);
 
   useEffect(() => {
-    if (!isStudent) return;
-
-    fetch("/api/progress")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (Array.isArray(data?.clearedConceptIds)) setClearedConceptIds(new Set<number>(data.clearedConceptIds));
-        if (Array.isArray(data?.manuallyUnlockedConceptIds)) {
-          setManuallyUnlockedConceptIds(new Set<number>(data.manuallyUnlockedConceptIds));
-        }
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
+    let active = true;
+    setDataError("");
+    fetch("/api/learn/bootstrap", { cache: "no-store", signal: controller.signal })
+      .then(async (res) => {
+        if (res.status === 401) { if (active) setSessionExpired(true); throw new Error("session"); }
+        if (!res.ok) throw new Error("bootstrap");
+        return res.json();
       })
-      .catch(() => { /* 조회 실패 시 첫 개념만 열린 기본 상태로 시작 */ });
-  }, [isStudent]);
+      .then((data) => {
+        if (!active) return;
+        setCurriculum(data.curriculum);
+        setCurriculumView(data.curriculumView);
+        setDataReady(true);
+      })
+      .catch(() => { if (active) setDataError("학습 자료를 불러오지 못했어요."); })
+      .finally(() => window.clearTimeout(timeout));
+    return () => { active = false; controller.abort(); window.clearTimeout(timeout); };
+  }, [dataAttempt]);
+
+  useEffect(() => {
+    if (!isStudent) return;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
+    let active = true;
+    setProgressError("");
+    fetch("/api/learn/access", { cache: "no-store", signal: controller.signal })
+      .then(async (res) => {
+        if (res.status === 401) { if (active) setSessionExpired(true); throw new Error("session"); }
+        if (!res.ok) throw new Error("progress");
+        return res.json();
+      })
+      .then((data) => {
+        if (!active) return;
+        setClearedConceptIds(new Set<number>(data.clearedConceptIds));
+        setManuallyUnlockedConceptIds(new Set<number>(data.manuallyUnlockedConceptIds));
+        setProgressReady(true);
+      })
+      .catch(() => { if (active) setProgressError("단원 접근 상태를 확인하지 못했어요."); })
+      .finally(() => window.clearTimeout(timeout));
+    return () => { active = false; controller.abort(); window.clearTimeout(timeout); };
+  }, [isStudent, progressAttempt]);
 
   const accessibleConceptIds = effectiveConceptAccessIdsForOrders(
     clearedConceptIds,
@@ -191,6 +232,10 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   );
 
   useEffect(() => {
+    if (!dataReady || !progressReady || sessionExpired) return;
+    const preserveDraft = initializedModeRef.current === null && draftEditedRef.current;
+    initializedModeRef.current = mode;
+    if (preserveDraft) return;
     setPracticeConceptId(null);
     if (mode === "mechdog") {
       const first = mechdogExamples[0];
@@ -245,12 +290,14 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       setEditorLoadSource(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, dataReady, progressReady, sessionExpired]);
 
   useEffect(() => {
-    if (reviewDeepLinkLoadedRef.current || typeof window === "undefined") return;
+    if (!dataReady || !progressReady || sessionExpired || reviewDeepLinkLoadedRef.current || typeof window === "undefined") return;
 
-    const conceptId = Number(new URLSearchParams(window.location.search).get("reviewConceptId"));
+    const reviewId = new URLSearchParams(window.location.search).get("reviewConceptId");
+    if (reviewId === null) { reviewDeepLinkLoadedRef.current = true; return; }
+    const conceptId = Number(reviewId);
     const unit = curriculumView.units.find((item) => item.id === conceptId);
     if (!Number.isInteger(conceptId) || !unit || !curriculum[conceptId]) {
       reviewDeepLinkLoadedRef.current = true;
@@ -294,7 +341,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     );
     sessionStorage.removeItem("pyrun-review-attempt");
     reviewDeepLinkLoadedRef.current = true;
-  }, [curriculum, curriculumView.units, mode, showSpeechBubble]);
+  }, [curriculum, curriculumView.units, mode, showSpeechBubble, dataReady, progressReady, sessionExpired]);
 
   const handleRun = useCallback(async () => {
     if (runningRef.current || pyLoading) return;
@@ -441,6 +488,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
   }, [curriculum, curriculumView.units]);
 
   const handleLoadExample = useCallback(() => {
+    if (!dataReady || !progressReady || sessionExpired) return;
     setPracticeConceptId(null);
     if (mode === "mechdog") {
       const ex = mechdogExamples.find(e => e.id === selectedMechdogId);
@@ -463,9 +511,10 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       setCode(example.exampleCode);
       setEditorLoadSource("example");
     }
-  }, [mode, selectedMechdogId, selectedConceptId, selectedLv3ConceptId, curriculum, mechdogExamples]);
+  }, [mode, selectedMechdogId, selectedConceptId, selectedLv3ConceptId, curriculum, mechdogExamples, dataReady, progressReady, sessionExpired]);
 
   const handleLoadPractice = useCallback(() => {
+    if (!dataReady || !progressReady || sessionExpired) return;
     if (mode === "mechdog") return;
     if (mode === "lv3") {
       const ex = curriculum[selectedLv3ConceptId];
@@ -482,10 +531,10 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       setPracticeConceptId(selectedConceptId);
       setEditorLoadSource("practice");
     }
-  }, [mode, selectedConceptId, selectedLv3ConceptId, curriculum]);
+  }, [mode, selectedConceptId, selectedLv3ConceptId, curriculum, dataReady, progressReady, sessionExpired]);
 
   const handleGenerateAiPractice = useCallback(async () => {
-    if (mode === "mechdog" || generatingAiPractice) return;
+    if (!dataReady || !progressReady || sessionExpired || mode === "mechdog" || generatingAiPractice) return;
     const conceptId = mode === "lv3" ? selectedLv3ConceptId : selectedConceptId;
     setGeneratingAiPractice(true);
     setShowSpeech(false);
@@ -530,6 +579,9 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
     }
   }, [
     generatingAiPractice,
+    dataReady,
+    progressReady,
+    sessionExpired,
     mode,
     selectedConceptId,
     selectedLv3ConceptId,
@@ -593,6 +645,22 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
       }}
     >
       <Header />
+      {sessionExpired ? (
+        <div role="alert" style={{ padding: "10px 18px", background: "#FFF0F4" }}>
+          로그인이 만료됐어요. <button type="button" onClick={() => window.location.reload()}>다시 로그인</button>
+        </div>
+      ) : (
+        <>
+          {!dataReady && <div role="status" style={{ padding: "8px 18px", background: "#EEE9FF" }}>
+            {dataError || "학습 자료를 불러오는 중이에요. 코드를 먼저 작성할 수 있어요."}
+            {dataError && <button type="button" onClick={() => setDataAttempt((n) => n + 1)}>자료 다시 불러오기</button>}
+          </div>}
+          {!progressReady && <div role="status" style={{ padding: "8px 18px", background: "#EEE9FF" }}>
+            {progressError || "학습 진도를 확인 중이에요. 확인 후 단원을 시작할 수 있어요."}
+            {progressError && <button type="button" onClick={() => setProgressAttempt((n) => n + 1)}>진도 다시 불러오기</button>}
+          </div>}
+        </>
+      )}
 
       {pyError && (
         <section className="runtime-error-panel" role="alert" aria-live="assertive">
@@ -694,7 +762,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                     const selected = id === selectedLv3ConceptId;
                     const cleared = isStudent && clearedConceptIds.has(id);
                     const unit = curriculumView.units.find((item) => item.id === id);
-                    const unlocked = !isStudent || unit?.sourceConceptId === 0 || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders);
+                    const unlocked = !sessionExpired && progressReady && (!isStudent || unit?.sourceConceptId === 0 || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders));
                     return (
                       <button
                         key={id}
@@ -807,7 +875,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
                     const selected = id === selectedConceptId;
                     const cleared = isStudent && clearedConceptIds.has(id);
                     const unit = curriculumView.units.find((item) => item.id === id);
-                    const unlocked = !isStudent || unit?.sourceConceptId === 0 || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders);
+                    const unlocked = !sessionExpired && progressReady && (!isStudent || unit?.sourceConceptId === 0 || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders));
                     return (
                       <button
                         key={id}
@@ -1035,7 +1103,7 @@ export default function LearnClient({ userName, curriculum, curriculumView, isSt
             <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
               <CodeEditor
                 value={code}
-                onChange={setCode}
+                onChange={(value) => { draftEditedRef.current = true; setCode(value); }}
                 onCursorChange={setCursorPosition}
                 fontSize={fontSizeStr}
               />

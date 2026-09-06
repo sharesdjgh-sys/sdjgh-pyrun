@@ -1,3 +1,4 @@
+import { ensureDefaultMechdogUnits } from "@/lib/mechdog-access";
 import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
@@ -100,6 +101,8 @@ export async function POST(req: NextRequest) {
         isDefault: true,
       })
       .returning({ id: curriculumSets.id });
+
+    await ensureDefaultMechdogUnits(curriculum.id, context.userId);
 
     for (const source of templateUnits) {
       const [unit] = await db

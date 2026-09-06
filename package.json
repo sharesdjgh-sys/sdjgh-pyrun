@@ -10,7 +10,8 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx --env-file .env.local lib/db/seed.ts"
+    "db:seed": "tsx --env-file .env.local lib/db/seed.ts",
+    "db:migrate": "tsx --env-file .env.local scripts/migrate-startup.ts"
   },
   "dependencies": {
     "@codemirror/lang-python": "^6.1.9",
