@@ -90,6 +90,7 @@ interface LearnClientProps {
 }
 
 export default function LearnClient({ userName, isStudent }: LearnClientProps) {
+  const robotAudienceCall = isStudent ? getFriendlyNameCall(userName) : "얘들아";
   const [curriculum, setCurriculum] = useState<Record<number, CurriculumItem>>({});
   const [curriculumView, setCurriculumView] = useState<CurriculumView>({ id: 0, name: "학습 자료 준비 중", units: [], mechdogUnits: [] });
   const [dataReady, setDataReady] = useState(false);
@@ -193,7 +194,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   useEffect(() => {
     const t = setTimeout(() => {
       showSpeechBubble(
-        `${getFriendlyNameCall(userName)}, 반가워! 난 같이 코딩할 AI 친구야. 궁금한 건 뭐든 편하게 물어봐. robot.move(2)처럼 코드를 쓰면 스테이지에서 직접 움직여 볼게!`,
+        `${robotAudienceCall}, 반가워! 난 같이 코딩할 AI 친구야. 궁금한 건 뭐든 편하게 물어봐. robot.move(2)처럼 코드를 쓰면 스테이지에서 직접 움직여 볼게!`,
         11000
       );
     }, 700);
@@ -223,11 +224,10 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     if (focusSpeechTimerRef.current) clearTimeout(focusSpeechTimerRef.current);
     if (focusEntryTimerRef.current) clearTimeout(focusEntryTimerRef.current);
 
-    const friendlyName = getFriendlyNameCall(userName);
     if (focusMode) {
       sessionStorage.setItem(FOCUS_MODE_STORAGE_KEY, "false");
       setFocusTransition("exiting");
-      const praise = `${friendlyName}, 진짜 잘했어! 끝까지 집중하느라 수고했어. 다음에도 같이 해보자!`;
+      const praise = `${robotAudienceCall}, 진짜 잘했어! 끝까지 집중하느라 수고했어. 다음에도 같이 해보자!`;
       setCommands([{ type: "focus_praise", params: { text: praise } }]);
       focusSpeechTimerRef.current = setTimeout(() => setFocusMode(false), 1400);
       focusEntryTimerRef.current = setTimeout(() => setFocusTransition(null), 2400);
@@ -238,14 +238,14 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     setFocusMode(true);
     setFocusTransition("entering");
     focusSpeechTimerRef.current = setTimeout(() => {
-      const message = `${friendlyName}, 준비됐어? 우리 같이 집중해서 멋진 코드를 만들어보자!`;
+      const message = `${robotAudienceCall}, 준비됐어? 우리 같이 집중해서 멋진 코드를 만들어보자!`;
       setCommands([
         { type: "jump", params: {} },
         { type: "focus_say", params: { text: message } },
       ]);
     }, 350);
     focusEntryTimerRef.current = setTimeout(() => setFocusTransition(null), 2400);
-  }, [focusMode, focusTransition, userName]);
+  }, [focusMode, focusTransition, robotAudienceCall]);
 
   useEffect(() => () => {
     if (focusSpeechTimerRef.current) clearTimeout(focusSpeechTimerRef.current);
@@ -638,7 +638,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
       setIsError(false);
       setPlots([]);
       showSpeechBubble(
-        `${userName}, ${data.title || "새로운 추가 문제"}를 준비했어! 편집기의 조건을 읽고 천천히 풀어보자.`,
+        `${robotAudienceCall}, ${data.title || "새로운 추가 문제"}를 준비했어! 편집기의 조건을 읽고 천천히 풀어보자.`,
         7000
       );
     } catch (error) {
@@ -657,8 +657,8 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     mode,
     selectedConceptId,
     selectedLv3ConceptId,
+    robotAudienceCall,
     showSpeechBubble,
-    userName,
   ]);
 
   const handleReset = useCallback(() => {
