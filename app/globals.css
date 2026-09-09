@@ -2761,3 +2761,50 @@ button:disabled {
     animation-iteration-count: 1 !important;
   }
 }
+/* Code focus mode toggle */
+.learn-code-focus-button {
+  transition:
+    transform 150ms cubic-bezier(.2,.8,.2,1),
+    box-shadow 150ms ease,
+    filter 150ms ease;
+}
+
+.learn-code-focus-emblem {
+  transition: transform 180ms cubic-bezier(.2,.8,.2,1);
+  filter: drop-shadow(0 2px 3px rgba(80, 49, 170, .2));
+}
+
+.learn-code-focus-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(94, 66, 180, .24);
+  filter: brightness(1.05) saturate(1.08);
+}
+
+.learn-code-focus-button:hover .learn-code-focus-emblem {
+  transform: scale(1.12) rotate(-5deg);
+}
+
+.learn-code-focus-button[aria-pressed="true"] {
+  box-shadow: 0 0 0 3px rgba(123, 92, 240, .14), 0 5px 12px rgba(94, 66, 180, .2);
+}
+
+.learn-code-focus-button[aria-pressed="true"] .learn-code-focus-emblem {
+  filter: drop-shadow(0 0 5px rgba(65, 235, 190, .62));
+}
+
+.learn-code-focus-button:active {
+  transform: translateY(1px) scale(.97);
+  box-shadow: 0 2px 6px rgba(94, 66, 180, .18);
+}
+
+.learn-code-focus-button:focus-visible {
+  outline: 3px solid rgba(123, 92, 240, .28);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learn-code-focus-button,
+  .learn-code-focus-emblem {
+    transition: none;
+  }
+}

@@ -54,6 +54,8 @@ robot.draw("star")
 robot.dance()
 `;
 
+const FOCUS_MODE_STORAGE_KEY = "pyrun-code-focus-mode";
+
 
 interface LearnClientProps {
   userName: string;
@@ -104,6 +106,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   const [showOutput, setShowOutput] = useState(false);
   const [fontSize, setFontSize] = useState(9);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+  const [focusMode, setFocusMode] = useState(false);
   const fontSizeStr = `${fontSize}pt`;
 
   const [mode, setMode] = useState<AppMode>("lv1");
@@ -178,6 +181,18 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     const observer = new ResizeObserver(syncHeight);
     observer.observe(panel);
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    setFocusMode(sessionStorage.getItem(FOCUS_MODE_STORAGE_KEY) === "true");
+  }, []);
+
+  const toggleFocusMode = useCallback(() => {
+    setFocusMode((enabled) => {
+      const next = !enabled;
+      sessionStorage.setItem(FOCUS_MODE_STORAGE_KEY, String(next));
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -641,10 +656,13 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        background: "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)",
+        background: focusMode
+          ? "linear-gradient(160deg,#F2F0F8 0%,#F0EDF7 52%,#ECEFF7 100%)"
+          : "linear-gradient(160deg,#F4EFFC 0%,#FCEFF6 52%,#EEF3FE 100%)",
+        transition: "background .3s ease",
       }}
     >
-      <Header />
+      {!focusMode && <Header />}
       {sessionExpired ? (
         <div role="alert" style={{ padding: "10px 18px", background: "#FFF0F4" }}>
           로그인이 만료됐어요. <button type="button" onClick={() => window.location.reload()}>다시 로그인</button>
@@ -682,7 +700,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
           style={{
             width: 192,
             flex: "none",
-            display: "flex",
+            display: focusMode ? "none" : "flex",
             flexDirection: "column",
             background: "#fff",
             borderRadius: 20,
@@ -932,7 +950,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         </div>
 
         {/* ── CENTER: Editor column ── */}
-        <div style={{ flex: 1.2, minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "relative" }}>
+        <div style={{ flex: focusMode ? 13 : 1.2, minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "relative" }}>
 
           {/* Concept explanation panel (collapsible) */}
           <div
@@ -1018,8 +1036,11 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
               flexDirection: "column",
               background: "#fff",
               borderRadius: 22,
-              border: "1px solid #EFEAF8",
-              boxShadow: "0 12px 30px rgba(90,63,214,.07)",
+              border: focusMode ? "1px solid #CFC3F5" : "1px solid #EFEAF8",
+              boxShadow: focusMode
+                ? "0 14px 36px rgba(90,63,214,.13), 0 0 0 3px rgba(123,92,240,.05)"
+                : "0 12px 30px rgba(90,63,214,.07)",
+              transition: "border-color .25s ease, box-shadow .25s ease",
               overflow: "hidden",
             }}
           >
@@ -1079,6 +1100,44 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
                 />
               </div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  type="button"
+                  className="learn-code-focus-button"
+                  onClick={toggleFocusMode}
+                  aria-pressed={focusMode}
+                  title={focusMode ? "코딩 몰입 모드 종료" : "주변 화면을 정리하고 코딩에 몰입하기"}
+                  style={{
+                    height: 34,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "0 12px 0 7px",
+                    border: focusMode ? "1px solid #7557D8" : "1px solid #DDD5F3",
+                    borderRadius: 11,
+                    background: focusMode
+                      ? "linear-gradient(135deg,#8065E1,#6646C7)"
+                      : "linear-gradient(135deg,#FFFFFF,#F3EEFF)",
+                    color: focusMode ? "#fff" : "#6D56B4",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    whiteSpace: "nowrap",
+                    boxShadow: focusMode
+                      ? "0 4px 10px rgba(94,66,180,.25)"
+                      : "0 3px 9px rgba(94,66,180,.12)",
+                  }}
+                >
+                  <Image
+                    className="learn-code-focus-emblem"
+                    src="/coding-focus-emblem.png"
+                    alt=""
+                    aria-hidden="true"
+                    width={24}
+                    height={24}
+                  />
+                  {focusMode ? "몰입 중" : "코딩 몰입"}
+                </button>
                 {/* Font size controls */}
                 <div style={{ display: "flex", alignItems: "center", gap: 3, background: "#F4F0FE", borderRadius: 8, padding: "2px 4px" }}>
                   <button
@@ -1580,7 +1639,15 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         </div>
 
         {/* ── RIGHT: Robot / DataViz column ── */}
-        <div style={{ flex: 0.85, minWidth: 280, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div
+          style={{
+            flex: focusMode ? 7 : 0.85,
+            minWidth: 280,
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
           {mode !== "lv3" && isStudent && levelRanks.length > 0 && (
             <div
               className={`learn-stage-ranks ${conceptExpanded ? "" : "is-compact"}`}
