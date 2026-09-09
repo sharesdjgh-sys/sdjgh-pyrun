@@ -1,6 +1,8 @@
 export type RobotCommand =
   | { type: "move"; params: { steps: number } }
   | { type: "say"; params: { text: string } }
+  | { type: "focus_say"; params: { text: string } }
+  | { type: "focus_praise"; params: { text: string } }
   | { type: "jump" | "dance" | "clone" | "spin" | "shake" | "clear"; params: Record<string, never> }
   | { type: "emotion"; params: { feeling: string } }
   | { type: "size"; params: { scale: number } }

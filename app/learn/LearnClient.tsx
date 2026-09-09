@@ -32,6 +32,7 @@ const GROUP_ICON_MAP: Record<string, React.ElementType> = {
 type AppMode = "lv1" | "lv2" | "lv3" | "mechdog";
 type EditorLoadSource = "example" | "practice" | "ai" | null;
 type FeedbackStatus = "grading" | "feedback" | null;
+type FocusTransition = "entering" | "exiting" | null;
 
 const MODE_THEME: Record<AppMode, {
   primary: string;
@@ -56,6 +57,32 @@ robot.dance()
 
 const FOCUS_MODE_STORAGE_KEY = "pyrun-code-focus-mode";
 
+const KOREAN_COMPOUND_SURNAMES = [
+  "남궁", "황보", "제갈", "선우", "서문", "독고", "동방", "사공",
+];
+
+function getFriendlyGivenName(name: string) {
+  const trimmedName = name.trim();
+  if (!trimmedName) return "코딩 친구";
+
+  const spacedParts = trimmedName.split(/\s+/);
+  if (spacedParts.length > 1) return spacedParts.at(-1) || trimmedName;
+  if (!/^[가-힣]+$/.test(trimmedName) || trimmedName.length < 3) return trimmedName;
+
+  const surnameLength = KOREAN_COMPOUND_SURNAMES.some((surname) => trimmedName.startsWith(surname)) ? 2 : 1;
+  return trimmedName.slice(surnameLength) || trimmedName;
+}
+
+function getFriendlyNameCall(name: string) {
+  const givenName = getFriendlyGivenName(name);
+
+  const lastCharacterCode = givenName.charCodeAt(givenName.length - 1);
+  const isHangulSyllable = lastCharacterCode >= 0xac00 && lastCharacterCode <= 0xd7a3;
+  if (!isHangulSyllable) return givenName;
+
+  const hasFinalConsonant = (lastCharacterCode - 0xac00) % 28 !== 0;
+  return `${givenName}${hasFinalConsonant ? "아" : "야"}`;
+}
 
 interface LearnClientProps {
   userName: string;
@@ -107,6 +134,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   const [fontSize, setFontSize] = useState(9);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [focusMode, setFocusMode] = useState(false);
+  const [focusTransition, setFocusTransition] = useState<FocusTransition>(null);
   const fontSizeStr = `${fontSize}pt`;
 
   const [mode, setMode] = useState<AppMode>("lv1");
@@ -143,6 +171,8 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   const [showVariable, setShowVariable] = useState(false);
 
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusSpeechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusEntryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runningRef = useRef(false);
   const reviewDeepLinkLoadedRef = useRef(false);
   // 로봇 애니메이션이 아직 재생 중인지. AI 채점 응답이 애니메이션보다 늦게 오는 경우가 많아,
@@ -163,7 +193,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   useEffect(() => {
     const t = setTimeout(() => {
       showSpeechBubble(
-        `안녕, ${userName}! 나는 AI 코딩 친구야. 왼쪽에서 단원을 선택하고 예제를 불러오거나 코드를 직접 수정해봐! robot.move(2) 처럼 코드를 쓰면 내가 스테이지에서 직접 움직여!`,
+        `${getFriendlyNameCall(userName)}, 반가워! 난 같이 코딩할 AI 친구야. 궁금한 건 뭐든 편하게 물어봐. robot.move(2)처럼 코드를 쓰면 스테이지에서 직접 움직여 볼게!`,
         11000
       );
     }, 700);
@@ -188,11 +218,38 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   }, []);
 
   const toggleFocusMode = useCallback(() => {
-    setFocusMode((enabled) => {
-      const next = !enabled;
-      sessionStorage.setItem(FOCUS_MODE_STORAGE_KEY, String(next));
-      return next;
-    });
+    if (focusTransition) return;
+
+    if (focusSpeechTimerRef.current) clearTimeout(focusSpeechTimerRef.current);
+    if (focusEntryTimerRef.current) clearTimeout(focusEntryTimerRef.current);
+
+    const friendlyName = getFriendlyNameCall(userName);
+    if (focusMode) {
+      sessionStorage.setItem(FOCUS_MODE_STORAGE_KEY, "false");
+      setFocusTransition("exiting");
+      const praise = `${friendlyName}, 진짜 잘했어! 끝까지 집중하느라 수고했어. 다음에도 같이 해보자!`;
+      setCommands([{ type: "focus_praise", params: { text: praise } }]);
+      focusSpeechTimerRef.current = setTimeout(() => setFocusMode(false), 1400);
+      focusEntryTimerRef.current = setTimeout(() => setFocusTransition(null), 2400);
+      return;
+    }
+
+    sessionStorage.setItem(FOCUS_MODE_STORAGE_KEY, "true");
+    setFocusMode(true);
+    setFocusTransition("entering");
+    focusSpeechTimerRef.current = setTimeout(() => {
+      const message = `${friendlyName}, 준비됐어? 우리 같이 집중해서 멋진 코드를 만들어보자!`;
+      setCommands([
+        { type: "jump", params: {} },
+        { type: "focus_say", params: { text: message } },
+      ]);
+    }, 350);
+    focusEntryTimerRef.current = setTimeout(() => setFocusTransition(null), 2400);
+  }, [focusMode, focusTransition, userName]);
+
+  useEffect(() => () => {
+    if (focusSpeechTimerRef.current) clearTimeout(focusSpeechTimerRef.current);
+    if (focusEntryTimerRef.current) clearTimeout(focusEntryTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -648,9 +705,18 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   const levelRanks = isStudent
     ? highestEarnedBadgesByLevel(curriculumView.units, clearedConceptIds)
     : [];
+  const focusWorldName = displayConcept?.nameKo?.trim() || "코딩";
+  const focusConceptId = mode === "lv3" ? selectedLv3ConceptId : selectedConceptId;
+  const focusUnit = mode === "mechdog"
+    ? undefined
+    : curriculumView.units.find((unit) => unit.id === focusConceptId);
+  const focusBadgePath = getBadgeImagePath(focusUnit?.sourceConceptId);
+  const focusBadgeName = focusUnit?.badgeNameKo?.trim() || `${focusWorldName} 배지`;
+  const focusBadgeEarned = !isStudent || (focusUnit ? clearedConceptIds.has(focusUnit.id) : false);
 
   return (
     <div
+      className={`learn-focus-root${focusTransition ? ` is-${focusTransition}` : ""}`}
       style={{
         height: "100vh",
         display: "flex",
@@ -662,6 +728,52 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         transition: "background .3s ease",
       }}
     >
+      {focusTransition && (
+        <div className={`learn-focus-entry is-${focusTransition}`} role="status" aria-live="polite">
+          <div className="learn-focus-entry-rings" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="learn-focus-entry-message">
+            {focusBadgePath ? (
+              <div className={`learn-focus-entry-badge ${focusBadgeEarned ? "is-earned" : "is-locked"}`}>
+                <Image
+                  src={focusBadgePath}
+                  alt={`${focusBadgeEarned ? "획득한" : "아직 획득하지 않은"} ${focusBadgeName} 배지`}
+                  width={128}
+                  height={128}
+                  sizes="128px"
+                  priority
+                />
+              </div>
+            ) : (
+              <Image
+                src="/coding-focus-emblem-v3.png"
+                alt=""
+                aria-hidden="true"
+                width={48}
+                height={48}
+                priority
+              />
+            )}
+            <span>
+              {focusBadgePath
+                ? focusBadgeEarned
+                  ? `획득한 배지 · ${focusBadgeName}`
+                  : `이번 몰입의 목표 · ${focusBadgeName}`
+                : focusTransition === "entering"
+                  ? "코딩 몰입 준비 중"
+                  : "코딩 몰입 마무리"}
+            </span>
+            <strong>
+              {focusTransition === "entering"
+                ? `${focusWorldName}의 세계에 빠지는 중...`
+                : `${focusWorldName}의 세계에서 빠져나오는 중...`}
+            </strong>
+          </div>
+        </div>
+      )}
       {!focusMode && <Header />}
       {sessionExpired ? (
         <div role="alert" style={{ padding: "10px 18px", background: "#FFF0F4" }}>
@@ -950,7 +1062,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         </div>
 
         {/* ── CENTER: Editor column ── */}
-        <div style={{ flex: focusMode ? 13 : 1.2, minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "relative" }}>
+        <div className="learn-focus-editor-column" style={{ flex: focusMode ? 13 : 1.2, minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "relative" }}>
 
           {/* Concept explanation panel (collapsible) */}
           <div
@@ -1433,7 +1545,9 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
                 type="button"
                 className="learn-code-focus-button"
                 onClick={toggleFocusMode}
+                disabled={focusTransition !== null}
                 aria-pressed={focusMode}
+                aria-busy={focusTransition !== null}
                 title={focusMode ? "코딩 몰입 모드 종료" : "주변 화면을 정리하고 코딩에 몰입하기"}
                 style={{
                   marginLeft: "auto",
@@ -1448,7 +1562,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
                     ? "linear-gradient(135deg,#8065E1,#6646C7)"
                     : "linear-gradient(135deg,#FFFFFF,#F3EEFF)",
                   color: focusMode ? "#fff" : "#6D56B4",
-                  cursor: "pointer",
+                  cursor: focusTransition ? "wait" : "pointer",
                   fontFamily: "inherit",
                   fontSize: 12,
                   fontWeight: 800,
@@ -1642,6 +1756,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
 
         {/* ── RIGHT: Robot / DataViz column ── */}
         <div
+          className="learn-focus-robot-column"
           style={{
             flex: focusMode ? 7 : 0.85,
             minWidth: 280,
@@ -1748,8 +1863,9 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
               >
                 <div
                   style={{
-                    fontSize: 12,
-                    lineHeight: 1.45,
+                    fontSize: 13.5,
+                    lineHeight: 1.55,
+                    fontWeight: 600,
                     color: showSpeech ? "#fff" : "#8B83A8",
                     textAlign: "center",
                   }}

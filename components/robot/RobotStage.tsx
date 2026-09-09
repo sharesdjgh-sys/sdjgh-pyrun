@@ -65,6 +65,7 @@ export default function RobotStage({
   const [emotion, setEmotion] = useState<RobotEmotion>("idle");
   const [robotState, setRobotState] = useState<RobotState>("idle");
   const [speech, setSpeech] = useState<string | null>(null);
+  const [wideSpeech, setWideSpeech] = useState(false);
   const [mechdogLabel, setMechdogLabel] = useState<string | null>(null);
   const [mechdogLedColor, setMechdogLedColor] = useState<string | null>(null);
   const [mechdogAction, setMechdogAction] = useState<string | null>(null);
@@ -206,6 +207,7 @@ export default function RobotStage({
         setEmotion(currentEmotion);
         setRobotState("idle");
         setSpeech(null);
+        setWideSpeech(false);
         setMechdogLabel(null);
         setMechdogLedColor(null);
         setMechdogAction(null);
@@ -267,10 +269,35 @@ export default function RobotStage({
             }
 
             case "say": {
+              setWideSpeech(false);
               setSpeech(cmd.params.text);
               setRobotState("talking");
               // 말풍선 읽는 시간만큼 충분히 대기
               await delay(Math.max(1500, cmd.params.text.length * 80));
+              setRobotState("idle");
+              break;
+            }
+
+            case "focus_say": {
+              setWideSpeech(true);
+              setSpeech(cmd.params.text);
+              setRobotState("talking");
+              await delay(Math.max(2800, Math.min(4800, cmd.params.text.length * 75)));
+              setSpeech(null);
+              setWideSpeech(false);
+              setRobotState("idle");
+              break;
+            }
+
+            case "focus_praise": {
+              currentEmotion = "happy";
+              setEmotion(currentEmotion);
+              setWideSpeech(true);
+              setSpeech(cmd.params.text);
+              setRobotState("celebrating");
+              await delay(Math.max(2800, Math.min(4800, cmd.params.text.length * 75)));
+              setSpeech(null);
+              setWideSpeech(false);
               setRobotState("idle");
               break;
             }
@@ -762,7 +789,10 @@ export default function RobotStage({
 
         {/* 말풍선 렌더링 - 로봇 상단에 위치 */}
         {speech && (
-          <div className="absolute bottom-[95%] left-1/2 -translate-x-1/2 mb-3 z-40 w-max max-w-[200px]">
+          <div
+            className="absolute bottom-[95%] left-1/2 -translate-x-1/2 mb-3 z-40 w-max"
+            style={{ maxWidth: wideSpeech ? 300 : 200 }}
+          >
             <RobotSpeechBubble text={speech} visible={!!speech} />
           </div>
         )}
