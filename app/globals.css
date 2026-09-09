@@ -734,8 +734,11 @@ html, body {
   border-right: 1px solid #EEE8FA !important;
   color: #CBC3E2 !important;
 }
-.cm-activeLineGutter, .cm-activeLine {
+.cm-activeLineGutter {
   background: #F5F1FD !important;
+}
+.cm-activeLine {
+  background: transparent !important;
 }
 .cm-cursor { border-left-color: #7B5CF0 !important; }
 .cm-selectionBackground { background: #DDD0FA !important; }
