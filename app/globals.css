@@ -2771,7 +2771,6 @@ button:disabled {
 
 .learn-code-focus-emblem {
   transition: transform 180ms cubic-bezier(.2,.8,.2,1);
-  filter: drop-shadow(0 2px 3px rgba(80, 49, 170, .2));
 }
 
 .learn-code-focus-button:hover {
@@ -2786,10 +2785,6 @@ button:disabled {
 
 .learn-code-focus-button[aria-pressed="true"] {
   box-shadow: 0 0 0 3px rgba(123, 92, 240, .14), 0 5px 12px rgba(94, 66, 180, .2);
-}
-
-.learn-code-focus-button[aria-pressed="true"] .learn-code-focus-emblem {
-  filter: drop-shadow(0 0 5px rgba(65, 235, 190, .62));
 }
 
 .learn-code-focus-button:active {

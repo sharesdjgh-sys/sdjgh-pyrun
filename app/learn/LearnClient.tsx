@@ -1100,44 +1100,6 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
                 />
               </div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-                <button
-                  type="button"
-                  className="learn-code-focus-button"
-                  onClick={toggleFocusMode}
-                  aria-pressed={focusMode}
-                  title={focusMode ? "코딩 몰입 모드 종료" : "주변 화면을 정리하고 코딩에 몰입하기"}
-                  style={{
-                    height: 34,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 5,
-                    padding: "0 12px 0 7px",
-                    border: focusMode ? "1px solid #7557D8" : "1px solid #DDD5F3",
-                    borderRadius: 11,
-                    background: focusMode
-                      ? "linear-gradient(135deg,#8065E1,#6646C7)"
-                      : "linear-gradient(135deg,#FFFFFF,#F3EEFF)",
-                    color: focusMode ? "#fff" : "#6D56B4",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    whiteSpace: "nowrap",
-                    boxShadow: focusMode
-                      ? "0 4px 10px rgba(94,66,180,.25)"
-                      : "0 3px 9px rgba(94,66,180,.12)",
-                  }}
-                >
-                  <Image
-                    className="learn-code-focus-emblem"
-                    src="/coding-focus-emblem.png"
-                    alt=""
-                    aria-hidden="true"
-                    width={24}
-                    height={24}
-                  />
-                  {focusMode ? "몰입 중" : "코딩 몰입"}
-                </button>
                 {/* Font size controls */}
                 <div style={{ display: "flex", alignItems: "center", gap: 3, background: "#F4F0FE", borderRadius: 8, padding: "2px 4px" }}>
                   <button
@@ -1466,13 +1428,53 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
                 </button>
               )}
 
+              {/* Code focus */}
+              <button
+                type="button"
+                className="learn-code-focus-button"
+                onClick={toggleFocusMode}
+                aria-pressed={focusMode}
+                title={focusMode ? "코딩 몰입 모드 종료" : "주변 화면을 정리하고 코딩에 몰입하기"}
+                style={{
+                  marginLeft: "auto",
+                  height: 34,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "0 12px 0 7px",
+                  border: focusMode ? "1px solid #7557D8" : "1px solid #DDD5F3",
+                  borderRadius: 11,
+                  background: focusMode
+                    ? "linear-gradient(135deg,#8065E1,#6646C7)"
+                    : "linear-gradient(135deg,#FFFFFF,#F3EEFF)",
+                  color: focusMode ? "#fff" : "#6D56B4",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                  boxShadow: focusMode
+                    ? "0 4px 10px rgba(94,66,180,.25)"
+                    : "0 3px 9px rgba(94,66,180,.12)",
+                }}
+              >
+                <Image
+                  className="learn-code-focus-emblem"
+                  src="/coding-focus-emblem-v3.png"
+                  alt=""
+                  aria-hidden="true"
+                  width={24}
+                  height={24}
+                />
+                {focusMode ? "몰입 중" : "코딩 몰입"}
+              </button>
+
               {/* Reset */}
               <button
                 onClick={handleReset}
                 disabled={resetIsApplied}
                 aria-pressed={resetIsApplied}
                 style={{
-                  marginLeft: "auto",
                   display: "flex",
                   alignItems: "center",
                   gap: 5,
