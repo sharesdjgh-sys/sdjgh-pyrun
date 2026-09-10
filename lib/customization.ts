@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema";
 import {
   ACTIVE_CHARACTERS,
+  aiCosmeticRewardProgress,
   COSMETIC_FAMILIES,
   cosmeticItemKey,
   availableCosmeticItemKeys,
@@ -53,8 +54,8 @@ export async function syncGroupRewardGrants(
     .then((rows) => rows.map((row) => row.id));
 }
 
-export async function syncAiRewardGrants(userId: number, curriculumId: number) {
-  const [{ solvedCount }] = await db
+async function getAiSolvedCounts(userId: number, curriculumId: number) {
+  const rows = await db
     .select({ solvedCount: count() })
     .from(aiPracticeChallenges)
     .innerJoin(concepts, eq(aiPracticeChallenges.conceptId, concepts.id))
@@ -62,8 +63,13 @@ export async function syncAiRewardGrants(userId: number, curriculumId: number) {
       eq(aiPracticeChallenges.userId, userId),
       eq(concepts.curriculumId, curriculumId),
       isNotNull(aiPracticeChallenges.solvedAt),
-    ));
-  const rewardCount = Math.floor(Number(solvedCount) / 3);
+    ))
+    .groupBy(aiPracticeChallenges.conceptId);
+  return rows.map((row) => Number(row.solvedCount));
+}
+
+export async function syncAiRewardGrants(userId: number, curriculumId: number) {
+  const { earnedRewards: rewardCount } = aiCosmeticRewardProgress(await getAiSolvedCounts(userId, curriculumId));
   if (rewardCount < 1) return [] as number[];
   return db
     .insert(cosmeticRewardGrants)
@@ -87,13 +93,7 @@ export async function getCustomizationState(userId: number, curriculumId: number
     db.select().from(cosmeticRewardGrants)
       .where(and(eq(cosmeticRewardGrants.userId, userId), eq(cosmeticRewardGrants.curriculumId, curriculumId)))
       .orderBy(asc(cosmeticRewardGrants.createdAt), asc(cosmeticRewardGrants.id)),
-    db.select({ id: aiPracticeChallenges.id }).from(aiPracticeChallenges)
-      .innerJoin(concepts, eq(aiPracticeChallenges.conceptId, concepts.id))
-      .where(and(
-        eq(aiPracticeChallenges.userId, userId),
-        eq(concepts.curriculumId, curriculumId),
-        isNotNull(aiPracticeChallenges.solvedAt),
-      )),
+    getAiSolvedCounts(userId, curriculumId),
   ]);
 
   const inventory = inventoryRows.map((row) => row.itemKey).filter((key) => parseCosmeticItemKey(key));
@@ -131,7 +131,7 @@ export async function getCustomizationState(userId: number, curriculumId: number
       familyKey: grant.familyKey,
       availability,
     })),
-    aiProgress: { solved: solvedRows.length % 3, target: 3 },
+    aiProgress: aiCosmeticRewardProgress(solvedRows, grantRows.filter((grant) => grant.sourceType === "ai").length),
   };
 }
 

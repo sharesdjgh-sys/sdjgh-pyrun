@@ -8,8 +8,26 @@ import {
   parseCosmeticItemKey,
   availableCosmeticItemKeys,
   completedGroupRewardFamilies,
+  aiCosmeticRewardProgress,
 } from "../lib/cosmetics";
 import { validateFeedback } from "../lib/api-guard";
+
+test("AI rewards count at most two solved challenges per concept", () => {
+  assert.deepEqual(aiCosmeticRewardProgress([100]), { earnedRewards: 0, solved: 2, target: 3, remaining: 1 });
+  assert.deepEqual(aiCosmeticRewardProgress([2, 1]), { earnedRewards: 1, solved: 0, target: 3, remaining: 3 });
+  assert.deepEqual(aiCosmeticRewardProgress([100, 1]), aiCosmeticRewardProgress([2, 1]));
+});
+
+test("AI rewards require moving to other concepts for further rewards", () => {
+  assert.deepEqual(aiCosmeticRewardProgress([2, 2]), { earnedRewards: 1, solved: 1, target: 3, remaining: 2 });
+  assert.deepEqual(aiCosmeticRewardProgress([2, 2, 2]), { earnedRewards: 2, solved: 0, target: 3, remaining: 3 });
+  assert.deepEqual(aiCosmeticRewardProgress([]), { earnedRewards: 0, solved: 0, target: 3, remaining: 3 });
+});
+
+test("previously granted AI rewards are preserved and not promised twice", () => {
+  assert.deepEqual(aiCosmeticRewardProgress([6], 2), { earnedRewards: 0, solved: 0, target: 3, remaining: 7 });
+  assert.deepEqual(aiCosmeticRewardProgress([2, 2, 2, 2, 1], 2), { earnedRewards: 3, solved: 0, target: 3, remaining: 3 });
+});
 
 test("all six student characters are active choices", () => {
   assert.deepEqual(ACTIVE_CHARACTERS.map((item) => item.type), ["robot", "dog", "game", "wizard", "astronaut", "slime"]);

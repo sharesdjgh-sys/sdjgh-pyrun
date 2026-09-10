@@ -5,13 +5,14 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import RobotCharacter from "../components/robot/RobotCharacter";
 import DogCharacter from "../components/robot/DogCharacter";
+import SlimeCharacter from "../components/robot/SlimeCharacter";
 import { robotApi } from "../lib/robot-api";
 import { animationQueue } from "../lib/animation-queue";
 
 // Next compiles preserved JSX automatically; the node/tsx test runner uses classic JSX.
 Object.assign(globalThis, { React });
 
-for (const [name, Character] of [["robot", RobotCharacter], ["dog", DogCharacter]] as const) {
+for (const [name, Character] of [["robot", RobotCharacter], ["dog", DogCharacter], ["slime", SlimeCharacter]] as const) {
   test(`${name} renders small and large SVGs proportionally without double scaling`, () => {
     for (const scale of [.5, 1, 2.5, 3]) {
       for (const direction of ["left", "right"] as const) {
@@ -37,6 +38,19 @@ test("robot.size queues shrink, enlarge and reset values without changing their 
     for (const invalid of [.49, 3.01, NaN, Infinity, -Infinity]) assert.throws(() => robotApi.size(invalid));
   } finally { animationQueue.clear(); }
 });
+
+for (const [name, Character] of [["dog", DogCharacter], ["slime", SlimeCharacter]] as const) {
+  test(`${name} paint IDs are unique for multiple previews and emotions`, () => {
+    const markup = renderToStaticMarkup(createElement(React.Fragment, null,
+      ...(["idle", "happy", "sad", "angry", "surprised"] as const).map((emotion, key) => createElement(Character, { key, state: "idle", emotion, size: 70 })),
+    ));
+    const ids = [...markup.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
+    const refs = [...markup.matchAll(/url\(#([^)]+)\)/g)].map(match => match[1]);
+    assert.ok(ids.length >= 15);
+    assert.equal(new Set(ids).size, ids.length);
+    assert.ok(refs.every(id => ids.includes(id)));
+  });
+}
 
 test("robot paint IDs remain unique across wardrobe previews and stage clones", () => {
   const markup = renderToStaticMarkup(createElement(React.Fragment, null,

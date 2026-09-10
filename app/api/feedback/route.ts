@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { userConceptClears, userConceptPractices, userConceptUnlocks, feedbackHistory, concepts, aiPracticeChallenges } from "@/lib/db/schema";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { generateFeedback, judgePractice } from "@/lib/gemini";
 import { effectiveConceptAccessIdsForOrders, isConceptUnlockedInOrders } from "@/lib/progress";
 import { parsePython } from "@/lib/python-parser";
@@ -21,6 +21,7 @@ import {
   sessionTenant,
 } from "@/lib/curriculum-access";
 import { syncAiRewardGrants, syncGroupRewardGrants } from "@/lib/customization";
+import { AI_REWARD_CONCEPT_LIMIT } from "@/lib/cosmetics";
 
 export async function POST(req: NextRequest) {
   const context = sessionTenant(await auth());
@@ -174,18 +175,28 @@ export async function POST(req: NextRequest) {
         .limit(1);
       if (challenge) {
         solved = isSuccess && parseResult.syntaxValid && matchesExpectedOutput(challenge.expectedOutput, stdout || "");
+        let firstSolveRecorded = false;
         if (solved && !challenge.solvedAt) {
           const firstSolve = await db.update(aiPracticeChallenges)
             .set({ solvedAt: new Date() })
             .where(and(eq(aiPracticeChallenges.id, challenge.id), isNull(aiPracticeChallenges.solvedAt)))
             .returning({ id: aiPracticeChallenges.id });
+          firstSolveRecorded = firstSolve.length > 0;
           if (firstSolve.length > 0 && curriculumId) {
             newlyEarnedRewardIds.push(...await syncAiRewardGrants(userId, curriculumId));
           }
         }
-        feedback = solved
-          ? "AI 도전 성공! 새로운 방식으로도 정확하게 해결했어요. 도전 게이지가 올라갔습니다."
-          : "실행은 되었지만 아직 예시 출력과 정확히 같지 않아요. 문제의 출력 조건을 한 줄씩 비교해 보세요.";
+        if (solved && firstSolveRecorded) {
+          const [{ solvedCount }] = await db.select({ solvedCount: count() }).from(aiPracticeChallenges)
+            .where(and(eq(aiPracticeChallenges.userId, userId), eq(aiPracticeChallenges.conceptId, challenge.conceptId), isNotNull(aiPracticeChallenges.solvedAt)));
+          feedback = Number(solvedCount) > AI_REWARD_CONCEPT_LIMIT
+            ? `AI 추가 문제 성공! 이 목차는 보상에 반영되는 ${AI_REWARD_CONCEPT_LIMIT}개를 이미 해결했어요. 이번 풀이는 연습으로 기록돼요. 아이템을 더 모으려면 다른 목차에 도전해 보세요!`
+            : `AI 추가 문제 성공! 아이템 보상 진행도에 반영했어요. 이 목차에서는 ${solvedCount}/${AI_REWARD_CONCEPT_LIMIT}개를 해결했어요.${Number(solvedCount) === AI_REWARD_CONCEPT_LIMIT ? " 다음 보상 도전은 다른 목차에서 해 보세요!" : ""}`;
+        } else {
+          feedback = solved
+            ? "AI 추가 문제 성공! 이미 해결한 문제라 보상 진행도에는 다시 반영되지 않아요."
+            : "실행은 되었지만 아직 예시 출력과 정확히 같지 않아요. 문제의 출력 조건을 한 줄씩 비교해 보세요.";
+        }
       }
     }
 

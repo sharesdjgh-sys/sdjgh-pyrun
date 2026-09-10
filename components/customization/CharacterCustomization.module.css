@@ -1,8 +1,25 @@
+.wardrobeModal { overscroll-behavior: contain; }
+.wardrobeHeader { padding: 20px 22px 14px; border-bottom: 1px solid #eee9f7; }
+.wardrobeTitle { padding-right: 36px; color: #2f2742; font-size: 21px; font-weight: 900; }
+.rewardGuide { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #f7f4fd; color: #66567e; }
+.guideMain { display: flex; align-items: flex-start; gap: 7px; margin: 0; font-size: 13px; line-height: 1.6; word-break: keep-all; }
+.guideMain > svg { flex-shrink: 0; margin-top: 2px; color: #8b6ac5; }
+.guideLimit { margin: 4px 0 0 22px; font-size: 12px; line-height: 1.6; color: #6948a2; font-weight: 700; word-break: keep-all; }
+.guideHint { margin: 2px 0 0 22px; color: #786b89; font-size: 11.5px; line-height: 1.6; word-break: keep-all; }
+
 .wardrobeGrid {
   display: grid;
-  grid-template-columns: 270px minmax(0, 1fr);
-  min-height: 470px;
+  grid-template-columns: 240px minmax(0, 1fr);
 }
+
+.wardrobePreview { padding: 14px 16px; background: linear-gradient(180deg,#fbf8ff,#f4f8ff); border-right: 1px solid #eee9f7; }
+.mainPortrait { height: 168px; display: grid; place-items: center; }
+.pendingReward { width: 100%; margin-top: 10px; padding: 10px 8px; border: 0; border-radius: 11px; background: linear-gradient(135deg,#8b5cf6,#ec4899); color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
+.wardrobeItems { min-width: 0; padding: 18px; }
+.itemSections { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: 20px 16px; }
+.itemSection { min-width: 0; }
+.itemCard { min-height: 78px; padding: 8px; border-radius: 12px; text-align: left; position: relative; }
+.slotPicker { display: none; }
 
 .rewardGrid {
   display: grid;
@@ -25,8 +42,8 @@
   justify-content: center;
   gap: 4px;
   min-width: 0;
-  min-height: 84px;
-  padding: 7px 8px;
+  min-height: 66px;
+  padding: 4px 8px;
   border: 1.5px solid #e9e3f2;
   border-radius: 14px;
   box-shadow: 0 2px 5px rgba(75, 52, 110, .04);
@@ -54,7 +71,7 @@
   display: grid;
   place-items: center;
   width: 56px;
-  height: 52px;
+  height: 42px;
   border-radius: 50%;
   background: radial-gradient(ellipse at center, #f4f0fa, transparent 72%);
   pointer-events: none;
@@ -87,19 +104,55 @@
 
 .itemGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
+@media (max-width: 700px) and (max-height: 700px) {
+  .wardrobeModal .wardrobeHeader { padding: 14px 16px 10px; }
+  .wardrobeModal .rewardGuide { margin-top: 8px; }
+  .wardrobeModal .wardrobePreview { padding: 8px 12px; gap: 8px; }
+  .wardrobeModal .wardrobeItems { padding: 10px; }
+  .wardrobeModal .slotPicker { margin-bottom: 8px; }
+}
+
 @media (max-width: 700px) {
+  .wardrobeHeader { padding: 17px 16px 12px; }
+  .wardrobeTitle { font-size: 19px; }
+  .rewardGuide { padding: 8px 10px; margin-top: 10px; }
+
   .wardrobeGrid {
     grid-template-columns: 1fr;
   }
 
   .wardrobePreview {
-    border-right: 0 !important;
+    display: grid;
+    grid-template-columns: minmax(100px, .9fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-right: 0;
     border-bottom: 1px solid #eee9f7;
   }
+
+  .mainPortrait { height: 170px; }
+  .characterTiles { margin-top: 0; gap: 5px; }
+  .characterTile { min-height: 58px; padding: 3px 4px; gap: 1px; }
+  .tilePortrait { height: 36px; }
+  .tileLabel { font-size: 10px; }
+  .pendingReward { grid-column: 1 / -1; margin-top: 0; padding: 8px; }
+  .wardrobeItems { padding: 12px; }
+  .slotPicker { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; margin-bottom: 12px; padding: 4px; border-radius: 12px; background: #f3eff9; }
+  .slotPicker button { min-height: 32px; border: 0; border-radius: 9px; color: #81728f; background: transparent; font-size: 12px; font-weight: 800; cursor: pointer; }
+  .slotPicker button[aria-pressed="true"] { background: #fff; color: #7856bc; box-shadow: 0 2px 5px #4b346e12; }
+  .slotPicker button:focus-visible { outline: 2px solid #7856bc; outline-offset: 1px; }
+  .itemSections { grid-template-columns: 1fr; gap: 0; }
+  .itemSection[data-active="false"] { display: none; }
+  .itemSection > div:first-child { display: none; }
+  .itemCard { display: grid; grid-template-columns: 24px minmax(0,1fr); column-gap: 7px; min-height: 58px; }
+  .itemCard > span { grid-row: 1 / span 2; align-self: center; margin-bottom: 0 !important; }
+  .itemCard > strong { align-self: end; }
+  .itemCard > small { align-self: start; }
 
   .rewardGrid {
     grid-template-columns: 1fr;

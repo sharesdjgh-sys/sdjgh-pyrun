@@ -9,7 +9,7 @@ import GameCharacter from "@/components/robot/GameCharacter";
 import WizardCharacter from "@/components/robot/WizardCharacter";
 import AstronautCharacter from "@/components/robot/AstronautCharacter";
 import SlimeCharacter from "@/components/robot/SlimeCharacter";
-import { ACTIVE_CHARACTERS, COSMETIC_FAMILIES, cosmeticItemKey, parseCosmeticItemKey } from "@/lib/cosmetics";
+import { ACTIVE_CHARACTERS, AI_REWARD_CONCEPT_LIMIT, COSMETIC_FAMILIES, cosmeticItemKey, parseCosmeticItemKey } from "@/lib/cosmetics";
 import type { ActiveCharacterType, CharacterLoadout, CosmeticSlot } from "@/types";
 import styles from "./CharacterCustomization.module.css";
 
@@ -25,7 +25,7 @@ type CustomizationState = {
   inventory: string[];
   loadouts: Record<ActiveCharacterType, CharacterLoadout>;
   pendingGrants: PendingGrant[];
-  aiProgress: { solved: number; target: number };
+  aiProgress: { solved: number; target: number; remaining?: number };
 };
 
 type Props = {
@@ -53,6 +53,7 @@ function Preview({ type, loadout, size = 150 }: { type: ActiveCharacterType; loa
 export default function CharacterCustomization({ value, onChange, onLoadoutsChange, rewardSignal }: Props) {
   const [state, setState] = useState<CustomizationState | null>(null);
   const [wardrobeOpen, setWardrobeOpen] = useState(false);
+  const [wardrobeSlot, setWardrobeSlot] = useState<CosmeticSlot>("head");
   const [rewardOpen, setRewardOpen] = useState(false);
   const [wardrobeCharacter, setWardrobeCharacter] = useState<ActiveCharacterType>(value);
   const [busy, setBusy] = useState(false);
@@ -80,6 +81,13 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
   useEffect(() => {
     if (rewardSignal > 0) void refresh(true);
   }, [rewardSignal, refresh]);
+
+  useEffect(() => {
+    if (!wardrobeOpen && !rewardOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [wardrobeOpen, rewardOpen]);
 
   const loadouts = state?.loadouts ?? EMPTY_LOADOUTS;
   const activeGrant = state?.pendingGrants[0] ?? null;
@@ -168,7 +176,7 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
           {!!state?.pendingGrants.length && <span style={{ position: "absolute", top: -8, right: -8, minWidth: 19, height: 19, padding: "0 5px", borderRadius: 99, background: "#EC4899", color: "white", display: "grid", placeItems: "center", fontSize: 10, boxShadow: "0 2px 6px rgba(236,72,153,.35)" }}>{state.pendingGrants.length}</span>}
         </button>
         <span
-          title="서로 다른 AI 추가 문제를 3개 해결하면 꾸미기 아이템을 받을 수 있어요. 틀려도 진행도는 줄어들지 않아요."
+          title={`서로 다른 AI 추가 문제를 3개 해결하면 꾸미기 아이템을 받을 수 있어요. 같은 목차에서는 최대 ${AI_REWARD_CONCEPT_LIMIT}개까지만 보상에 반영해요. 틀려도 진행도는 줄어들지 않아요.`}
           aria-label={`AI 추가 문제 ${state?.aiProgress.solved ?? 0}개 해결, 3개 해결하면 꾸미기 아이템 획득`}
           style={{ height: 31, padding: "0 10px", borderRadius: 10, background: "#F5F1FF", color: "#7659CC", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 800 }}
         >
@@ -178,16 +186,21 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
 
       {wardrobeOpen && (
         <div role="dialog" aria-modal="true" aria-label="나의 캐릭터 옷장" style={overlayStyle}>
-          <div style={{ ...modalStyle, width: "min(880px, calc(100vw - 28px))" }}>
+          <div className={styles.wardrobeModal} style={{ ...modalStyle, width: "min(880px, calc(100vw - 28px))" }}>
             <button type="button" aria-label="닫기" onClick={() => setWardrobeOpen(false)} style={closeStyle}><X size={19} /></button>
-            <div style={{ padding: "25px 28px 18px", borderBottom: "1px solid #EEE9F7" }}>
-              <div style={{ color: "#2F2742", fontSize: 22, fontWeight: 900 }}>나의 캐릭터 옷장</div>
-              <div style={{ color: "#8B83A8", fontSize: 13, marginTop: 5 }}>공부해서 모은 아이템을 자유롭게 조합해 보세요.</div>
+            <div className={styles.wardrobeHeader}>
+              <div className={styles.wardrobeTitle}>나의 캐릭터 옷장</div>
+              <section className={styles.rewardGuide} aria-label="아이템 얻는 방법">
+                <p className={styles.guideMain}><Gift size={15} aria-hidden="true" /><span><strong>학습 묶음의 필수 문제 완료</strong> 또는 <strong>AI 추가 문제 {state?.aiProgress.target ?? 3}개 해결</strong>하면 아이템을 받아요.</span></p>
+                <p className={styles.guideLimit}>AI 보상은 같은 목차 최대 {AI_REWARD_CONCEPT_LIMIT}개 · 같은 문제 중복 제외</p>
+                <p className={styles.guideHint}>AI 보상은 완료한 묶음의 미보유 아이템 중 랜덤 · 3번째부터는 자유 연습</p>
+                {!!state && (state.aiProgress.remaining ?? 0) > state.aiProgress.target && <p className={styles.guideHint}>기존 보상 유지 · 다음 보상까지 다른 목차에서 {state.aiProgress.remaining}개 더 해결</p>}
+              </section>
             </div>
             <div className={styles.wardrobeGrid}>
-              <div className={styles.wardrobePreview} style={{ padding: 22, background: "linear-gradient(180deg,#FBF8FF,#F4F8FF)", borderRight: "1px solid #EEE9F7" }}>
-                <div style={{ height: 245, display: "grid", placeItems: "center", overflow: "hidden" }}>
-                  <Preview type={wardrobeCharacter} loadout={loadouts[wardrobeCharacter]} size={178} />
+              <div className={styles.wardrobePreview}>
+                <div className={styles.mainPortrait}>
+                  <Preview type={wardrobeCharacter} loadout={loadouts[wardrobeCharacter]} size={128} />
                 </div>
                 <div className={styles.characterTiles} role="group" aria-label="옷장 캐릭터 선택">
                   {ACTIVE_CHARACTERS.map((character) => (
@@ -200,29 +213,33 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
                       onClick={() => setWardrobeCharacter(character.type)}
                       style={{ background: wardrobeCharacter === character.type ? character.tint : "#fff", color: character.color }}
                     >
-                      <span className={styles.tilePortrait} aria-hidden="true"><Preview type={character.type} loadout={loadouts[character.type]} size={42} /></span>
+                      <span className={styles.tilePortrait} aria-hidden="true"><Preview type={character.type} loadout={loadouts[character.type]} size={28} /></span>
                       <span className={styles.tileLabel}>{character.label}</span>
                       {wardrobeCharacter === character.type && <span className={styles.tileSelected} aria-hidden="true"><Check size={10} strokeWidth={3} /></span>}
                     </button>
                   ))}
                 </div>
                 {!!state?.pendingGrants.length && (
-                  <button onClick={() => { setWardrobeOpen(false); setRevealedItem(null); setRewardOpen(true); }} style={{ width: "100%", marginTop: 16, border: 0, borderRadius: 12, padding: "12px", background: "linear-gradient(135deg,#8B5CF6,#EC4899)", color: "white", fontWeight: 900, cursor: "pointer", boxShadow: "0 7px 16px rgba(139,92,246,.22)" }}>
+                  <button className={styles.pendingReward} onClick={() => { setWardrobeOpen(false); setRevealedItem(null); setRewardOpen(true); }}>
                     <Gift size={15} style={{ verticalAlign: -3, marginRight: 6 }} /> 받지 않은 보상 {state.pendingGrants.length}개
                   </button>
                 )}
               </div>
-              <div style={{ padding: 22, overflowY: "auto", maxHeight: 540 }}>
+              <div className={styles.wardrobeItems}>
+                <div className={styles.slotPicker} role="group" aria-label="아이템 부위 선택">
+                  {(["head", "face", "body", "back"] as CosmeticSlot[]).map((slot) => <button key={slot} type="button" aria-pressed={wardrobeSlot === slot} onClick={() => setWardrobeSlot(slot)}>{SLOT_LABEL[slot]}</button>)}
+                </div>
+                <div className={styles.itemSections}>
                 {(["head", "face", "body", "back"] as CosmeticSlot[]).map((slot) => {
                   const families = COSMETIC_FAMILIES.filter((family) => family.slot === slot);
-                  return <section key={slot} style={{ marginBottom: 22 }}>
+                  return <section key={slot} className={styles.itemSection} data-active={wardrobeSlot === slot} aria-label={`${SLOT_LABEL[slot]} 아이템`}>
                     <div style={{ fontSize: 13, fontWeight: 900, color: "#675D82", marginBottom: 9 }}>{SLOT_LABEL[slot]} 아이템</div>
                     <div className={styles.itemGrid}>
                       {families.map((family) => {
                         const key = cosmeticItemKey(family.key, wardrobeCharacter);
                         const owned = inventory.has(key);
                         const equipped = loadouts[wardrobeCharacter]?.[slot] === key;
-                        return <button key={key} disabled={!owned || busy} onClick={() => void equip(key)} style={{ minHeight: 74, border: equipped ? `2px solid ${family.color}` : "1.5px solid #ECE7F4", borderRadius: 13, background: equipped ? `${family.accent}66` : owned ? "#fff" : "#F7F5FA", color: owned ? "#4C435F" : "#B1A9C2", padding: 9, textAlign: "left", cursor: owned ? "pointer" : "not-allowed", position: "relative" }}>
+                        return <button key={key} className={styles.itemCard} disabled={!owned || busy} onClick={() => void equip(key)} style={{ border: equipped ? `2px solid ${family.color}` : "1.5px solid #ECE7F4", background: equipped ? `${family.accent}66` : owned ? "#fff" : "#F7F5FA", color: owned ? "#4C435F" : "#B1A9C2", cursor: owned ? "pointer" : "not-allowed" }}>
                           <span style={{ width: 24, height: 24, borderRadius: 8, display: "grid", placeItems: "center", background: owned ? family.color : "#DDD8E6", color: "white", marginBottom: 6 }}>{owned ? (equipped ? <Check size={15} /> : <Sparkles size={13} />) : <Lock size={12} />}</span>
                           <strong style={{ display: "block", fontSize: 11.5 }}>{family.nameKo}</strong>
                           <small style={{ fontSize: 10 }}>{owned ? (equipped ? "장착 중" : "장착하기") : "아직 잠김"}</small>
@@ -231,6 +248,7 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
                     </div>
                   </section>;
                 })}
+                </div>
                 {message && <p style={{ color: "#DC2626", fontSize: 12, fontWeight: 700 }}>{message}</p>}
               </div>
             </div>
@@ -247,7 +265,7 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
                 {activeGrant.sourceType === "ai" ? "AI 도전 3개 성공" : "학습 묶음 완료"}
               </span>
               <h2 style={{ margin: "9px 0 4px", color: "#332A47", fontSize: 24 }}>{revealedItem ? "새 아이템을 받았어요!" : "어떤 친구의 아이템을 받을까요?"}</h2>
-              <p style={{ margin: 0, color: "#8B83A8", fontSize: 13 }}>{activeGrant.sourceType === "ai" ? "캐릭터를 고르면 아직 없는 아이템 하나가 나타나요." : "세 모습을 충분히 미리 보고 하나를 선택하세요."}</p>
+              <p style={{ margin: 0, color: "#8B83A8", fontSize: 13 }}>{activeGrant.sourceType === "ai" ? "캐릭터를 고르면 아직 없는 아이템 하나가 나타나요." : "캐릭터별 모습을 미리 보고 하나를 선택하세요."}</p>
             </div>
             {revealedItem ? (() => {
               const parsed = parseCosmeticItemKey(revealedItem);

@@ -1,5 +1,22 @@
 import type { ActiveCharacterType, CosmeticSlot } from "@/types";
 
+export const AI_REWARD_CONCEPT_LIMIT = 2;
+export const AI_REWARD_TARGET = 3;
+
+// Counts must be grouped by concept, with each solved challenge counted once.
+export function aiCosmeticRewardProgress(solvedCounts: number[], grantedRewardCount = 0) {
+  const eligibleSolved = solvedCounts.reduce((total, count) => total + Math.min(count, AI_REWARD_CONCEPT_LIMIT), 0);
+  const earnedRewards = Math.floor(eligibleSolved / AI_REWARD_TARGET);
+  // Preserve existing rewards without issuing them again after the rule changes.
+  const creditedRewards = Math.max(earnedRewards, grantedRewardCount);
+  return {
+    earnedRewards,
+    solved: Math.max(0, eligibleSolved - creditedRewards * AI_REWARD_TARGET),
+    target: AI_REWARD_TARGET,
+    remaining: (creditedRewards + 1) * AI_REWARD_TARGET - eligibleSolved,
+  };
+}
+
 export const ACTIVE_CHARACTERS: Array<{
   type: ActiveCharacterType;
   label: string;
