@@ -19,7 +19,7 @@ import {
   placeRobotClone,
   type StageDirection,
 } from "@/lib/robot-stage-layout";
-import type { CharacterType, RobotEmotion, RobotState } from "@/types";
+import type { CharacterLoadout, CharacterType, RobotEmotion, RobotState } from "@/types";
 
 interface RobotStageProps {
   commands: RobotCommand[];
@@ -29,6 +29,7 @@ interface RobotStageProps {
   showVariable?: boolean;
   characterType?: CharacterType;
   isError?: boolean;
+  loadout?: CharacterLoadout;
 }
 
 interface DrawnShape {
@@ -57,6 +58,7 @@ export default function RobotStage({
   showVariable,
   characterType = "robot",
   isError = false,
+  loadout,
 }: RobotStageProps) {
   // 로봇 상태 변수들
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -99,6 +101,7 @@ export default function RobotStage({
             scale={charScale}
             direction={charDir}
             size={charSize}
+            loadout={loadout}
           />
         );
       case "game":
@@ -109,6 +112,7 @@ export default function RobotStage({
             scale={charScale}
             direction={charDir}
             size={charSize}
+            loadout={loadout}
           />
         );
       case "wizard":
@@ -119,6 +123,7 @@ export default function RobotStage({
             scale={charScale}
             direction={charDir}
             size={charSize}
+            loadout={loadout}
           />
         );
       case "astronaut":
@@ -129,6 +134,7 @@ export default function RobotStage({
             scale={charScale}
             direction={charDir}
             size={charSize}
+            loadout={loadout}
           />
         );
       case "slime":
@@ -139,6 +145,7 @@ export default function RobotStage({
             scale={charScale}
             direction={charDir}
             size={charSize}
+            loadout={loadout}
           />
         );
       case "robot":
@@ -150,6 +157,7 @@ export default function RobotStage({
             scale={charScale}
             direction={charDir}
             size={charSize}
+            loadout={loadout}
           />
         );
     }

@@ -2,6 +2,8 @@
 
 import { motion, Variants } from "framer-motion";
 import type { RobotState, RobotEmotion } from "@/types";
+import type { CharacterLoadout } from "@/types";
+import CharacterCosmetics from "./CharacterCosmetics";
 
 interface DogCharacterProps {
   state: RobotState;
@@ -9,6 +11,7 @@ interface DogCharacterProps {
   scale?: number;
   direction?: "left" | "right";
   size?: number;
+  loadout?: CharacterLoadout;
 }
 
 // 강아지 모션 variants
@@ -93,6 +96,7 @@ export default function DogCharacter({
   scale = 1.0,
   direction = "right",
   size = 184,
+  loadout,
 }: DogCharacterProps) {
   const isError = state === "error";
 
@@ -286,6 +290,7 @@ export default function DogCharacter({
         style={{ overflow: "visible" }}
         xmlns="http://www.w3.org/2000/svg"
       >
+        <CharacterCosmetics characterType="dog" loadout={loadout} layer="behind" />
         {/* Shadow */}
         <ellipse cx="100" cy="235" rx="58" ry="8" fill="#58483B" opacity="0.14" />
 
@@ -314,6 +319,7 @@ export default function DogCharacter({
         <g>
           <rect x="52" y="132" width="96" height="64" rx="28" fill={colors.furMain} />
           <ellipse cx="100" cy="172" rx="34" ry="24" fill={colors.furWhite} />
+          <ellipse cx="78" cy="145" rx="18" ry="8" fill="#FFFFFF" opacity="0.18" />
         </g>
 
         {/* Front Left Leg */}
@@ -364,6 +370,8 @@ export default function DogCharacter({
 
           {/* Head Shape */}
           <circle cx="100" cy="96" r="52" fill={colors.furMain} />
+          <path d="M82 49 Q88 30 99 46 Q108 27 114 49 Q124 35 127 57" fill={colors.furMain} stroke={colors.furMain} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+          <ellipse cx="78" cy="62" rx="20" ry="10" fill="#FFFFFF" opacity="0.2" transform="rotate(-18 78 62)" />
           {/* White Snout Pattern */}
           <path d="M 78 125 C 78 125 100 134 122 125 C 122 125 126 100 100 96 C 74 100 78 125 78 125" fill={colors.furWhite} />
           <path d="M 94 96 L 106 96 L 100 112 Z" fill={colors.furWhite} />
@@ -381,10 +389,12 @@ export default function DogCharacter({
 
           {/* Nose */}
           <ellipse cx="100" cy="104" rx="8.5" ry="5.5" fill={colors.nose} />
+          <ellipse cx="97" cy="102" rx="2.8" ry="1.7" fill="#FFFFFF" opacity="0.7" />
 
           {/* Mouth and Tongue */}
           {renderMouthAndTongue()}
         </motion.g>
+        <CharacterCosmetics characterType="dog" loadout={loadout} layer="front" />
       </svg>
     </motion.div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import type { RobotEmotion, RobotState } from "@/types";
+import type { CharacterLoadout, RobotEmotion, RobotState } from "@/types";
+import CharacterCosmetics from "./CharacterCosmetics";
 
 interface SlimeCharacterProps {
   state: RobotState;
@@ -9,6 +10,7 @@ interface SlimeCharacterProps {
   scale?: number;
   direction?: "left" | "right";
   size?: number;
+  loadout?: CharacterLoadout;
 }
 
 const bodyVariants: Variants = {
@@ -45,7 +47,7 @@ function Face({ emotion, error }: { emotion: RobotEmotion; error: boolean }) {
   return <>{eyes}{mouth}</>;
 }
 
-export default function SlimeCharacter({ state, emotion = "idle", scale = 1, direction = "right", size = 184 }: SlimeCharacterProps) {
+export default function SlimeCharacter({ state, emotion = "idle", scale = 1, direction = "right", size = 184, loadout }: SlimeCharacterProps) {
   const error = state === "error";
   const h = Math.round(size * (226 / 184));
   const fill = error ? "#82B9AD" : emotion === "sad" ? "#91B8B6" : emotion === "angry" ? "#EE7D79" : emotion === "surprised" ? "#6BCBE3" : "#55D5B0";
@@ -53,6 +55,7 @@ export default function SlimeCharacter({ state, emotion = "idle", scale = 1, dir
   return (
     <div style={{ width: size, height: h, display: "flex", alignItems: "flex-end", justifyContent: "center", transform: `scale(${scale}) scaleX(${direction === "left" ? -1 : 1})`, transformOrigin: "bottom center" }}>
       <svg viewBox="0 0 200 250" width={size} height={h} preserveAspectRatio="xMidYMax meet" style={{ overflow: "visible" }} aria-hidden="true">
+        <CharacterCosmetics characterType="slime" loadout={loadout} layer="behind" />
         <ellipse cx="100" cy="231" rx="58" ry="9" fill="#174E4A" opacity=".15" />
         <motion.g animate={state} variants={bubbleVariants} style={{ transformOrigin: "100px 100px", transformBox: "view-box" }}>
           <circle cx="42" cy="106" r="8" fill="#9CF0D7" stroke={edge} strokeWidth="2" /><circle cx="157" cy="79" r="11" fill="#9CF0D7" stroke={edge} strokeWidth="2" /><circle cx="171" cy="121" r="5" fill="#D2FFF2" />
@@ -64,6 +67,7 @@ export default function SlimeCharacter({ state, emotion = "idle", scale = 1, dir
           <Face emotion={emotion} error={error} />
           <circle cx="142" cy="188" r="7" fill="#D2FFF2" opacity=".55" /><circle cx="59" cy="198" r="4" fill="#D2FFF2" opacity=".45" />
         </motion.g>
+        <CharacterCosmetics characterType="slime" loadout={loadout} layer="front" />
       </svg>
     </div>
   );

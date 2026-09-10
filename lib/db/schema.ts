@@ -267,3 +267,78 @@ export const feedbackHistory = pgTable(
     userCreatedIndex: index("feedback_history_user_created_index").on(table.userId, table.createdAt),
   })
 );
+
+export const userCustomizationProfiles = pgTable("user_customization_profiles", {
+  userId: integer("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  activeCharacter: varchar("active_character", { length: 20 }).notNull().default("robot"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const userCosmeticItems = pgTable(
+  "user_cosmetic_items",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    itemKey: varchar("item_key", { length: 80 }).notNull(),
+    source: varchar("source", { length: 20 }).notNull(),
+    earnedAt: timestamp("earned_at").defaultNow(),
+  },
+  (table) => ({
+    userItemUnique: uniqueIndex("user_cosmetic_items_user_item_unique").on(table.userId, table.itemKey),
+  })
+);
+
+export const userCharacterLoadouts = pgTable(
+  "user_character_loadouts",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    characterType: varchar("character_type", { length: 20 }).notNull(),
+    headItemKey: varchar("head_item_key", { length: 80 }),
+    faceItemKey: varchar("face_item_key", { length: 80 }),
+    bodyItemKey: varchar("body_item_key", { length: 80 }),
+    backItemKey: varchar("back_item_key", { length: 80 }),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    userCharacterUnique: uniqueIndex("user_character_loadouts_user_character_unique").on(table.userId, table.characterType),
+  })
+);
+
+export const cosmeticRewardGrants = pgTable(
+  "cosmetic_reward_grants",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    curriculumId: integer("curriculum_id").notNull().references(() => curriculumSets.id, { onDelete: "cascade" }),
+    sourceType: varchar("source_type", { length: 20 }).notNull(),
+    sourceKey: varchar("source_key", { length: 160 }).notNull(),
+    familyKey: varchar("family_key", { length: 80 }),
+    selectedCharacter: varchar("selected_character", { length: 20 }),
+    itemKey: varchar("item_key", { length: 80 }),
+    createdAt: timestamp("created_at").defaultNow(),
+    claimedAt: timestamp("claimed_at"),
+  },
+  (table) => ({
+    userRewardUnique: uniqueIndex("cosmetic_reward_grants_user_source_unique").on(table.userId, table.sourceType, table.sourceKey),
+  })
+);
+
+export const aiPracticeChallenges = pgTable(
+  "ai_practice_challenges",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    conceptId: integer("concept_id").notNull().references(() => concepts.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 100 }).notNull(),
+    starterCode: text("starter_code").notNull(),
+    expectedOutput: text("expected_output").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+    solvedAt: timestamp("solved_at"),
+  },
+  (table) => ({
+    userCreatedIndex: index("ai_practice_challenges_user_created_index").on(table.userId, table.createdAt),
+  })
+);

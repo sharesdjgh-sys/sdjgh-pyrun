@@ -9,14 +9,14 @@ import { animationQueue, type RobotCommand } from "@/lib/animation-queue";
 import RobotStage from "@/components/robot/RobotStage";
 import RobotApiTooltip from "@/components/robot/RobotApiTooltip";
 import MechdogApiTooltip from "@/components/robot/MechdogApiTooltip";
-import CharacterPicker from "@/components/robot/CharacterPicker";
+import CharacterCustomization from "@/components/customization/CharacterCustomization";
 import DataVizPanel from "@/components/editor/DataVizPanel";
 import OutputPanel from "@/components/editor/OutputPanel";
 import BadgeCelebration from "@/components/badges/BadgeCelebration";
 import Header from "@/components/layout/Header";
 import StudentHintChatbot from "@/components/chat/StudentHintChatbot";
 import type { CurriculumItem } from "@/lib/curriculum";
-import type { SelectableCharacterType } from "@/types";
+import type { ActiveCharacterType, CharacterLoadout } from "@/types";
 import { curriculumLevelOrders, groupCurriculumUnits, type CurriculumView } from "@/lib/curriculum-model";
 import { getBadgeImagePath } from "@/lib/badge-images";
 import { highestEarnedBadgesByLevel } from "@/lib/badge-ranks";
@@ -124,6 +124,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   // 지금 에디터에 로드된 연습문제의 개념 ID. 문제 풀이 중일 때만 서버 채점을 요청한다.
   const [practiceConceptId, setPracticeConceptId] = useState<number | null>(null);
   const [generatingAiPractice, setGeneratingAiPractice] = useState(false);
+  const [aiChallengeId, setAiChallengeId] = useState<number | null>(null);
   const [editorLoadSource, setEditorLoadSource] = useState<EditorLoadSource>(null);
   // 클리어(뱃지 획득)한 개념 목록. 순차 잠금 해제의 기준.
   const [clearedConceptIds, setClearedConceptIds] = useState<Set<number>>(new Set());
@@ -158,7 +159,12 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     }));
   const currentUnitGroups = groupCurriculumUnits(curriculumView.units, currentLevel);
 
-  const [characterType, setCharacterType] = useState<SelectableCharacterType>("robot");
+  const [characterType, setCharacterType] = useState<ActiveCharacterType>("robot");
+  const [characterLoadouts, setCharacterLoadouts] = useState<Record<ActiveCharacterType, CharacterLoadout>>({
+    robot: {}, dog: {}, game: {}, wizard: {}, astronaut: {}, slime: {},
+  });
+  const [rewardSignal, setRewardSignal] = useState(0);
+  const [rewardAfterBadge, setRewardAfterBadge] = useState(false);
   const [isError, setIsError] = useState(false);
 
   const [commands, setCommands] = useState<RobotCommand[]>([]);
@@ -309,6 +315,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     initializedModeRef.current = mode;
     if (preserveDraft) return;
     setPracticeConceptId(null);
+    setAiChallengeId(null);
     if (mode === "mechdog") {
       const first = mechdogExamples[0];
       setSelectedMechdogId(first?.id ?? null);
@@ -463,6 +470,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         body: JSON.stringify({
           code, stdout, stderr, isSuccess: success,
           practiceConceptId: mode === "mechdog" ? null : practiceConceptId,
+          aiChallengeId: mode === "mechdog" ? null : aiChallengeId,
         }),
       });
 
@@ -470,8 +478,13 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         const data = await res.json();
         let feedback: string = data.feedback;
         const badgeIds: number[] = data.newlyEarnedBadgeIds;
+        const rewardIds: number[] = Array.isArray(data.newlyEarnedRewardIds) ? data.newlyEarnedRewardIds : [];
         if (badgeIds.length > 0) {
           setClearedConceptIds((prev) => new Set([...prev, ...badgeIds]));
+        }
+        if (rewardIds.length > 0) {
+          if (badgeIds.length > 0) setRewardAfterBadge(true);
+          else setRewardSignal((current) => current + 1);
         }
 
         if (!success) {
@@ -515,7 +528,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
       setFeedbackStatus(null);
       runningRef.current = false;
     }
-  }, [pyLoading, code, mode, practiceConceptId, executeCode, showSpeechBubble]);
+  }, [pyLoading, code, mode, practiceConceptId, aiChallengeId, executeCode, showSpeechBubble]);
 
   const handleAnimationComplete = useCallback(() => {
     animationDoneRef.current = true;
@@ -533,6 +546,10 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   // 축하 팝업의 "다음 단계 공부하기": 다음 개념을 선택하고 예제 코드를 로드
   const handleGoNextConcept = useCallback((id: number) => {
     setNewBadgeIds([]);
+    if (rewardAfterBadge) {
+      setRewardAfterBadge(false);
+      setRewardSignal((current) => current + 1);
+    }
     setPracticeConceptId(null);
     setShowSpeech(false);
     setOutput("");
@@ -557,11 +574,13 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     } else {
       setEditorLoadSource(null);
     }
-  }, [curriculum, curriculumView.units]);
+  }, [curriculum, curriculumView.units, rewardAfterBadge]);
 
   const handleLoadExample = useCallback(() => {
     if (!dataReady || !progressReady || sessionExpired) return;
     setPracticeConceptId(null);
+    setAiChallengeId(null);
+    setAiChallengeId(null);
     if (mode === "mechdog") {
       const ex = mechdogExamples.find(e => e.id === selectedMechdogId);
       if (ex) {
@@ -588,6 +607,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   const handleLoadPractice = useCallback(() => {
     if (!dataReady || !progressReady || sessionExpired) return;
     if (mode === "mechdog") return;
+    setAiChallengeId(null);
     if (mode === "lv3") {
       const ex = curriculum[selectedLv3ConceptId];
       if (ex?.practiceCode) {
@@ -627,6 +647,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
       setCode(data.starterCode);
       // AI 추가 문제는 자유 연습이며 필수 문제의 뱃지 판정과 분리한다.
       setPracticeConceptId(null);
+      setAiChallengeId(typeof data.challengeId === "number" ? data.challengeId : null);
       setEditorLoadSource("ai");
       setOutput("");
       setExecError("");
@@ -663,6 +684,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
 
   const handleReset = useCallback(() => {
     setPracticeConceptId(null);
+    setAiChallengeId(null);
     setEditorLoadSource(null);
     setCode(INITIAL_CODE);
     setOutput("");
@@ -1878,7 +1900,12 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
             {/* Character selector */}
             {mode !== "mechdog" && (
             <div style={{ flex: "none", display: "flex", justifyContent: "center", padding: "2px 14px 8px" }}>
-              <CharacterPicker value={characterType} onChange={setCharacterType} />
+              <CharacterCustomization
+                value={characterType}
+                onChange={setCharacterType}
+                onLoadoutsChange={setCharacterLoadouts}
+                rewardSignal={rewardSignal}
+              />
             </div>
             )}
 
@@ -1947,6 +1974,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
                 showVariable={showVariable}
                 characterType={mode === "mechdog" ? "mechdog" : characterType}
                 isError={isError}
+                loadout={characterLoadouts[characterType]}
               />
             </div>
             </>
@@ -1960,7 +1988,13 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         badges={curriculumView.units}
         conceptOrders={levelOrders}
         feedback={badgeFeedback}
-        onClose={() => setNewBadgeIds([])}
+        onClose={() => {
+          setNewBadgeIds([]);
+          if (rewardAfterBadge) {
+            setRewardAfterBadge(false);
+            setRewardSignal((current) => current + 1);
+          }
+        }}
         onNext={handleGoNextConcept}
       />
 

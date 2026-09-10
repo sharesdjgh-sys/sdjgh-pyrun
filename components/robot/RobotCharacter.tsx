@@ -10,6 +10,8 @@ import {
   leftLegVariants,
   rightLegVariants,
 } from "@/components/robot/robotAnimations";
+import CharacterCosmetics from "./CharacterCosmetics";
+import type { CharacterLoadout } from "@/types";
 
 interface RobotCharacterProps {
   state: RobotState;
@@ -17,6 +19,7 @@ interface RobotCharacterProps {
   scale?: number;
   direction?: "left" | "right";
   size?: number;
+  loadout?: CharacterLoadout;
 }
 
 const getColorPalette = (emotion: RobotEmotion, isError: boolean) => {
@@ -88,6 +91,7 @@ export default function RobotCharacter({
   scale = 1.0,
   direction = "right",
   size = 184,
+  loadout,
 }: RobotCharacterProps) {
   const isError = state === "error";
   const colors = getColorPalette(emotion, isError);
@@ -337,6 +341,7 @@ export default function RobotCharacter({
         style={{ overflow: "visible" }}
         xmlns="http://www.w3.org/2000/svg"
       >
+        <CharacterCosmetics characterType="robot" loadout={loadout} layer="behind" />
         {/* Shadow */}
         <ellipse cx="100" cy="245" rx="54" ry="7" fill={colors.accentDark} opacity="0.16" />
 
@@ -539,8 +544,8 @@ export default function RobotCharacter({
             <circle cx="64" cy="40" r="7.5" fill={colors.accentDark} />
           </g>
         </motion.g>
+        <CharacterCosmetics characterType="robot" loadout={loadout} layer="front" />
       </svg>
     </motion.div>
   );
 }
-

@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import type { RobotEmotion, RobotState } from "@/types";
+import type { CharacterLoadout, RobotEmotion, RobotState } from "@/types";
+import CharacterCosmetics from "./CharacterCosmetics";
 
 interface AstronautCharacterProps {
   state: RobotState;
@@ -9,6 +10,7 @@ interface AstronautCharacterProps {
   scale?: number;
   direction?: "left" | "right";
   size?: number;
+  loadout?: CharacterLoadout;
 }
 
 const bodyVariants: Variants = {
@@ -61,7 +63,7 @@ function Face({ emotion, error }: { emotion: RobotEmotion; error: boolean }) {
   return <>{eyes}{mouth}</>;
 }
 
-export default function AstronautCharacter({ state, emotion = "idle", scale = 1, direction = "right", size = 184 }: AstronautCharacterProps) {
+export default function AstronautCharacter({ state, emotion = "idle", scale = 1, direction = "right", size = 184, loadout }: AstronautCharacterProps) {
   const error = state === "error";
   const h = Math.round(size * (226 / 184));
   const accent = error ? "#E25B5B" : emotion === "angry" ? "#E26745" : emotion === "sad" ? "#8A94A6" : "#24A8C7";
@@ -69,6 +71,7 @@ export default function AstronautCharacter({ state, emotion = "idle", scale = 1,
   return (
     <motion.div animate={state} variants={bodyVariants} style={{ width: size, height: h, display: "flex", alignItems: "flex-end", justifyContent: "center", scale, scaleX: (direction === "left" ? -1 : 1) * scale, transformOrigin: "bottom center" }}>
       <svg viewBox="0 0 200 250" width={size} height={h} preserveAspectRatio="xMidYMax meet" style={{ overflow: "visible" }} aria-hidden="true">
+        <CharacterCosmetics characterType="astronaut" loadout={loadout} layer="behind" />
         <ellipse cx="100" cy="242" rx="44" ry="6" fill="#17324D" opacity=".16" />
         <rect x="57" y="126" width="86" height="80" rx="26" fill="#E8EEF2" stroke="#C6D5DC" strokeWidth="3" />
         <rect x="48" y="137" width="18" height="54" rx="8" fill="#A5BCC6" />
@@ -89,6 +92,7 @@ export default function AstronautCharacter({ state, emotion = "idle", scale = 1,
         </g>
         <path d="M82 135h36" stroke={accent} strokeWidth="6" strokeLinecap="round" />
         <path d="M93 35l7-15 7 15" fill="none" stroke={accent} strokeWidth="3" strokeLinecap="round" /><circle cx="100" cy="18" r="5" fill="#FFCB57" />
+        <CharacterCosmetics characterType="astronaut" loadout={loadout} layer="front" />
       </svg>
     </motion.div>
   );

@@ -1,33 +1,42 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { ChevronDown } from "lucide-react";
-import type { SelectableCharacterType } from "@/types";
+import type { ActiveCharacterType, CharacterLoadout } from "@/types";
+import { ACTIVE_CHARACTERS } from "@/lib/cosmetics";
+import RobotCharacter from "./RobotCharacter";
+import DogCharacter from "./DogCharacter";
+import GameCharacter from "./GameCharacter";
+import WizardCharacter from "./WizardCharacter";
+import AstronautCharacter from "./AstronautCharacter";
+import SlimeCharacter from "./SlimeCharacter";
 
 interface CharacterPickerProps {
-  value: SelectableCharacterType;
-  onChange: (value: SelectableCharacterType) => void;
+  value: ActiveCharacterType;
+  onChange: (value: ActiveCharacterType) => void;
+  loadouts?: Record<ActiveCharacterType, CharacterLoadout>;
 }
 
 interface CharacterOption {
-  type: SelectableCharacterType;
+  type: ActiveCharacterType;
   label: string;
-  image: string;
   color: string;
   tint: string;
 }
 
-const CHARACTER_OPTIONS: CharacterOption[] = [
-  { type: "robot", label: "로봇", image: "/character-icons/robot.webp", color: "#7B5CF0", tint: "#F2ECFD" },
-  { type: "dog", label: "강아지", image: "/character-icons/dog.webp", color: "#D97706", tint: "#FFF7E8" },
-  { type: "game", label: "전사", image: "/character-icons/warrior.webp", color: "#E2557A", tint: "#FFF0F4" },
-  { type: "wizard", label: "마법사", image: "/character-icons/wizard.webp", color: "#7251D6", tint: "#F0EBFF" },
-  { type: "astronaut", label: "우주비행사", image: "/character-icons/astronaut.webp", color: "#1687A7", tint: "#EAF9FC" },
-  { type: "slime", label: "슬라임", image: "/character-icons/slime.webp", color: "#169E83", tint: "#E9FAF5" },
-];
+const CHARACTER_OPTIONS: CharacterOption[] = ACTIVE_CHARACTERS;
 
-export default function CharacterPicker({ value, onChange }: CharacterPickerProps) {
+function CharacterPreview({ type, size = 54, loadout }: { type: ActiveCharacterType; size?: number; loadout?: CharacterLoadout }) {
+  const props = { state: "idle" as const, size, loadout };
+  if (type === "dog") return <DogCharacter {...props} />;
+  if (type === "game") return <GameCharacter {...props} />;
+  if (type === "wizard") return <WizardCharacter {...props} />;
+  if (type === "astronaut") return <AstronautCharacter {...props} />;
+  if (type === "slime") return <SlimeCharacter {...props} />;
+  return <RobotCharacter {...props} />;
+}
+
+export default function CharacterPicker({ value, onChange, loadouts }: CharacterPickerProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -82,13 +91,9 @@ export default function CharacterPicker({ value, onChange }: CharacterPickerProp
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Image
-            src={selected.image}
-            alt=""
-            width={22}
-            height={22}
-            style={{ width: 22, height: 22, borderRadius: 7, objectFit: "cover" }}
-          />
+          <span style={{ width: 24, height: 24, overflow: "hidden", display: "grid", placeItems: "start center" }}>
+            <CharacterPreview type={selected.type} size={24} loadout={loadouts?.[selected.type]} />
+          </span>
           {selected.label}
         </span>
         <ChevronDown
@@ -108,7 +113,7 @@ export default function CharacterPicker({ value, onChange }: CharacterPickerProp
             top: "calc(100% + 6px)",
             left: "50%",
             transform: "translateX(-50%)",
-            width: 300,
+            width: 318,
             padding: 8,
             display: "grid",
             gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
@@ -134,7 +139,7 @@ export default function CharacterPicker({ value, onChange }: CharacterPickerProp
                   triggerRef.current?.focus();
                 }}
                 style={{
-                  minHeight: 88,
+                  minHeight: 104,
                   padding: "7px 5px 8px",
                   border: isSelected ? `1.5px solid ${option.color}` : "1.5px solid transparent",
                   borderRadius: 10,
@@ -150,19 +155,9 @@ export default function CharacterPicker({ value, onChange }: CharacterPickerProp
                   fontWeight: 800,
                 }}
               >
-                <Image
-                  src={option.image}
-                  alt=""
-                  width={54}
-                  height={54}
-                  style={{
-                    width: 54,
-                    height: 54,
-                    borderRadius: 12,
-                    objectFit: "cover",
-                    boxShadow: isSelected ? `0 4px 10px ${option.color}33` : "0 2px 7px rgba(61,43,115,.12)",
-                  }}
-                />
+                <span style={{ width: 68, height: 70, overflow: "hidden", display: "grid", placeItems: "start center" }}>
+                  <CharacterPreview type={option.type} size={62} loadout={loadouts?.[option.type]} />
+                </span>
                 <span>{option.label}</span>
               </button>
             );

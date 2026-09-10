@@ -12,6 +12,8 @@ import {
 } from "@/lib/curriculum-access";
 import { generateExtraPracticeProblem } from "@/lib/gemini";
 import { createExtraPracticeStarter } from "@/lib/practice-template";
+import { db } from "@/lib/db";
+import { aiPracticeChallenges } from "@/lib/db/schema";
 
 export async function POST(req: NextRequest) {
   const context = sessionTenant(await auth());
@@ -42,9 +44,19 @@ export async function POST(req: NextRequest) {
       referencePractice: unit.practiceCode ?? "",
     });
 
-    return NextResponse.json({
+    const starterCode = createExtraPracticeStarter(problem);
+    const [challenge] = await db.insert(aiPracticeChallenges).values({
+      userId: context.userId,
+      conceptId,
       title: problem.title,
-      starterCode: createExtraPracticeStarter(problem),
+      starterCode,
+      expectedOutput: problem.expectedOutput.join("\n"),
+    }).returning({ id: aiPracticeChallenges.id });
+
+    return NextResponse.json({
+      challengeId: challenge.id,
+      title: problem.title,
+      starterCode,
     });
   } catch (error) {
     if (error instanceof RequestValidationError) {

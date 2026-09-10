@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import type { RobotEmotion, RobotState } from "@/types";
+import type { CharacterLoadout, RobotEmotion, RobotState } from "@/types";
+import CharacterCosmetics from "./CharacterCosmetics";
 
 interface WizardCharacterProps {
   state: RobotState;
@@ -9,6 +10,7 @@ interface WizardCharacterProps {
   scale?: number;
   direction?: "left" | "right";
   size?: number;
+  loadout?: CharacterLoadout;
 }
 
 const bodyVariants: Variants = {
@@ -79,7 +81,7 @@ function Face({ emotion, error }: { emotion: RobotEmotion; error: boolean }) {
   return <>{eyes}{mouth}</>;
 }
 
-export default function WizardCharacter({ state, emotion = "idle", scale = 1, direction = "right", size = 184 }: WizardCharacterProps) {
+export default function WizardCharacter({ state, emotion = "idle", scale = 1, direction = "right", size = 184, loadout }: WizardCharacterProps) {
   const error = state === "error";
   const h = Math.round(size * (226 / 184));
   const robe = error ? "#8D3C68" : emotion === "sad" ? "#7C7896" : emotion === "angry" ? "#B33A5B" : "#7152CC";
@@ -88,6 +90,7 @@ export default function WizardCharacter({ state, emotion = "idle", scale = 1, di
   return (
     <motion.div animate={state} variants={bodyVariants} style={{ width: size, height: h, display: "flex", alignItems: "flex-end", justifyContent: "center", scale, scaleX: (direction === "left" ? -1 : 1) * scale, transformOrigin: "bottom center" }}>
       <svg viewBox="0 0 200 250" width={size} height={h} preserveAspectRatio="xMidYMax meet" style={{ overflow: "visible" }} aria-hidden="true">
+        <CharacterCosmetics characterType="wizard" loadout={loadout} layer="behind" />
         <ellipse cx="100" cy="241" rx="45" ry="6" fill="#241D38" opacity=".18" />
         <motion.g animate={state} variants={sparkleVariants} style={{ transformOrigin: "156px 64px" }}>
           <path d="M156 48l3.5 10 10 3.5-10 3.5-3.5 10-3.5-10-10-3.5 10-3.5z" fill="#FFD866" />
@@ -114,6 +117,7 @@ export default function WizardCharacter({ state, emotion = "idle", scale = 1, di
         <path d="M67 153q-18 20-18 45" stroke={robe} strokeWidth="18" strokeLinecap="round" />
         <circle cx="49" cy="199" r="9" fill="#FFD9BD" />
         <path d="M70 233h27" stroke="#49358F" strokeWidth="12" strokeLinecap="round" /><path d="M105 233h27" stroke="#49358F" strokeWidth="12" strokeLinecap="round" />
+        <CharacterCosmetics characterType="wizard" loadout={loadout} layer="front" />
       </svg>
     </motion.div>
   );

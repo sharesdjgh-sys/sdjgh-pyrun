@@ -1,0 +1,47 @@
+.wardrobeGrid {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  min-height: 470px;
+}
+
+.rewardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.itemGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .wardrobeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .wardrobePreview {
+    border-right: 0 !important;
+    border-bottom: 1px solid #eee9f7;
+  }
+
+  .rewardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .rewardCard {
+    display: grid;
+    grid-template-columns: 118px 1fr;
+    align-items: center;
+    padding: 6px 12px !important;
+  }
+
+  .rewardPreview {
+    height: 126px !important;
+  }
+
+  .itemGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

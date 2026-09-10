@@ -2,6 +2,8 @@
 
 import { motion, Variants } from "framer-motion";
 import type { RobotState, RobotEmotion } from "@/types";
+import type { CharacterLoadout } from "@/types";
+import CharacterCosmetics from "./CharacterCosmetics";
 
 interface GameCharacterProps {
   state: RobotState;
@@ -9,6 +11,7 @@ interface GameCharacterProps {
   scale?: number;
   direction?: "left" | "right";
   size?: number;
+  loadout?: CharacterLoadout;
 }
 
 // 게임 캐릭터 전사 모션 variants
@@ -88,6 +91,7 @@ export default function GameCharacter({
   scale = 1.0,
   direction = "right",
   size = 184,
+  loadout,
 }: GameCharacterProps) {
   const isError = state === "error";
 
@@ -272,6 +276,7 @@ export default function GameCharacter({
         style={{ overflow: "visible" }}
         xmlns="http://www.w3.org/2000/svg"
       >
+        <CharacterCosmetics characterType="game" loadout={loadout} layer="behind" />
         {/* Shadow */}
         <ellipse cx="100" cy="242" rx="46" ry="6" fill="#1C182A" opacity="0.22" />
 
@@ -311,6 +316,9 @@ export default function GameCharacter({
         {/* Armor Body */}
         <g>
           <rect x="62" y="132" width="76" height="66" rx="22" fill={colors.armor} />
+          <path d="M70 149 Q100 128 130 149" fill="none" stroke="#FFFFFF" strokeWidth="4" opacity="0.28" strokeLinecap="round" />
+          <circle cx="68" cy="150" r="14" fill={colors.helmet} stroke={colors.armorTrim} strokeWidth="2" />
+          <circle cx="132" cy="150" r="14" fill={colors.helmet} stroke={colors.armorTrim} strokeWidth="2" />
           {/* Breastplate crest */}
           <path d="M 86 132 C 86 132 100 156 114 132 L 100 180 Z" fill={colors.armorTrim} />
           <circle cx="100" cy="148" r="5" fill={colors.hilt} />
@@ -340,6 +348,7 @@ export default function GameCharacter({
 
           {/* Knight Helmet */}
           <path d="M 50 64 C 50 64 50 26 100 22 C 150 26 150 64 150 64 L 142 56 L 58 56 Z" fill={colors.helmet} />
+          <path d="M67 48 Q82 29 105 31" fill="none" stroke="#FFFFFF" strokeWidth="6" opacity="0.35" strokeLinecap="round" />
           {/* Helmet plume (깃털 장식) */}
           <path
             d="M 100 22 Q 115 -10 135 6 Q 118 6 100 22"
@@ -365,10 +374,12 @@ export default function GameCharacter({
             stroke={colors.armorTrim}
             strokeWidth="2.5"
           />
+          <path d="M38 136 Q45 132 56 136" fill="none" stroke="#FFFFFF" strokeWidth="3" opacity="0.35" strokeLinecap="round" />
           {/* Golden cross on shield */}
           <path d="M 47 132 L 47 184 M 36 148 L 58 148" stroke={colors.hilt} strokeWidth="3" strokeLinecap="round" />
           <circle cx="47" cy="148" r="4.5" fill="#EF4444" />
         </motion.g>
+        <CharacterCosmetics characterType="game" loadout={loadout} layer="front" />
       </svg>
     </motion.div>
   );

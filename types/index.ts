@@ -76,6 +76,10 @@ export type CharacterType =
 
 export type SelectableCharacterType = Exclude<CharacterType, "mechdog">;
 
+export type ActiveCharacterType = SelectableCharacterType;
+export type CosmeticSlot = "head" | "face" | "body" | "back";
+export type CharacterLoadout = Partial<Record<CosmeticSlot, string>>;
+
 export interface RobotStateData {
   state: RobotState;
   steps?: number;

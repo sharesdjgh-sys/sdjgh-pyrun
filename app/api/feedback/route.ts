@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
-import { userConceptClears, userConceptPractices, userConceptUnlocks, feedbackHistory, concepts } from "@/lib/db/schema";
-import { and, eq, inArray } from "drizzle-orm";
+import { userConceptClears, userConceptPractices, userConceptUnlocks, feedbackHistory, concepts, aiPracticeChallenges } from "@/lib/db/schema";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { generateFeedback, judgePractice } from "@/lib/gemini";
 import { effectiveConceptAccessIdsForOrders, isConceptUnlockedInOrders } from "@/lib/progress";
 import { parsePython } from "@/lib/python-parser";
@@ -20,6 +20,7 @@ import {
   resolveCurriculumIdForUser,
   sessionTenant,
 } from "@/lib/curriculum-access";
+import { syncAiRewardGrants, syncGroupRewardGrants } from "@/lib/customization";
 
 export async function POST(req: NextRequest) {
   const context = sessionTenant(await auth());
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
         headers: { "Retry-After": String(rate.retryAfter) },
       });
     }
-    const { code, stdout, stderr, isSuccess, practiceConceptId } = validateFeedback(await req.json());
+    const { code, stdout, stderr, isSuccess, practiceConceptId, aiChallengeId } = validateFeedback(await req.json());
     const practiceUnit = practiceConceptId === null
       ? undefined
       : curriculumUnits.find((unit) => unit.id === practiceConceptId);
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
     let feedback: string | null = null;
     let solved: boolean | null = null;
     const newlyEarnedConceptIds: number[] = [];
+    const newlyEarnedRewardIds: number[] = [];
     let clearedIds: number[] = [];
     let canAccessPractice = false;
 
@@ -154,6 +156,39 @@ export async function POST(req: NextRequest) {
       solved = false;
     }
 
+    if (aiChallengeId !== null) {
+      const [challenge] = await db
+        .select({
+          id: aiPracticeChallenges.id,
+          expectedOutput: aiPracticeChallenges.expectedOutput,
+          solvedAt: aiPracticeChallenges.solvedAt,
+          conceptId: aiPracticeChallenges.conceptId,
+        })
+        .from(aiPracticeChallenges)
+        .innerJoin(concepts, eq(aiPracticeChallenges.conceptId, concepts.id))
+        .where(and(
+          eq(aiPracticeChallenges.id, aiChallengeId),
+          eq(aiPracticeChallenges.userId, userId),
+          curriculumId ? eq(concepts.curriculumId, curriculumId) : eq(concepts.curriculumId, -1),
+        ))
+        .limit(1);
+      if (challenge) {
+        solved = isSuccess && parseResult.syntaxValid && matchesExpectedOutput(challenge.expectedOutput, stdout || "");
+        if (solved && !challenge.solvedAt) {
+          const firstSolve = await db.update(aiPracticeChallenges)
+            .set({ solvedAt: new Date() })
+            .where(and(eq(aiPracticeChallenges.id, challenge.id), isNull(aiPracticeChallenges.solvedAt)))
+            .returning({ id: aiPracticeChallenges.id });
+          if (firstSolve.length > 0 && curriculumId) {
+            newlyEarnedRewardIds.push(...await syncAiRewardGrants(userId, curriculumId));
+          }
+        }
+        feedback = solved
+          ? "AI 도전 성공! 새로운 방식으로도 정확하게 해결했어요. 도전 게이지가 올라갔습니다."
+          : "실행은 되었지만 아직 예시 출력과 정확히 같지 않아요. 문제의 출력 조건을 한 줄씩 비교해 보세요.";
+      }
+    }
+
     // 채점 대상이 아니거나 Gemini 채점이 실패한 경우 일반 피드백 생성
     if (feedback === null) {
       feedback = await generateFeedback({
@@ -188,10 +223,15 @@ export async function POST(req: NextRequest) {
       isSolved: solved,
     });
 
+    if (newlyEarnedConceptIds.length > 0 && curriculumId) {
+      newlyEarnedRewardIds.push(...await syncGroupRewardGrants(userId, curriculumId, curriculumUnits));
+    }
+
     return NextResponse.json({
       feedback,
       // 축하 오버레이는 conceptId 기준으로 뱃지 메타데이터를 찾는다.
       newlyEarnedBadgeIds: newlyEarnedConceptIds,
+      newlyEarnedRewardIds,
       practicedConceptIds: practiceConceptId !== null && canAccessPractice ? [practiceConceptId] : [],
       completionStatus: solved === true ? "cleared" : solved === false ? "incorrect" : "unjudged",
     });

@@ -52,12 +52,20 @@ export function validateFeedback(input: unknown) {
     }
     practiceConceptId = data.practiceConceptId;
   }
+  let aiChallengeId: number | null = null;
+  if (data.aiChallengeId !== undefined && data.aiChallengeId !== null) {
+    if (typeof data.aiChallengeId !== "number" || !Number.isInteger(data.aiChallengeId) || data.aiChallengeId < 1) {
+      throw new RequestValidationError("AI 도전문제 정보가 올바르지 않습니다.");
+    }
+    aiChallengeId = data.aiChallengeId;
+  }
   return {
     code: requiredString(data.code, "코드", 1, 20_000),
     stdout: typeof data.stdout === "string" ? data.stdout.slice(0, 8_000) : "",
     stderr: typeof data.stderr === "string" ? data.stderr.slice(0, 8_000) : "",
     isSuccess: data.isSuccess,
     practiceConceptId,
+    aiChallengeId,
   };
 }
 
