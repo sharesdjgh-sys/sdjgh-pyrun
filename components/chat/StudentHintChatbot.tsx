@@ -18,6 +18,10 @@ type ChatMessage = {
   content: string;
 };
 
+const CHAT_FONT_SIZE_STORAGE_KEY = "pyrun-chat-font-size";
+const MIN_CHAT_FONT_SIZE = 12;
+const MAX_CHAT_FONT_SIZE = 18;
+
 const HINT_SECTION_META = {
   "살펴볼 부분": {
     icon: Search,
@@ -120,7 +124,7 @@ function parseHintSections(content: string) {
   return sections;
 }
 
-function AssistantMessageContent({ content }: { content: string }) {
+function AssistantMessageContent({ content, fontSize }: { content: string; fontSize: number }) {
   const sections = parseHintSections(content);
   if (sections.length < 2) return <>{content}</>;
 
@@ -146,7 +150,7 @@ function AssistantMessageContent({ content }: { content: string }) {
                 gap: 6,
                 marginBottom: 6,
                 color: meta.color,
-                fontSize: 12,
+                fontSize: Math.max(12, fontSize - 0.5),
                 fontWeight: 900,
                 lineHeight: 1.2,
               }}
@@ -157,7 +161,7 @@ function AssistantMessageContent({ content }: { content: string }) {
             <div
               style={{
                 color: "#4A4165",
-                fontSize: 12.5,
+                fontSize,
                 lineHeight: 1.62,
                 whiteSpace: "pre-wrap",
                 ...("code" in meta && meta.code
@@ -167,7 +171,7 @@ function AssistantMessageContent({ content }: { content: string }) {
                       background: "rgba(255,255,255,.78)",
                       color: "#30445A",
                       fontFamily: "'JetBrains Mono', 'Consolas', monospace",
-                      fontSize: 12,
+                      fontSize: Math.max(12, fontSize - 0.5),
                     }
                   : {}),
               }}
@@ -226,7 +230,15 @@ export default function StudentHintChatbot({
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [chatFontSize, setChatFontSize] = useState(13);
   const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const savedSize = Number(localStorage.getItem(CHAT_FONT_SIZE_STORAGE_KEY));
+    if (Number.isFinite(savedSize) && savedSize >= MIN_CHAT_FONT_SIZE && savedSize <= MAX_CHAT_FONT_SIZE) {
+      setChatFontSize(savedSize);
+    }
+  }, []);
 
   useEffect(() => {
     if (open) endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -287,6 +299,14 @@ export default function StudentHintChatbot({
     setInput("");
   }
 
+  function changeChatFontSize(delta: number) {
+    setChatFontSize((current) => {
+      const next = Math.min(MAX_CHAT_FONT_SIZE, Math.max(MIN_CHAT_FONT_SIZE, current + delta));
+      localStorage.setItem(CHAT_FONT_SIZE_STORAGE_KEY, String(next));
+      return next;
+    });
+  }
+
   return (
     <>
       {open && (
@@ -321,6 +341,35 @@ export default function StudentHintChatbot({
                 {isStudent ? "어려운 부분을 같이 하나씩 풀어보자" : "수업 중 궁금한 코드와 개념을 함께 살펴봐요"}
               </div>
             </div>
+            <div
+              role="group"
+              aria-label="챗봇 글자 크기"
+              style={{ display: "flex", alignItems: "center", gap: 3, padding: "2px 4px", borderRadius: 8, background: "#F4F0FE" }}
+            >
+              <button
+                type="button"
+                onClick={() => changeChatFontSize(-1)}
+                disabled={chatFontSize <= MIN_CHAT_FONT_SIZE}
+                aria-label="챗봇 글자 작게"
+                title="글자 작게"
+                style={{ width: 22, height: 22, border: "none", borderRadius: 5, background: "transparent", color: "#7B5CF0", cursor: chatFontSize <= MIN_CHAT_FONT_SIZE ? "not-allowed" : "pointer", fontFamily: "inherit", fontSize: 14, lineHeight: 1, fontWeight: 700, opacity: chatFontSize <= MIN_CHAT_FONT_SIZE ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                −
+              </button>
+              <span aria-hidden="true" style={{ minWidth: 28, color: "#7B5CF0", fontSize: 11, fontWeight: 600, textAlign: "center" }}>
+                {chatFontSize}pt
+              </span>
+              <button
+                type="button"
+                onClick={() => changeChatFontSize(1)}
+                disabled={chatFontSize >= MAX_CHAT_FONT_SIZE}
+                aria-label="챗봇 글자 크게"
+                title="글자 크게"
+                style={{ width: 22, height: 22, border: "none", borderRadius: 5, background: "transparent", color: "#7B5CF0", cursor: chatFontSize >= MAX_CHAT_FONT_SIZE ? "not-allowed" : "pointer", fontFamily: "inherit", fontSize: 14, lineHeight: 1, fontWeight: 700, opacity: chatFontSize >= MAX_CHAT_FONT_SIZE ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                +
+              </button>
+            </div>
             <button onClick={resetChat} aria-label="대화 지우기" title="대화 지우기" style={{ width: 32, height: 32, display: "grid", placeItems: "center", border: 0, borderRadius: 9, background: "rgba(255,255,255,.7)", color: "#887BA7", cursor: "pointer" }}>
               <Trash2 size={15} />
             </button>
@@ -346,14 +395,14 @@ export default function StudentHintChatbot({
                     color: message.role === "user" ? "#fff" : "#4A4165",
                     border: message.role === "user" ? "none" : "1px solid #EAE4F6",
                     boxShadow: message.role === "user" ? "0 5px 13px rgba(114,84,231,.18)" : "0 4px 12px rgba(80,61,137,.06)",
-                    fontSize: 12.5,
+                    fontSize: chatFontSize,
                     lineHeight: 1.58,
                     whiteSpace: "pre-wrap",
                     overflowWrap: "anywhere",
                   }}
                 >
                   {message.role === "assistant"
-                    ? <AssistantMessageContent content={message.content} />
+                    ? <AssistantMessageContent content={message.content} fontSize={chatFontSize} />
                     : message.content}
                 </div>
               </div>
@@ -392,7 +441,7 @@ export default function StudentHintChatbot({
                 rows={3}
                 placeholder={isStudent ? "막힌 부분을 편하게 물어봐" : "코드나 개념을 편하게 물어보세요"}
                 aria-label="챗봇 질문"
-                style={{ flex: 1, minWidth: 0, minHeight: 60, maxHeight: 180, overflowY: "auto", resize: "vertical", border: 0, outline: 0, background: "transparent", color: "#403755", fontFamily: "inherit", fontSize: 12.5, lineHeight: 1.5 }}
+                style={{ flex: 1, minWidth: 0, minHeight: 60, maxHeight: 180, overflowY: "auto", resize: "vertical", border: 0, outline: 0, background: "transparent", color: "#403755", fontFamily: "inherit", fontSize: chatFontSize, lineHeight: 1.5 }}
               />
               <button onClick={() => void sendMessage()} disabled={!input.trim() || sending} aria-label="질문 보내기" style={{ width: 36, height: 36, flex: "none", display: "grid", placeItems: "center", border: 0, borderRadius: 11, background: !input.trim() || sending ? "#D9D1EC" : "#7B5CF0", color: "#fff", cursor: !input.trim() || sending ? "not-allowed" : "pointer" }}>
                 <Send size={16} />
