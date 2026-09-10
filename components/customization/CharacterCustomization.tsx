@@ -9,7 +9,7 @@ import GameCharacter from "@/components/robot/GameCharacter";
 import WizardCharacter from "@/components/robot/WizardCharacter";
 import AstronautCharacter from "@/components/robot/AstronautCharacter";
 import SlimeCharacter from "@/components/robot/SlimeCharacter";
-import { ACTIVE_CHARACTERS, AI_REWARD_CONCEPT_LIMIT, COSMETIC_FAMILIES, cosmeticItemKey, parseCosmeticItemKey } from "@/lib/cosmetics";
+import { ACTIVE_CHARACTERS, AI_REWARD_CONCEPT_LIMIT, COSMETIC_FAMILIES, characterCosmeticFamily, cosmeticItemKey, parseCosmeticItemKey } from "@/lib/cosmetics";
 import type { ActiveCharacterType, CharacterLoadout, CosmeticSlot } from "@/types";
 import styles from "./CharacterCustomization.module.css";
 import CosmeticItemPreview from "./CosmeticItemPreview";
@@ -194,7 +194,7 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
               <section className={styles.rewardGuide} aria-label="아이템 얻는 방법">
                 <p className={styles.guideMain}><Gift size={15} aria-hidden="true" /><span><strong>학습 묶음의 필수 문제 완료</strong> 또는 <strong>AI 추가 문제 {state?.aiProgress.target ?? 3}개 해결</strong>하면 아이템을 받아요.</span></p>
                 <p className={styles.guideLimit}>AI 보상은 같은 목차 최대 {AI_REWARD_CONCEPT_LIMIT}개 · 같은 문제 중복 제외</p>
-                <p className={styles.guideHint}>AI 보상은 완료한 묶음의 미보유 아이템 중 랜덤 · 3번째부터는 자유 연습</p>
+                <p className={styles.guideHint}>6종 중 캐릭터 선택 → 미보유 전용 아이템 랜덤 획득</p>
                 {!!state && (state.aiProgress.remaining ?? 0) > state.aiProgress.target && <p className={styles.guideHint}>기존 보상 유지 · 다음 보상까지 다른 목차에서 {state.aiProgress.remaining}개 더 해결</p>}
               </section>
             </div>
@@ -232,7 +232,7 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
                 </div>
                 <div className={styles.itemSections}>
                 {(["head", "face", "body", "back"] as CosmeticSlot[]).map((slot) => {
-                  const families = COSMETIC_FAMILIES.filter((family) => family.slot === slot);
+                  const families = COSMETIC_FAMILIES.filter((family) => family.slot === slot).map((family) => characterCosmeticFamily(family, wardrobeCharacter));
                   return <section key={slot} className={styles.itemSection} data-active={wardrobeSlot === slot} aria-label={`${SLOT_LABEL[slot]} 아이템`}>
                     <div style={{ fontSize: 13, fontWeight: 900, color: "#675D82", marginBottom: 9 }}>{SLOT_LABEL[slot]} 아이템</div>
                     <div className={styles.itemGrid}>
@@ -241,7 +241,7 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
                         const owned = inventory.has(key);
                         const equipped = loadouts[wardrobeCharacter]?.[slot] === key;
                         return <button key={key} type="button" className={styles.itemCard} data-owned={owned} aria-pressed={equipped} disabled={!owned || busy} onClick={() => void equip(key)} style={{ border: equipped ? `2px solid ${family.color}` : "1.5px solid #ECE7F4", background: equipped ? `${family.accent}66` : owned ? "#fff" : "#F7F5FA", color: owned ? "#4C435F" : "#8F849F", cursor: owned ? "pointer" : "not-allowed" }}>
-                          <span className={styles.itemArtwork}><CosmeticItemPreview family={family} /></span>
+                          <span className={styles.itemArtwork}><CosmeticItemPreview family={family} characterType={wardrobeCharacter} /></span>
                           <strong style={{ display: "block", fontSize: 11.5 }}>{family.nameKo}</strong>
                           <small className={styles.itemStatus}>{!owned ? <Lock size={10} aria-hidden="true" /> : equipped ? <Check size={11} aria-hidden="true" /> : null}{owned ? (equipped ? "장착 중" : "장착하기") : "아직 잠김"}</small>
                         </button>;
@@ -257,16 +257,16 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
         </div>
       )}
 
-      {rewardOpen && activeGrant && (
+      {rewardOpen && (activeGrant || revealedItem) && (
         <div role="dialog" aria-modal="true" aria-label="꾸미기 아이템 선택" style={{ ...overlayStyle, zIndex: 150 }}>
           <div style={{ ...modalStyle, width: "min(820px, calc(100vw - 28px))", padding: "28px" }}>
             <button type="button" aria-label="닫기" onClick={closeReward} style={closeStyle}><X size={19} /></button>
             <div style={{ textAlign: "center", marginBottom: 20 }}>
-              <span style={{ display: "inline-flex", padding: "6px 10px", borderRadius: 99, background: activeGrant.sourceType === "ai" ? "#F3E8FF" : "#E8FFF7", color: activeGrant.sourceType === "ai" ? "#8B5CF6" : "#0F9F78", fontSize: 11, fontWeight: 900 }}>
-                {activeGrant.sourceType === "ai" ? "AI 도전 3개 성공" : "학습 묶음 완료"}
+              <span style={{ display: "inline-flex", padding: "6px 10px", borderRadius: 99, background: "#F3E8FF", color: "#8B5CF6", fontSize: 11, fontWeight: 900 }}>
+                {revealedItem ? "나만의 새 아이템" : activeGrant?.sourceType === "ai" ? "AI 추가 문제 3개 성공" : "학습 묶음 완료"}
               </span>
               <h2 style={{ margin: "9px 0 4px", color: "#332A47", fontSize: 24 }}>{revealedItem ? "새 아이템을 받았어요!" : "어떤 친구의 아이템을 받을까요?"}</h2>
-              <p style={{ margin: 0, color: "#8B83A8", fontSize: 13 }}>{activeGrant.sourceType === "ai" ? "캐릭터를 고르면 아직 없는 아이템 하나가 나타나요." : "캐릭터별 모습을 미리 보고 하나를 선택하세요."}</p>
+              <p style={{ margin: 0, color: "#8B83A8", fontSize: 13 }}>{revealedItem ? "옷장에서 입혀 보세요. 새로운 모험을 함께할 준비가 됐어요!" : "좋아하는 캐릭터를 고르면, 아직 없는 전용 아이템 1개가 랜덤으로 나와요."}</p>
             </div>
             {revealedItem ? (() => {
               const parsed = parseCosmeticItemKey(revealedItem);
@@ -275,21 +275,18 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
               return <div style={{ textAlign: "center" }}>
                 <div style={{ width: 230, height: 260, margin: "0 auto", display: "grid", placeItems: "center", borderRadius: 24, background: `linear-gradient(160deg,#fff,${parsed.family.accent}66)`, overflow: "hidden" }}><Preview type={parsed.characterType} loadout={previewLoadout} size={186} /></div>
                 <strong style={{ display: "block", color: "#4B3D66", fontSize: 18, marginTop: 10 }}>{parsed.family.nameKo}</strong>
-                <button onClick={closeReward} style={primaryButton}>다음 보상 확인</button>
+                <button onClick={() => { if (state?.pendingGrants.length) closeReward(); else { setWardrobeCharacter(parsed.characterType); setRewardOpen(false); setRevealedItem(null); setWardrobeOpen(true); } }} style={primaryButton}>{state?.pendingGrants.length ? "다음 선물 선택" : "옷장에서 입혀보기"}</button>
               </div>;
             })() : (
               <div className={styles.rewardGrid}>
                 {ACTIVE_CHARACTERS.map((character) => {
-                  const family = COSMETIC_FAMILIES.find((item) => item.key === activeGrant.familyKey);
-                  const groupItemKey = family ? cosmeticItemKey(family.key, character.type) : null;
-                  const available = activeGrant.sourceType === "group"
-                    ? !!groupItemKey && !inventory.has(groupItemKey)
-                    : activeGrant.availability[character.type] > 0;
+                  const remaining = activeGrant?.availability[character.type] ?? 0;
+                  const available = remaining > 0;
                   const previewLoadout = loadouts[character.type];
                   return <button className={styles.rewardCard} key={character.type} disabled={!available || busy} onClick={() => void claim(character.type)} style={{ border: `2px solid ${available ? character.color : "#DDD8E6"}`, borderRadius: 20, background: available ? `linear-gradient(180deg,#fff,${character.tint})` : "#F6F4F8", padding: "13px 8px 16px", cursor: available ? "pointer" : "not-allowed", opacity: available ? 1 : .55, color: character.color }}>
                     <div className={styles.rewardPreview} style={{ height: 185, display: "grid", placeItems: "center", overflow: "hidden" }}><Preview type={character.type} loadout={previewLoadout} size={138} /></div>
                     <span><strong style={{ display: "block", fontSize: 15 }}>{character.label}</strong>
-                    <small className={styles.rewardItemLabel} style={{ color: "#817793", fontWeight: 700 }}>{activeGrant.sourceType === "group" && family && <CosmeticItemPreview family={family} />}{activeGrant.sourceType === "ai" ? `${activeGrant.availability[character.type]}개 중 랜덤` : family?.nameKo}</small></span>
+                    <small className={styles.rewardItemLabel} style={{ color: "#817793", fontWeight: 700 }}>{available ? `전용 아이템 ${remaining}개 중 랜덤` : "모두 모았어요"}</small></span>
                   </button>;
                 })}
               </div>

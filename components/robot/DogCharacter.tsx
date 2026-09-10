@@ -5,6 +5,7 @@ import { useId } from "react";
 import type { RobotState, RobotEmotion } from "@/types";
 import type { CharacterLoadout } from "@/types";
 import CharacterCosmetics from "./CharacterCosmetics";
+import { restingBodyPose, withRestingPose } from "./poseTransitions";
 
 interface DogCharacterProps {
   state: RobotState;
@@ -16,7 +17,7 @@ interface DogCharacterProps {
 }
 
 // 강아지 모션 variants
-const bodyVariants: Variants = {
+const bodyVariants: Variants = withRestingPose({
   idle: { x: 0, rotate: 0, scale: 1, scaleY: 1, y: [0, -3, 0], transition: { duration: 2, repeat: Infinity, ease: "easeInOut" } },
   talking: { y: [0, -2, 0], transition: { duration: 0.6, repeat: Infinity, ease: "easeInOut" } },
   walking: {
@@ -35,16 +36,22 @@ const bodyVariants: Variants = {
     transition: { duration: 0.8, repeat: 3, ease: "easeInOut" },
   },
   error: { x: [0, -8, 8, -8, 8, 0], transition: { duration: 0.5, ease: "easeInOut" } },
-};
+  headShake: { x: [0, -8, 8, -8, 8, 0], transition: { duration: .6 } },
+  spinning: { rotate: [0, 360], transition: { duration: .7, ease: "easeInOut" } },
+  shaking: { x: [0, -10, 10, -10, 10, 0], transition: { duration: .5 } },
+}, restingBodyPose);
 
-const headVariants: Variants = {
+const headVariants: Variants = withRestingPose({
   idle: { rotate: [0, 1.5, 0, -1.5, 0], transition: { duration: 3, repeat: Infinity, ease: "easeInOut" } },
   talking: { rotate: [0, 3, -3, 3, 0], transition: { duration: 0.4, repeat: Infinity, ease: "easeInOut" } },
   walking: { rotate: [2, -2, 2], transition: { duration: 0.6, repeat: Infinity } },
   jumping: { rotate: [0, -3, 0], transition: { duration: 0.3 } },
   celebrating: { rotate: [0, 8, -8, 8, 0], transition: { duration: 0.4, repeat: 4, ease: "easeInOut" } },
   error: { rotate: [-4, 4, -4, 0], transition: { duration: 0.4 } },
-};
+  headShake: { rotate: [0, -8, 8, -8, 0], transition: { duration: .6 } },
+  spinning: {},
+  shaking: {},
+}, { rotate: 0 });
 
 const earLVariants: Variants = {
   idle: { rotate: [0, 5, 0], transition: { duration: 2, repeat: Infinity } },
@@ -311,7 +318,7 @@ export default function DogCharacter({
           <radialGradient id={`${paintId}-gold`} cx=".3" cy=".25" r=".85"><stop stopColor="#FFFDE4" /><stop offset=".4" stopColor={colors.pendant} /><stop offset="1" stopColor="#E5AD53" /></radialGradient>
         </defs>
         {/* Keep commanded size separate from squash/stretch animations. */}
-        <motion.g animate={state} variants={bodyVariants} style={{ transformOrigin: "100px 250px" }}>
+        <motion.g data-part="character-body" animate={state} variants={bodyVariants} style={{ transformOrigin: "100px 250px" }}>
         <CharacterCosmetics characterType="dog" loadout={loadout} layer="behind" />
         {/* Shadow */}
         <ellipse cx="100" cy="235" rx="58" ry="8" fill="#58483B" opacity="0.14" />
@@ -370,7 +377,7 @@ export default function DogCharacter({
         </g>
 
         {/* Head + Ears + Face (grouped to sway together) */}
-        <motion.g animate={state} variants={headVariants} style={{ originX: "100px", originY: "115px", transformBox: "view-box" }}>
+        <motion.g data-part="character-head" animate={state} variants={headVariants} style={{ originX: "100px", originY: "115px", transformBox: "view-box" }}>
           {/* Left Ear */}
           <motion.g
             animate={state}
@@ -422,8 +429,9 @@ export default function DogCharacter({
 
           {/* Mouth and Tongue */}
           {renderMouthAndTongue()}
+        <CharacterCosmetics characterType="dog" loadout={loadout} layer="front" slots={["head", "face"]} />
         </motion.g>
-        <CharacterCosmetics characterType="dog" loadout={loadout} layer="front" />
+        <CharacterCosmetics characterType="dog" loadout={loadout} layer="front" slots={["body"]} />
         </motion.g>
       </svg>
     </div>

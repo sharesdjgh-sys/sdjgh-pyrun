@@ -9,8 +9,20 @@ import {
   availableCosmeticItemKeys,
   completedGroupRewardFamilies,
   aiCosmeticRewardProgress,
+  randomRewardCandidates,
 } from "../lib/cosmetics";
 import { validateFeedback } from "../lib/api-guard";
+
+test("all rewards draw from the selected character's full unowned catalog", () => {
+  for (const { type } of ACTIVE_CHARACTERS) {
+    const all = randomRewardCandidates(type, []);
+    assert.equal(all.length, 13);
+    assert.ok(all.every(key=>key.endsWith(`:${type}`)));
+    assert.equal(randomRewardCandidates(type, all).length, 0);
+    assert.deepEqual(randomRewardCandidates(type, all.slice(0,-1)), all.slice(-1));
+    assert.equal(randomRewardCandidates(type, ["unrelated:robot"]).length, 13);
+  }
+});
 
 test("AI rewards count at most two solved challenges per concept", () => {
   assert.deepEqual(aiCosmeticRewardProgress([100]), { earnedRewards: 0, solved: 2, target: 3, remaining: 1 });

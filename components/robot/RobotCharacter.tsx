@@ -365,7 +365,7 @@ export default function RobotCharacter({
           </radialGradient>
         </defs>
         {/* Size is rendered as SVG dimensions; movement cannot overwrite it. */}
-        <motion.g animate={state} variants={bodyVariants} style={{ transformOrigin: "100px 250px" }}>
+        <motion.g data-part="character-body" animate={state} variants={bodyVariants} style={{ transformOrigin: "100px 250px" }}>
         <CharacterCosmetics characterType="robot" loadout={loadout} layer="behind" />
         {/* Shadow */}
         <ellipse cx="100" cy="245" rx="54" ry="7" fill={colors.accentDark} opacity="0.16" />
@@ -457,7 +457,7 @@ export default function RobotCharacter({
         </g>
 
         {/* Head + Headphones + Antenna + Bow (grouped so they all move together) */}
-        <motion.g animate={state} variants={headVariants} style={{ originX: "100px", originY: "95px", transformBox: "view-box" }}>
+        <motion.g data-part="character-head" animate={state} variants={headVariants} style={{ originX: "100px", originY: "95px", transformBox: "view-box" }}>
           {/* Headphones */}
           <circle cx="35" cy="96" r="20" fill={paint("lavender")} stroke={colors.accentDark} strokeWidth="2" />
           <ellipse cx="35" cy="96" rx="8.5" ry="13" fill={paint("shell")} stroke={colors.accentDark} strokeWidth="1.5" />
@@ -561,6 +561,7 @@ export default function RobotCharacter({
           )}
 
           {/* Antenna */}
+          {!loadout?.head && <>
           <line x1="100" y1="36" x2="100" y2="14" stroke={colors.bodyStroke} strokeWidth="5" strokeLinecap="round" />
           <circle
             cx="100"
@@ -581,8 +582,10 @@ export default function RobotCharacter({
             <ellipse cx="48" cy="38" rx="5" ry="3.5" fill="#FFFFFF" opacity="0.35" />
             <circle cx="64" cy="40" r="7.5" fill={colors.accentDark} />
           </g>
+          </>}
+        <CharacterCosmetics characterType="robot" loadout={loadout} layer="front" slots={["head", "face"]} />
         </motion.g>
-        <CharacterCosmetics characterType="robot" loadout={loadout} layer="front" />
+        <CharacterCosmetics characterType="robot" loadout={loadout} layer="front" slots={["body"]} />
         </motion.g>
       </svg>
     </div>

@@ -1,6 +1,7 @@
 import type { Variants } from "framer-motion";
+import { restingBodyPose, withRestingPose } from "./poseTransitions";
 
-export const bodyVariants: Variants = {
+export const bodyVariants: Variants = withRestingPose({
   idle: {
     x: 0,
     rotate: 0,
@@ -45,9 +46,9 @@ export const bodyVariants: Variants = {
     x: [0, -10, 10, -10, 10, -5, 5, 0],
     transition: { duration: 0.5, ease: "easeOut" as const },
   },
-};
+}, restingBodyPose);
 
-export const headVariants: Variants = {
+export const headVariants: Variants = withRestingPose({
   idle: {
     rotate: [0, 2, 0, -2, 0],
     transition: { duration: 3, repeat: Infinity, ease: "easeInOut" },
@@ -72,7 +73,7 @@ export const headVariants: Variants = {
     rotate: [0, -8, 8, -8, 8, 0],
     transition: { duration: 0.5 },
   },
-};
+}, { rotate: 0 });
 
 export const leftArmVariants: Variants = {
   idle: { rotate: [0, 5, 0], transition: { duration: 2, repeat: Infinity } },

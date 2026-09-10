@@ -3,6 +3,7 @@
 import { useId, type ReactNode } from "react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import type { CharacterLoadout, RobotEmotion, RobotState } from "@/types";
+import { withRestingPose } from "./poseTransitions";
 
 export interface CompanionProps {
   state: RobotState;
@@ -14,7 +15,7 @@ export interface CompanionProps {
 }
 
 const rest = { x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1 };
-export const companionMotion: Variants = {
+export const companionMotion: Variants = withRestingPose({
   idle: { ...rest, y: [0, -2.5, 0], transition: { duration: 2.8, repeat: Infinity, ease: "easeInOut" } },
   talking: { ...rest, y: [0, -3, 0], rotate: [0, -1.5, 1.5, 0], transition: { duration: .8, repeat: Infinity } },
   walking: { ...rest, y: [0, -5, 0], rotate: [-2, 2, -2], transition: { duration: .5, repeat: Infinity } },
@@ -24,15 +25,15 @@ export const companionMotion: Variants = {
   headShake: { ...rest, rotate: [0, -6, 6, -6, 0], transition: { duration: .6 } },
   shaking: { ...rest, x: [0, -6, 6, -6, 0], transition: { duration: .5 } },
   spinning: { ...rest, rotate: [0, 360], transition: { duration: .75 } },
-};
+}, rest);
 
 export function CompanionFrame({ state, scale = 1, direction = "right", size = 184, children, label }: CompanionProps & { children: ReactNode; label: string }) {
   const reduced = useReducedMotion();
   const h = Math.round(size * 226 / 184);
-  return <div data-companion={label} style={{ width: size, height: h, flexShrink: 0, transform: `scale(${scale}) scaleX(${direction === "left" ? -1 : 1})`, transformOrigin: "bottom center" }}>
-    <svg viewBox="0 0 200 250" width={size} height={h} preserveAspectRatio="xMidYMax meet" style={{ overflow: "visible" }} aria-hidden="true">
+  return <div data-companion={label} style={{ width: size, height: h, flexShrink: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", transform: `scaleX(${direction === "left" ? -1 : 1})`, transformOrigin: "bottom center" }}>
+    <svg viewBox="0 0 200 250" width={size * scale} height={h * scale} preserveAspectRatio="xMidYMax meet" style={{ overflow: "visible", flexShrink: 0 }} aria-hidden="true">
       <ellipse cx="100" cy="239" rx="46" ry="6" fill="#50416E" opacity=".11" />
-      <motion.g animate={reduced ? "still" : state} variants={{ ...companionMotion, still: rest }} style={{ transformOrigin: "100px 232px" }}>{children}</motion.g>
+      <motion.g data-part="character-body" animate={reduced ? "still" : state} variants={{ ...companionMotion, still: rest }} style={{ transformOrigin: "100px 232px" }}>{children}</motion.g>
     </svg>
   </div>;
 }

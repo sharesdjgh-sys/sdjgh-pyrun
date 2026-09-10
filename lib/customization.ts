@@ -1,4 +1,4 @@
-import { and, asc, count, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   aiPracticeChallenges,
@@ -13,12 +13,12 @@ import {
   ACTIVE_CHARACTERS,
   aiCosmeticRewardProgress,
   COSMETIC_FAMILIES,
-  cosmeticItemKey,
-  availableCosmeticItemKeys,
+  randomRewardCandidates,
   completedGroupRewardFamilies,
   parseCosmeticItemKey,
 } from "@/lib/cosmetics";
 import type { ActiveCharacterType, CharacterLoadout, CosmeticSlot } from "@/types";
+import { cosmeticRewardClaimQuery } from "./cosmetic-reward-query";
 
 type CurriculumUnit = {
   id: number;
@@ -97,13 +97,9 @@ export async function getCustomizationState(userId: number, curriculumId: number
   ]);
 
   const inventory = inventoryRows.map((row) => row.itemKey).filter((key) => parseCosmeticItemKey(key));
-  const owned = new Set(inventory);
-  const eligibleFamilies = [...new Set(grantRows
-    .filter((grant) => grant.sourceType === "group" && grant.familyKey)
-    .map((grant) => grant.familyKey as string))];
   const availability = Object.fromEntries(ACTIVE_CHARACTERS.map(({ type }) => [
     type,
-    eligibleFamilies.filter((family) => !owned.has(cosmeticItemKey(family, type))).length,
+    randomRewardCandidates(type, inventory).length,
   ]));
   const loadouts: Record<ActiveCharacterType, CharacterLoadout> = {
     robot: {}, dog: {}, game: {}, wizard: {}, astronaut: {}, slime: {},
@@ -141,52 +137,14 @@ export async function claimCosmeticReward(
   grantId: number,
   characterType: ActiveCharacterType,
 ) {
-  const [grant] = await db.select().from(cosmeticRewardGrants).where(and(
-    eq(cosmeticRewardGrants.id, grantId),
-    eq(cosmeticRewardGrants.userId, userId),
-    eq(cosmeticRewardGrants.curriculumId, curriculumId),
-    isNull(cosmeticRewardGrants.claimedAt),
-  )).limit(1);
-  if (!grant) throw new Error("이미 받았거나 존재하지 않는 보상입니다.");
-
-  let familyKey = grant.familyKey;
-  if (grant.sourceType === "ai") {
-    const [groupGrants, inventoryRows] = await Promise.all([
-      db.select({ familyKey: cosmeticRewardGrants.familyKey }).from(cosmeticRewardGrants).where(and(
-        eq(cosmeticRewardGrants.userId, userId),
-        eq(cosmeticRewardGrants.curriculumId, curriculumId),
-        eq(cosmeticRewardGrants.sourceType, "group"),
-        isNotNull(cosmeticRewardGrants.familyKey),
-      )),
-      db.select({ itemKey: userCosmeticItems.itemKey }).from(userCosmeticItems).where(eq(userCosmeticItems.userId, userId)),
-    ]);
-    const owned = new Set(inventoryRows.map((item) => item.itemKey));
-    const candidates = availableCosmeticItemKeys(
-      groupGrants.map((item) => item.familyKey as string),
-      characterType,
-      owned,
-    ).map((key) => parseCosmeticItemKey(key)!.family.key);
-    if (candidates.length === 0) throw new Error("이 캐릭터가 받을 수 있는 새 아이템이 없습니다.");
-    familyKey = candidates[Math.floor(Math.random() * candidates.length)];
+  // One atomic statement: lock the grant, add one unowned item, then consume
+  // the grant only if insertion succeeded. Neon HTTP does not support interactive transactions.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const result = await db.execute(cosmeticRewardClaimQuery(userId, curriculumId, grantId, characterType));
+    const row = result.rows[0] as { itemKey: string } | undefined;
+    if (row) return { itemKey: row.itemKey, familyKey: parseCosmeticItemKey(row.itemKey)!.family.key };
   }
-  if (!familyKey || !COSMETIC_FAMILIES.some((family) => family.key === familyKey)) {
-    throw new Error("보상 아이템 정보가 올바르지 않습니다.");
-  }
-  const itemKey = cosmeticItemKey(familyKey, characterType);
-  const [alreadyOwned] = await db.select({ id: userCosmeticItems.id }).from(userCosmeticItems).where(and(
-    eq(userCosmeticItems.userId, userId),
-    eq(userCosmeticItems.itemKey, itemKey),
-  )).limit(1);
-  if (alreadyOwned) throw new Error("이미 가진 아이템입니다. 다른 캐릭터를 선택해 주세요.");
-  const claimed = await db.update(cosmeticRewardGrants).set({
-    selectedCharacter: characterType,
-    itemKey,
-    claimedAt: new Date(),
-  }).where(and(eq(cosmeticRewardGrants.id, grantId), isNull(cosmeticRewardGrants.claimedAt)))
-    .returning({ id: cosmeticRewardGrants.id });
-  if (claimed.length === 0) throw new Error("이미 받은 보상입니다.");
-  await db.insert(userCosmeticItems).values({ userId, itemKey, source: grant.sourceType }).onConflictDoNothing();
-  return { itemKey, familyKey };
+  throw new Error("이미 받은 보상이거나 이 캐릭터의 아이템을 모두 모았어요. 다른 캐릭터를 선택하거나 보상 목록을 새로 확인해 주세요.");
 }
 
 export async function saveActiveCharacter(userId: number, characterType: ActiveCharacterType) {

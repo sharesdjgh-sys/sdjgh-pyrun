@@ -6,13 +6,16 @@ import { renderToStaticMarkup } from "react-dom/server";
 import RobotCharacter from "../components/robot/RobotCharacter";
 import DogCharacter from "../components/robot/DogCharacter";
 import SlimeCharacter from "../components/robot/SlimeCharacter";
+import GameCharacter from "../components/robot/GameCharacter";
+import WizardCharacter from "../components/robot/WizardCharacter";
+import AstronautCharacter from "../components/robot/AstronautCharacter";
 import { robotApi } from "../lib/robot-api";
 import { animationQueue } from "../lib/animation-queue";
 
 // Next compiles preserved JSX automatically; the node/tsx test runner uses classic JSX.
 Object.assign(globalThis, { React });
 
-for (const [name, Character] of [["robot", RobotCharacter], ["dog", DogCharacter], ["slime", SlimeCharacter]] as const) {
+for (const [name, Character] of [["robot", RobotCharacter], ["dog", DogCharacter], ["slime", SlimeCharacter], ["game", GameCharacter], ["wizard", WizardCharacter], ["astronaut", AstronautCharacter]] as const) {
   test(`${name} renders small and large SVGs proportionally without double scaling`, () => {
     for (const scale of [.5, 1, 2.5, 3]) {
       for (const direction of ["left", "right"] as const) {

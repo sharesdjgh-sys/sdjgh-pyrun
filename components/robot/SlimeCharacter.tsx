@@ -4,6 +4,7 @@ import { motion, type Variants } from "framer-motion";
 import { useId } from "react";
 import type { CharacterLoadout, RobotEmotion, RobotState } from "@/types";
 import CharacterCosmetics from "./CharacterCosmetics";
+import { withRestingPose } from "./poseTransitions";
 
 interface SlimeCharacterProps {
   state: RobotState;
@@ -28,7 +29,7 @@ const bodyVariants: Variants = {
 };
 
 // A new action must not inherit flattening or rotation from an interrupted one.
-const settledBodyVariants: Variants = Object.fromEntries(Object.entries(bodyVariants).map(([name, target]) => [name, { ...neutralBody, ...target }]));
+const settledBodyVariants: Variants = withRestingPose(bodyVariants, neutralBody);
 
 const bubbleVariants: Variants = {
   idle: { opacity: [0, .7, 0], y: [5, -5, -14], transition: { duration: 2.2, repeat: Infinity } },
