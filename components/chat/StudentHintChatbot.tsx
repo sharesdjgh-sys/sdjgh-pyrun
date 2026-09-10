@@ -183,6 +183,7 @@ function AssistantMessageContent({ content }: { content: string }) {
 
 interface StudentHintChatbotProps {
   studentName: string;
+  isStudent?: boolean;
   conceptName: string;
   conceptDescription: string;
   code: string;
@@ -190,7 +191,12 @@ interface StudentHintChatbotProps {
   error: string;
 }
 
-function createWelcomeMessage(studentName: string) {
+function createWelcomeMessage(studentName: string, isStudent: boolean) {
+  if (!isStudent) {
+    return `안녕하세요, 선생님! 저는 수업 중 코드와 개념을 함께 살펴보는 파이런 학습 파트너예요.
+
+현재 단원이나 실행 결과에서 궁금한 점을 편하게 물어보세요.`;
+  }
   const greeting = `안녕, ${getStudentVocative(studentName)}!`;
   return `${greeting} 나는 같이 코딩을 고민해주는 파이런 학습 파트너야.
 
@@ -206,13 +212,14 @@ const QUICK_QUESTIONS = [
 
 export default function StudentHintChatbot({
   studentName,
+  isStudent = true,
   conceptName,
   conceptDescription,
   code,
   output,
   error,
 }: StudentHintChatbotProps) {
-  const welcomeMessage = createWelcomeMessage(studentName);
+  const welcomeMessage = createWelcomeMessage(studentName, isStudent);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: welcomeMessage },
@@ -310,7 +317,9 @@ export default function StudentHintChatbot({
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: "#3D2E8A", fontSize: 15, fontWeight: 900 }}>파이런 학습 파트너</div>
-              <div style={{ marginTop: 2, color: "#82769F", fontSize: 11.5 }}>어려운 부분을 같이 하나씩 풀어보자</div>
+              <div style={{ marginTop: 2, color: "#82769F", fontSize: 11.5 }}>
+                {isStudent ? "어려운 부분을 같이 하나씩 풀어보자" : "수업 중 궁금한 코드와 개념을 함께 살펴봐요"}
+              </div>
             </div>
             <button onClick={resetChat} aria-label="대화 지우기" title="대화 지우기" style={{ width: 32, height: 32, display: "grid", placeItems: "center", border: 0, borderRadius: 9, background: "rgba(255,255,255,.7)", color: "#887BA7", cursor: "pointer" }}>
               <Trash2 size={15} />
@@ -381,7 +390,7 @@ export default function StudentHintChatbot({
                   }
                 }}
                 rows={3}
-                placeholder="막힌 부분을 편하게 물어봐"
+                placeholder={isStudent ? "막힌 부분을 편하게 물어봐" : "코드나 개념을 편하게 물어보세요"}
                 aria-label="챗봇 질문"
                 style={{ flex: 1, minWidth: 0, minHeight: 60, maxHeight: 180, overflowY: "auto", resize: "vertical", border: 0, outline: 0, background: "transparent", color: "#403755", fontFamily: "inherit", fontSize: 12.5, lineHeight: 1.5 }}
               />
@@ -397,7 +406,7 @@ export default function StudentHintChatbot({
       <div style={{ position: "fixed", right: 20, bottom: 18, zIndex: 101, display: "flex", alignItems: "center", gap: 8 }}>
         {!open && (
           <div style={{ padding: "8px 11px", border: "1px solid #E0D7F6", borderRadius: 12, background: "#fff", color: "#5C4E84", boxShadow: "0 8px 20px rgba(70,51,128,.13)", fontSize: 11.5, fontWeight: 800 }}>
-            막히면 물어봐!
+            {isStudent ? "막히면 물어봐!" : "궁금하면 물어보세요"}
           </div>
         )}
           <button

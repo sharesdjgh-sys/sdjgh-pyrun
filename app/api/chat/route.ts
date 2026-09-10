@@ -4,6 +4,7 @@ import { rateLimit, RequestValidationError, validateStudentChat } from "@/lib/ap
 import { sessionTenant } from "@/lib/curriculum-access";
 import { generateStudentHintChat } from "@/lib/gemini";
 import { getStudentVocative } from "@/lib/student-name";
+import { isStudentRole } from "@/lib/roles";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -22,9 +23,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const input = validateStudentChat(await req.json());
+    const isStudent = isStudentRole(context.role);
+    const displayName = (session?.user as { displayName?: string } | undefined)?.displayName;
     const answer = await generateStudentHintChat({
       ...input,
-      studentName: getStudentVocative(session?.user?.name),
+      studentName: isStudent ? getStudentVocative(displayName || session?.user?.name) : "선생님",
+      audienceRole: isStudent ? "student" : "teacher",
     });
     return NextResponse.json({ answer });
   } catch (error) {

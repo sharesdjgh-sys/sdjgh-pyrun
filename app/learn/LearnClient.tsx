@@ -1964,19 +1964,18 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         onNext={handleGoNextConcept}
       />
 
-      {isStudent && (
-        <StudentHintChatbot
-          studentName={userName}
-          conceptName={displayConcept?.nameKo ?? "자유 학습"}
-          conceptDescription={displayConcept?.explanation ?? ""}
-          code={code}
-          output={output}
-          error={execError}
-        />
-      )}
+      <StudentHintChatbot
+        studentName={isStudent ? userName : "선생님"}
+        isStudent={isStudent}
+        conceptName={displayConcept?.nameKo ?? "자유 학습"}
+        conceptDescription={displayConcept?.explanation ?? ""}
+        code={code}
+        output={output}
+        error={execError}
+      />
 
       {/* 제작사 로고 */}
-      <div style={{ position: "fixed", bottom: 14, right: isStudent ? 99 : 18, zIndex: 5, opacity: 0.6 }}>
+      <div style={{ position: "fixed", bottom: 14, right: 99, zIndex: 5, opacity: 0.6 }}>
         <Image
           src="/lifeprofessor-logo.png"
           alt="인생교수의 AI 연구소"
