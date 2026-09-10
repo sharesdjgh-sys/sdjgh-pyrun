@@ -1,99 +1,71 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
-import type { CharacterLoadout, RobotEmotion, RobotState } from "@/types";
+import { motion, useReducedMotion } from "framer-motion";
 import CharacterCosmetics from "./CharacterCosmetics";
+import { CompanionFrame, CompanionStar, useCompanionPaint, type CompanionProps } from "./CompanionParts";
 
-interface AstronautCharacterProps {
-  state: RobotState;
-  emotion?: RobotEmotion;
-  scale?: number;
-  direction?: "left" | "right";
-  size?: number;
-  loadout?: CharacterLoadout;
-}
-
-const bodyVariants: Variants = {
-  idle: { y: [0, -6, 0], rotate: [0, 1.5, 0, -1.5, 0], transition: { duration: 2.8, repeat: Infinity, ease: "easeInOut" } },
-  talking: { y: [0, -3, 0], transition: { duration: 0.65, repeat: Infinity } },
-  walking: { y: [0, -6, 0, -6, 0], transition: { duration: 0.85, repeat: Infinity, ease: "easeInOut" } },
-  jumping: { y: [0, -58, -58, 0], rotate: [0, -5, 5, 0], transition: { duration: 0.72, ease: "easeOut" } },
-  headShake: { x: [0, -10, 10, -10, 10, 0], transition: { duration: 0.55 } },
-  celebrating: { y: [0, -18, -9, -20, 0], rotate: [0, 7, -7, 7, 0], transition: { duration: 0.9, repeat: 3 } },
-  error: { x: [0, -8, 8, -8, 8, 0], transition: { duration: 0.5 } },
-  spinning: {},
-  shaking: {},
-};
-
-const armLeftVariants: Variants = {
-  idle: { rotate: [0, 5, 0], transition: { duration: 2.2, repeat: Infinity } },
-  talking: { rotate: [0, -35, -10, -35, 0], transition: { duration: 0.7, repeat: Infinity } },
-  walking: { rotate: [-22, 22, -22], transition: { duration: 0.85, repeat: Infinity } },
-  jumping: { rotate: -55 }, headShake: {},
-  celebrating: { rotate: [0, -90, -55, -90, 0], transition: { duration: 0.6, repeat: 4 } },
-  error: { rotate: 18 }, spinning: {}, shaking: {},
-};
-const armRightVariants: Variants = {
-  idle: { rotate: [0, -5, 0], transition: { duration: 2.2, repeat: Infinity } },
-  talking: { rotate: [0, 20, 0], transition: { duration: 0.7, repeat: Infinity } },
-  walking: { rotate: [22, -22, 22], transition: { duration: 0.85, repeat: Infinity } },
-  jumping: { rotate: 55 }, headShake: {},
-  celebrating: { rotate: [0, 90, 55, 90, 0], transition: { duration: 0.6, repeat: 4 } },
-  error: { rotate: -18 }, spinning: {}, shaking: {},
-};
-const legLeftVariants: Variants = { walking: { rotate: [-18, 20, -18], transition: { duration: 0.85, repeat: Infinity } }, jumping: { rotate: -14 }, celebrating: { rotate: [0, -12, 0], transition: { duration: 0.5, repeat: 4 } } };
-const legRightVariants: Variants = { walking: { rotate: [18, -20, 18], transition: { duration: 0.85, repeat: Infinity } }, jumping: { rotate: 14 }, celebrating: { rotate: [0, 12, 0], transition: { duration: 0.5, repeat: 4 } } };
-const flameVariants: Variants = {
-  idle: { opacity: 0 }, talking: { opacity: 0 }, walking: { opacity: 0 }, headShake: { opacity: 0 }, error: { opacity: 0 }, spinning: { opacity: 0 }, shaking: { opacity: 0 },
-  jumping: { opacity: [0, 1, .5, 0], scaleY: [0.3, 1.3, .8, 0.2], transition: { duration: .7 } },
-  celebrating: { opacity: [0, 1, .55, 1, 0], scaleY: [.2, 1.5, .8, 1.4, .2], transition: { duration: .9, repeat: 3 } },
-};
-
-function Face({ emotion, error }: { emotion: RobotEmotion; error: boolean }) {
-  const ink = error ? "#7F1D1D" : "#17324D";
-  if (error) return <><path d="M72 89l11 7M83 89l-11 7M117 89l11 7M128 89l-11 7" stroke={ink} strokeWidth="3.5" strokeLinecap="round" /><path d="M92 113q8-8 16 0" stroke={ink} strokeWidth="3" fill="none" /></>;
-  const eyes = emotion === "happy"
-    ? <><path d="M70 96q8-11 16 0M114 96q8-11 16 0" stroke={ink} strokeWidth="4" fill="none" strokeLinecap="round" /></>
-    : emotion === "angry"
-      ? <><circle cx="79" cy="96" r="5" fill={ink} /><circle cx="121" cy="96" r="5" fill={ink} /><path d="M69 86l18 7M131 86l-18 7" stroke={ink} strokeWidth="3" /></>
-      : emotion === "surprised"
-        ? <><circle cx="79" cy="96" r="7" fill={ink} /><circle cx="121" cy="96" r="7" fill={ink} /></>
-        : <><ellipse cx="79" cy="96" rx="5" ry="6" fill={ink} /><ellipse cx="121" cy="96" rx="5" ry="6" fill={ink} /></>;
-  const mouth = emotion === "sad" ? <path d="M92 114q8-8 16 0" stroke={ink} strokeWidth="3" fill="none" /> : emotion === "surprised" ? <circle cx="100" cy="110" r="5" stroke={ink} strokeWidth="2.5" fill="none" /> : emotion === "angry" ? <path d="M92 110h16" stroke={ink} strokeWidth="3" /> : <path d="M92 108q8 8 16 0" stroke={ink} strokeWidth="3" fill="none" />;
-  return <>{eyes}{mouth}</>;
-}
-
-export default function AstronautCharacter({ state, emotion = "idle", scale = 1, direction = "right", size = 184, loadout }: AstronautCharacterProps) {
-  const error = state === "error";
-  const h = Math.round(size * (226 / 184));
-  const accent = error ? "#E25B5B" : emotion === "angry" ? "#E26745" : emotion === "sad" ? "#8A94A6" : "#24A8C7";
-  const glass = error ? "#F9B5B5" : emotion === "surprised" ? "#BCEFFF" : "#BCE8F2";
-  return (
-    <motion.div animate={state} variants={bodyVariants} style={{ width: size, height: h, display: "flex", alignItems: "flex-end", justifyContent: "center", scale, scaleX: (direction === "left" ? -1 : 1) * scale, transformOrigin: "bottom center" }}>
-      <svg viewBox="0 0 200 250" width={size} height={h} preserveAspectRatio="xMidYMax meet" style={{ overflow: "visible" }} aria-hidden="true">
-        <CharacterCosmetics characterType="astronaut" loadout={loadout} layer="behind" />
-        <ellipse cx="100" cy="242" rx="44" ry="6" fill="#17324D" opacity=".16" />
-        <rect x="57" y="126" width="86" height="80" rx="26" fill="#E8EEF2" stroke="#C6D5DC" strokeWidth="3" />
-        <rect x="48" y="137" width="18" height="54" rx="8" fill="#A5BCC6" />
-        <motion.g animate={state} variants={flameVariants} style={{ transformOrigin: "52px 198px", transformBox: "view-box" }}>
-          <path d="M44 188q8 28 16 0l-3 38-5 13-5-13z" fill="#FFB52E" /><path d="M49 193q3 20 6 0l-1 29-2 8-2-8z" fill="#FFF07A" />
-        </motion.g>
-        <motion.g animate={state} variants={legLeftVariants} style={{ transformOrigin: "84px 194px", transformBox: "view-box" }}><rect x="72" y="187" width="24" height="43" rx="9" fill="#EEF4F7" stroke="#C6D5DC" strokeWidth="2" /><rect x="65" y="222" width="34" height="17" rx="8" fill={accent} /></motion.g>
-        <motion.g animate={state} variants={legRightVariants} style={{ transformOrigin: "116px 194px", transformBox: "view-box" }}><rect x="104" y="187" width="24" height="43" rx="9" fill="#EEF4F7" stroke="#C6D5DC" strokeWidth="2" /><rect x="101" y="222" width="34" height="17" rx="8" fill={accent} /></motion.g>
-        <rect x="76" y="149" width="48" height="31" rx="8" fill="#FFFFFF" stroke="#C6D5DC" strokeWidth="2" /><circle cx="88" cy="160" r="4" fill="#57D6A1" /><circle cx="101" cy="160" r="4" fill="#FFCB57" /><rect x="84" y="170" width="32" height="4" rx="2" fill={accent} />
-        <motion.g animate={state} variants={armLeftVariants} style={{ transformOrigin: "65px 151px", transformBox: "view-box" }}><rect x="43" y="143" width="25" height="58" rx="11" fill="#EEF4F7" stroke="#C6D5DC" strokeWidth="2" /><circle cx="54" cy="201" r="11" fill={accent} /></motion.g>
-        <motion.g animate={state} variants={armRightVariants} style={{ transformOrigin: "135px 151px", transformBox: "view-box" }}><rect x="132" y="143" width="25" height="58" rx="11" fill="#EEF4F7" stroke="#C6D5DC" strokeWidth="2" /><circle cx="146" cy="201" r="11" fill={accent} /></motion.g>
-        <g>
-          <circle cx="100" cy="92" r="53" fill="#F8FBFC" stroke="#C6D5DC" strokeWidth="4" />
-          <path d="M57 89q2-38 43-42 41 4 43 42v22H57z" fill={glass} stroke={accent} strokeWidth="4" />
-          <path d="M70 64q22-18 51-7" stroke="#FFFFFF" strokeWidth="7" strokeLinecap="round" opacity=".65" />
-          <Face emotion={emotion} error={error} />
-          <circle cx="145" cy="112" r="8" fill={accent} /><path d="M145 108v8M141 112h8" stroke="#fff" strokeWidth="2" />
-        </g>
-        <path d="M82 135h36" stroke={accent} strokeWidth="6" strokeLinecap="round" />
-        <path d="M93 35l7-15 7 15" fill="none" stroke={accent} strokeWidth="3" strokeLinecap="round" /><circle cx="100" cy="18" r="5" fill="#FFCB57" />
-        <CharacterCosmetics characterType="astronaut" loadout={loadout} layer="front" />
-      </svg>
-    </motion.div>
-  );
+/** A round alien in a bubble pod, with orbital feelers and three little feet. */
+export default function AstronautCharacter(props: CompanionProps) {
+  const { state, emotion = "idle", loadout } = props;
+  const paint = useCompanionPaint();
+  const reduced = useReducedMotion();
+  const worried = state === "error" || emotion === "sad";
+  return <CompanionFrame {...props} label="astronaut">
+    <defs>
+      <radialGradient id={paint.id("alien")} cx=".35" cy=".3" r=".85"><stop stopColor="#EAFFAD" /><stop offset=".55" stopColor="#BAE883" /><stop offset="1" stopColor="#64B9A1" /></radialGradient>
+      <linearGradient id={paint.id("shell")} x2=".8" y2="1"><stop stopColor="#FFFEF0" /><stop offset=".55" stopColor="#F1E9D6" /><stop offset="1" stopColor="#C6CCD0" /></linearGradient>
+      <radialGradient id={paint.id("space")} cx=".4" cy=".3" r=".8"><stop stopColor="#46677D" /><stop offset="1" stopColor="#263D5F" /></radialGradient>
+      <linearGradient id={paint.id("orange")} x2="1" y2="1"><stop stopColor="#FFC77D" /><stop offset="1" stopColor="#E88E62" /></linearGradient>
+      <linearGradient id={paint.id("glass")} x2="1" y2="1"><stop stopColor="#C8F9EF" stopOpacity=".28" /><stop offset="1" stopColor="#96D5F1" stopOpacity=".03" /></linearGradient>
+    </defs>
+    <CharacterCosmetics characterType="astronaut" loadout={loadout} layer="behind" />
+    <rect x="28" y="136" width="29" height="61" rx="13" fill="#97ADC7" stroke="#627D9E" strokeWidth="2.5" />
+    <rect x="143" y="136" width="29" height="61" rx="13" fill="#97ADC7" stroke="#627D9E" strokeWidth="2.5" />
+    {[0, 1, 2].map((leg) => <motion.g key={leg} animate={state === "walking" && !reduced ? { y: leg === 1 ? [-5, 0, -5] : [0, -5, 0] } : { y: 0 }} transition={{ duration: .55, repeat: state === "walking" ? Infinity : 0 }}>
+      <ellipse cx={63 + leg * 37} cy={leg === 1 ? 231 : 227} rx="18" ry="10" fill={paint.fill("orange")} stroke="#B87659" strokeWidth="2.5" />
+      <path d={`M${56 + leg * 37} ${leg === 1 ? 228 : 224}h11`} stroke="#FFE4B0" strokeWidth="3" strokeLinecap="round" />
+    </motion.g>)}
+    <motion.g animate={state === "celebrating" && !reduced ? { rotate: [0, 22, 0] } : { rotate: 0 }} transition={{ duration: .75, repeat: state === "celebrating" ? 3 : 0 }} style={{ transformOrigin: "49px 173px" }}>
+      <path d="M47 164q-21-12-28 3q-7 18 14 27l21-7Z" fill={paint.fill("shell")} stroke="#8FABB8" strokeWidth="2.5" />
+      <ellipse cx="22" cy="177" rx="11" ry="13" fill={paint.fill("orange")} stroke="#B87659" strokeWidth="2" transform="rotate(-25 22 177)" />
+    </motion.g>
+    <path d="M153 164q21-12 28 3q7 18-14 27l-21-7Z" fill={paint.fill("shell")} stroke="#8FABB8" strokeWidth="2.5" />
+    <ellipse cx="178" cy="177" rx="11" ry="13" fill={paint.fill("orange")} stroke="#B87659" strokeWidth="2" transform="rotate(25 178 177)" />
+    <path d="M37 147q63-20 126 0l6 29q4 52-69 52q-73 0-69-52Z" fill={paint.fill("shell")} stroke="#8FABB8" strokeWidth="3" />
+    <path d="M40 195q60 23 120 0" fill="none" stroke="#D7D7CB" strokeWidth="4" />
+    <rect x="78" y="171" width="44" height="30" rx="11" fill="#46617F" stroke="#BBC6CD" strokeWidth="2" />
+    <circle cx="89" cy="183" r="4" fill="#B9EC96" /><path d="M99 180h13m-13 6h8" stroke="#BCE1D9" strokeWidth="2" strokeLinecap="round" />
+    <path d="M89 194h22" stroke="#E9B781" strokeWidth="2" strokeLinecap="round" />
+    <path d="m51 185 4 4m90-4 4 4" stroke="#C8986B" strokeWidth="3" strokeLinecap="round" />
+    <circle cx="100" cy="101" r="72" fill={paint.fill("shell")} stroke="#8FABB8" strokeWidth="3" />
+    <circle cx="100" cy="101" r="63" fill={paint.fill("space")} stroke="#B2D5D5" strokeWidth="2" />
+    <motion.g animate={!reduced ? { rotate: [0, -5, 0, 5, 0] } : { rotate: 0 }} transition={{ duration: 3.1, repeat: Infinity }} style={{ transformOrigin: "100px 88px" }}>
+      <path d="M76 85q-1-22-15-22m63 22q1-22 15-22" fill="none" stroke="#B8E891" strokeWidth="5" strokeLinecap="round" />
+      <ellipse cx="59" cy="62" rx="8" ry="6" fill="#D5F4A3" transform="rotate(25 59 62)" />
+      <ellipse cx="141" cy="62" rx="8" ry="6" fill="#D5F4A3" transform="rotate(-25 141 62)" />
+    </motion.g>
+    <path d="M52 114q-2-33 23-37q24-7 50 0q25 4 23 37q-1 40-48 42q-47-2-48-42Z" fill={paint.fill("alien")} stroke="#7CBD91" strokeWidth="1.5" />
+    <ellipse cx="64" cy="130" rx="9" ry="4" fill="#8ECDA4" /><ellipse cx="136" cy="130" rx="9" ry="4" fill="#8ECDA4" />
+    {[77, 123].map((x) => <g key={x}>
+      {worried ? <path d={`M${x - 7} 113q7-7 14 0`} stroke="#24445A" strokeWidth="4" fill="none" strokeLinecap="round" />
+        : emotion === "happy" ? <path d={`M${x - 7} 109q7 13 14 0`} stroke="#24445A" strokeWidth="4" fill="none" strokeLinecap="round" />
+        : <g><ellipse cx={x} cy="110" rx={emotion === "surprised" ? 12 : 10} ry={emotion === "surprised" ? 17 : 14} fill="#24445A" /><ellipse cx={x - 3} cy="105" rx="3" ry="4" fill="#ECFFF2" /></g>}
+    </g>)}
+    {emotion === "angry" && <path d="m68 93 16 7m32 0 16-7" stroke="#24445A" strokeWidth="3" strokeLinecap="round" />}
+    {worried ? <path d="M95 139q5-5 10 0" stroke="#426F68" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      : <ellipse cx="100" cy="136" rx={emotion === "surprised" ? 6 : 4} ry={emotion === "happy" ? 5 : 3} fill="#426F68" />}
+    <circle cx="95" cy="87" r="2.5" fill="#EEFFC4" /><circle cx="103" cy="85" r="3" fill="#EEFFC4" /><circle cx="112" cy="88" r="2" fill="#EEFFC4" />
+    <circle cx="100" cy="101" r="63" fill={paint.fill("glass")} />
+    <path d="M48 89q3-28 25-37" fill="none" stroke="#F0FFF8" strokeWidth="5" strokeLinecap="round" opacity=".75" />
+    <path d="m47 99 1 7m98 28-7 7" stroke="#F0FFF8" strokeWidth="3" strokeLinecap="round" opacity=".65" />
+    <rect x="25" y="93" width="13" height="26" rx="6" fill={paint.fill("orange")} stroke="#B87659" strokeWidth="2" />
+    <rect x="162" y="93" width="13" height="26" rx="6" fill={paint.fill("orange")} stroke="#B87659" strokeWidth="2" />
+    {!loadout?.head && <g>
+      <path d="m132 37 9-14" stroke="#92A7BD" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="145" cy="18" r="9" fill="#B4E7E5" stroke="#7FAAB8" strokeWidth="2" />
+      <ellipse cx="145" cy="18" rx="16" ry="4" fill="none" stroke="#EBC18C" strokeWidth="3" transform="rotate(-20 145 18)" />
+    </g>}
+    <CompanionStar x={56} y={175} size={6} fill="#EDC484" />
+    <CharacterCosmetics characterType="astronaut" loadout={loadout} layer="front" />
+  </CompanionFrame>;
 }

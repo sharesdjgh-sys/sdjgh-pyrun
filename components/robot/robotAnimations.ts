@@ -2,6 +2,10 @@ import type { Variants } from "framer-motion";
 
 export const bodyVariants: Variants = {
   idle: {
+    x: 0,
+    rotate: 0,
+    scale: 1,
+    scaleY: 1,
     y: [0, -4, 0],
     transition: { duration: 2, repeat: Infinity, ease: "easeInOut" },
   },

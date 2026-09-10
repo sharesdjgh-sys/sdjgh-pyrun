@@ -19,13 +19,13 @@ export default function CharacterCosmetics({ characterType, loadout = {}, layer 
   const anchor = characterType === "slime"
     ? { faceY: 127, headY: 59, bodyY: 178, backX: 143, backY: 170 }
     : characterType === "wizard"
-      ? { faceY: 104, headY: 25, bodyY: 176, backX: 143, backY: 166 }
+      ? { faceY: 107, headY: 52, bodyY: 180, backX: 143, backY: 166 }
       : characterType === "astronaut"
-        ? { faceY: 96, headY: 28, bodyY: 173, backX: 144, backY: 164 }
+        ? { faceY: 110, headY: 31, bodyY: 186, backX: 153, backY: 177 }
         : characterType === "dog"
     ? { faceY: 92, headY: 34, bodyY: 171, backX: 145, backY: 158 }
     : characterType === "game"
-      ? { faceY: 94, headY: 20, bodyY: 164, backX: 139, backY: 164 }
+      ? { faceY: 110, headY: 45, bodyY: 182, backX: 139, backY: 164 }
       : { faceY: 96, headY: 34, bodyY: 181, backX: 144, backY: 166 };
 
   if (layer === "behind") {
@@ -86,14 +86,14 @@ export default function CharacterCosmetics({ characterType, loadout = {}, layer 
       )}
       {face && face.family.key === "heart-glasses" ? (
         <g aria-label={face.family.nameKo} fill={face.family.accent} stroke={face.family.color} strokeWidth="4">
-          <path d={`M53 ${anchor.faceY - 8}C53 ${anchor.faceY - 22}75 ${anchor.faceY - 24}78 ${anchor.faceY - 9}C81 ${anchor.faceY - 24}103 ${anchor.faceY - 22}103 ${anchor.faceY - 8}C103 ${anchor.faceY + 4}78 ${anchor.faceY + 18}78 ${anchor.faceY + 18}S53 ${anchor.faceY + 4}53 ${anchor.faceY - 8}Z`} />
-          <path d={`M97 ${anchor.faceY - 8}C97 ${anchor.faceY - 22}119 ${anchor.faceY - 24}122 ${anchor.faceY - 9}C125 ${anchor.faceY - 24}147 ${anchor.faceY - 22}147 ${anchor.faceY - 8}C147 ${anchor.faceY + 4}122 ${anchor.faceY + 18}122 ${anchor.faceY + 18}S97 ${anchor.faceY + 4}97 ${anchor.faceY - 8}Z`} />
+          <path d={`M53 ${anchor.faceY - 8} C53 ${anchor.faceY - 22} 75 ${anchor.faceY - 24} 78 ${anchor.faceY - 9} C81 ${anchor.faceY - 24} 103 ${anchor.faceY - 22} 103 ${anchor.faceY - 8} C103 ${anchor.faceY + 4} 78 ${anchor.faceY + 18} 78 ${anchor.faceY + 18} S53 ${anchor.faceY + 4} 53 ${anchor.faceY - 8} Z`} />
+          <path d={`M97 ${anchor.faceY - 8} C97 ${anchor.faceY - 22} 119 ${anchor.faceY - 24} 122 ${anchor.faceY - 9} C125 ${anchor.faceY - 24} 147 ${anchor.faceY - 22} 147 ${anchor.faceY - 8} C147 ${anchor.faceY + 4} 122 ${anchor.faceY + 18} 122 ${anchor.faceY + 18} S97 ${anchor.faceY + 4} 97 ${anchor.faceY - 8} Z`} />
         </g>
       ) : face && (
         <g aria-label={face.family.nameKo} fill={face.family.accent} fillOpacity=".28" stroke={face.family.color} strokeWidth="4">
           <rect x="52" y={anchor.faceY - 16} width="42" height="29" rx={face.family.key === "sparkle-visor" ? 9 : 14} />
           <rect x="106" y={anchor.faceY - 16} width="42" height="29" rx={face.family.key === "sparkle-visor" ? 9 : 14} />
-          <path d={`M94 ${anchor.faceY - 2}Q100 ${anchor.faceY - 7}106 ${anchor.faceY - 2}`} fill="none" />
+          <path d={`M94 ${anchor.faceY - 2} Q100 ${anchor.faceY - 7} 106 ${anchor.faceY - 2}`} fill="none" />
           {face.family.key === "sparkle-visor" && <path d={`M61 ${anchor.faceY - 9}l22 15M115 ${anchor.faceY - 9}l22 15`} stroke="#FFFFFF" strokeWidth="3" opacity=".8" />}
         </g>
       )}

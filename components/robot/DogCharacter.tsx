@@ -16,7 +16,7 @@ interface DogCharacterProps {
 
 // 강아지 모션 variants
 const bodyVariants: Variants = {
-  idle: { y: [0, -3, 0], transition: { duration: 2, repeat: Infinity, ease: "easeInOut" } },
+  idle: { x: 0, rotate: 0, scale: 1, scaleY: 1, y: [0, -3, 0], transition: { duration: 2, repeat: Infinity, ease: "easeInOut" } },
   talking: { y: [0, -2, 0], transition: { duration: 0.6, repeat: Infinity, ease: "easeInOut" } },
   walking: {
     y: [0, -3, 0, -3, 0],
@@ -268,28 +268,28 @@ export default function DogCharacter({
   };
 
   return (
-    <motion.div
-      animate={state}
-      variants={bodyVariants}
+    <div
+      data-character="dog"
       style={{
         width: size,
         height: h,
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
-        scale: scale,
-        scaleX: directionScaleX * scale,
+        transform: `scaleX(${directionScaleX})`,
         transformOrigin: "bottom center",
       }}
     >
       <svg
         viewBox="0 0 200 250"
-        width={size}
-        height={h}
+        width={size * scale}
+        height={h * scale}
         preserveAspectRatio="xMidYMax meet"
-        style={{ overflow: "visible" }}
+        style={{ overflow: "visible", flexShrink: 0 }}
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* Keep commanded size separate from squash/stretch animations. */}
+        <motion.g animate={state} variants={bodyVariants} style={{ transformOrigin: "100px 250px" }}>
         <CharacterCosmetics characterType="dog" loadout={loadout} layer="behind" />
         {/* Shadow */}
         <ellipse cx="100" cy="235" rx="58" ry="8" fill="#58483B" opacity="0.14" />
@@ -395,7 +395,8 @@ export default function DogCharacter({
           {renderMouthAndTongue()}
         </motion.g>
         <CharacterCosmetics characterType="dog" loadout={loadout} layer="front" />
+        </motion.g>
       </svg>
-    </motion.div>
+    </div>
   );
 }

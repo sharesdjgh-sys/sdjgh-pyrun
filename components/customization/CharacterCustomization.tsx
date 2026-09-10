@@ -189,9 +189,21 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
                 <div style={{ height: 245, display: "grid", placeItems: "center", overflow: "hidden" }}>
                   <Preview type={wardrobeCharacter} loadout={loadouts[wardrobeCharacter]} size={178} />
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 7, marginTop: 10 }}>
+                <div className={styles.characterTiles} role="group" aria-label="옷장 캐릭터 선택">
                   {ACTIVE_CHARACTERS.map((character) => (
-                    <button key={character.type} onClick={() => setWardrobeCharacter(character.type)} style={{ border: wardrobeCharacter === character.type ? `2px solid ${character.color}` : "2px solid transparent", background: wardrobeCharacter === character.type ? character.tint : "#fff", borderRadius: 11, padding: "9px 4px", color: character.color, fontWeight: 900, cursor: "pointer" }}>{character.label}</button>
+                    <button
+                      key={character.type}
+                      type="button"
+                      className={styles.characterTile}
+                      aria-label={character.label}
+                      aria-pressed={wardrobeCharacter === character.type}
+                      onClick={() => setWardrobeCharacter(character.type)}
+                      style={{ background: wardrobeCharacter === character.type ? character.tint : "#fff", color: character.color }}
+                    >
+                      <span className={styles.tilePortrait} aria-hidden="true"><Preview type={character.type} loadout={loadouts[character.type]} size={42} /></span>
+                      <span className={styles.tileLabel}>{character.label}</span>
+                      {wardrobeCharacter === character.type && <span className={styles.tileSelected} aria-hidden="true"><Check size={10} strokeWidth={3} /></span>}
+                    </button>
                   ))}
                 </div>
                 {!!state?.pendingGrants.length && (

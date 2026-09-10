@@ -319,28 +319,28 @@ export default function RobotCharacter({
   };
 
   return (
-    <motion.div
-      animate={state}
-      variants={bodyVariants}
+    <div
+      data-character="robot"
       style={{
         width: size,
         height: h,
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
-        scale: scale,
-        scaleX: directionScaleX * scale, // scaleX에 좌우 뒤집기 + 스케일 결합
+        transform: `scaleX(${directionScaleX})`,
         transformOrigin: "bottom center",
       }}
     >
       <svg
         viewBox="0 0 200 250"
-        width={size}
-        height={h}
+        width={size * scale}
+        height={h * scale}
         preserveAspectRatio="xMidYMax meet"
-        style={{ overflow: "visible" }}
+        style={{ overflow: "visible", flexShrink: 0 }}
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* Size is rendered as SVG dimensions; movement cannot overwrite it. */}
+        <motion.g animate={state} variants={bodyVariants} style={{ transformOrigin: "100px 250px" }}>
         <CharacterCosmetics characterType="robot" loadout={loadout} layer="behind" />
         {/* Shadow */}
         <ellipse cx="100" cy="245" rx="54" ry="7" fill={colors.accentDark} opacity="0.16" />
@@ -545,7 +545,8 @@ export default function RobotCharacter({
           </g>
         </motion.g>
         <CharacterCosmetics characterType="robot" loadout={loadout} layer="front" />
+        </motion.g>
       </svg>
-    </motion.div>
+    </div>
   );
 }
