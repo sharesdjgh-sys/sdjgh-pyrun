@@ -1,0 +1,84 @@
+- main [ref=f22e3]:
+  - paragraph [ref=f22e4]: PYRUN · ROBOT REMASTER
+  - heading "우리 로봇, 조금 더 또렷하게" [level=1] [ref=f22e5]
+  - paragraph [ref=f22e6]: 같은 얼굴과 비율, 더 섬세한 마감. 왼쪽은 수정 전, 오른쪽은 실제 개선된 캐릭터입니다.
+  - region "로봇 디자인 전후 비교" [ref=f22e7]:
+    - article [ref=f22e8]:
+      - generic [ref=f22e9]:
+        - text: BEFORE
+        - heading "익숙한 우리 로봇" [level=2] [ref=f22e10]
+      - img [ref=f22e13]:
+        - generic [ref=f22e14]: AI
+      - generic [ref=f22e74]:
+        - generic [ref=f22e75]:
+          - img [ref=f22e78]:
+            - generic [ref=f22e79]: AI
+          - generic [ref=f22e139]: 학습 화면 · 70px
+        - generic [ref=f22e140]:
+          - img [ref=f22e143]:
+            - generic [ref=f22e144]: AI
+          - generic [ref=f22e200]: 웃는 표정 · 138px
+    - article [ref=f22e201]:
+      - generic [ref=f22e202]:
+        - text: AFTER
+        - heading "인상은 그대로, 마감은 선명하게" [level=2] [ref=f22e203]
+      - img [ref=f22e206]:
+        - generic [ref=f22e207]: AI
+      - generic [ref=f22e277]:
+        - generic [ref=f22e278]:
+          - img [ref=f22e280]:
+            - generic [ref=f22e281]: AI
+          - generic [ref=f22e351]: 학습 화면 · 70px
+        - generic [ref=f22e352]:
+          - img [ref=f22e354]:
+            - generic [ref=f22e355]: AI
+          - generic [ref=f22e422]: 웃는 표정 · 138px
+  - region "동작 및 아이템 검수" [ref=f22e423]:
+    - heading "표정 · 아이템 · 크기 확인" [level=2] [ref=f22e424]
+    - generic [ref=f22e425]:
+      - generic [ref=f22e426]:
+        - text: 표정
+        - combobox "표정" [ref=f22e427]:
+          - option "idle" [selected]
+          - option "happy"
+          - option "sad"
+          - option "angry"
+          - option "surprised"
+      - generic [ref=f22e428]:
+        - text: 동작
+        - combobox "동작" [ref=f22e429]:
+          - option "idle" [selected]
+          - option "talking"
+          - option "walking"
+          - option "jumping"
+          - option "celebrating"
+          - option "error"
+          - option "headShake"
+          - option "spinning"
+          - option "shaking"
+      - generic [ref=f22e430]:
+        - text: 배율
+        - combobox "배율" [ref=f22e431]:
+          - option "0.5"
+          - option "1" [selected]
+          - option "2.5"
+          - option "3"
+      - generic [ref=f22e432]:
+        - text: 아이템
+        - combobox "아이템" [ref=f22e433]:
+          - option "기본 모습" [selected]
+          - option "반짝 안테나"
+          - option "동글 안경"
+          - option "파스텔 캡"
+          - option "별빛 배지"
+          - option "모험 가방"
+          - option "하트 안경"
+          - option "탐험가 모자"
+          - option "코드 문장"
+          - option "구름 날개"
+          - option "반짝 바이저"
+          - option "왕관 헤드셋"
+          - option "데이터 코어"
+          - option "별구름 제트팩"
+    - img [ref=f22e436]:
+      - generic [ref=f22e437]: AI

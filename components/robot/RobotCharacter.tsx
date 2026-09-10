@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useId } from "react";
 import type { RobotState, RobotEmotion } from "@/types";
 import {
   bodyVariants,
@@ -74,9 +75,9 @@ const getColorPalette = (emotion: RobotEmotion, isError: boolean) => {
     default:
       return {
         bodyBg: "#FCF9FF",
-        bodyStroke: "#ECE0FA",
+        bodyStroke: "#BDA8D4",
         accent: "#C6A2EC",
-        accentDark: "#B98FE6",
+        accentDark: "#A07BC7",
         earBg: "#D0B6F2",
         eyeBg: "#2B2440",
         cheekBg: "#F4A6C2",
@@ -95,6 +96,11 @@ export default function RobotCharacter({
 }: RobotCharacterProps) {
   const isError = state === "error";
   const colors = getColorPalette(emotion, isError);
+  const shellShade = isError || emotion === "angry" ? "#F7DDE2"
+    : emotion === "sad" ? "#E4E6EB" : emotion === "surprised" ? "#F7ECCF" : "#E4D7EE";
+  // Every wardrobe thumbnail and stage clone owns its SVG paint servers.
+  const paintId = useId().replace(/:/g, "");
+  const paint = (name: string) => `url(#${paintId}-${name})`;
 
   const h = Math.round(size * (226 / 184));
 
@@ -164,8 +170,9 @@ export default function RobotCharacter({
       default:
         return (
           <>
-            <ellipse cx="78" cy="96" rx="15" ry="18" fill={colors.eyeBg} />
-            <ellipse cx="122" cy="96" rx="15" ry="18" fill={colors.eyeBg} />
+            <ellipse cx="78" cy="96" rx="15" ry="18" fill={paint("eyes")} />
+            <ellipse cx="122" cy="96" rx="15" ry="18" fill={paint("eyes")} />
+            <path d="M70 106q8 7 16 0m28 0q8 7 16 0" stroke={colors.accent} strokeWidth="2" opacity=".5" fill="none" strokeLinecap="round" />
             <circle cx="73" cy="88" r="5" fill="#FFFFFF" />
             <circle cx="117" cy="88" r="5" fill="#FFFFFF" />
             <circle cx="83" cy="103" r="2.4" fill="#FFFFFF" opacity="0.55" />
@@ -212,6 +219,7 @@ export default function RobotCharacter({
       case "surprised":
         return <circle cx="100" cy="115" r="7.5" stroke="#3A2E4A" strokeWidth="3" fill="none" />;
       case "happy":
+        return <g><path d="M90 113q10 5 20 0q-1 13-10 13t-10-13" fill="#5C3F71" /><path d="M94 122q6-5 12 0q-6 5-12 0" fill="#EEAAC8" /></g>;
       case "idle":
       default:
         return (
@@ -339,6 +347,23 @@ export default function RobotCharacter({
         style={{ overflow: "visible", flexShrink: 0 }}
         xmlns="http://www.w3.org/2000/svg"
       >
+        <defs>
+          <linearGradient id={`${paintId}-shell`} x1=".15" y1="0" x2=".75" y2="1">
+            <stop stopColor="#FFFFFF" /><stop offset=".52" stopColor={colors.bodyBg} /><stop offset="1" stopColor={shellShade} />
+          </linearGradient>
+          <linearGradient id={`${paintId}-lavender`} x1=".15" y1="0" x2=".85" y2="1">
+            <stop stopColor={colors.earBg} /><stop offset=".4" stopColor={colors.accent} /><stop offset="1" stopColor={colors.accentDark} />
+          </linearGradient>
+          <linearGradient id={`${paintId}-face`} x2=".3" y2="1">
+            <stop stopColor="#FFFFFF" /><stop offset=".7" stopColor="#FFFFFF" /><stop offset="1" stopColor={colors.bodyBg} />
+          </linearGradient>
+          <linearGradient id={`${paintId}-eyes`} x2=".2" y2="1">
+            <stop stopColor={colors.eyeBg} /><stop offset=".6" stopColor={colors.eyeBg} /><stop offset="1" stopColor={colors.accentDark} />
+          </linearGradient>
+          <radialGradient id={`${paintId}-light`} cx=".35" cy=".25" r=".8">
+            <stop stopColor="#F9F1FF" /><stop offset=".35" stopColor={colors.accent} /><stop offset="1" stopColor={colors.glowColor} />
+          </radialGradient>
+        </defs>
         {/* Size is rendered as SVG dimensions; movement cannot overwrite it. */}
         <motion.g animate={state} variants={bodyVariants} style={{ transformOrigin: "100px 250px" }}>
         <CharacterCosmetics characterType="robot" loadout={loadout} layer="behind" />
@@ -346,53 +371,57 @@ export default function RobotCharacter({
         <ellipse cx="100" cy="245" rx="54" ry="7" fill={colors.accentDark} opacity="0.16" />
 
         {/* Left Leg */}
-        <motion.g animate={state} variants={leftLegVariants} style={{ originX: "89px", originY: "196px", transformBox: "view-box" }}>
-          <rect x="78" y="196" width="22" height="34" rx="11" fill={colors.bodyBg} />
+        <motion.g data-part="left-leg" animate={state} variants={leftLegVariants} style={{ originX: "89px", originY: "196px", transformBox: "view-box" }}>
+          <rect x="78" y="196" width="22" height="34" rx="11" fill={paint("shell")} stroke={colors.bodyStroke} strokeWidth="1.3" />
           <rect
             x="62"
             y="222"
             width="36"
             height="22"
             rx="11"
-            fill="#FFFFFF"
+            fill={paint("shell")}
             stroke={colors.bodyStroke}
-            strokeWidth="1.5"
+            strokeWidth="2"
           />
           <rect x="62" y="235" width="36" height="9" rx="4.5" fill={colors.accent} />
+          <path d="M70 228h13" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
         </motion.g>
 
         {/* Right Leg */}
-        <motion.g animate={state} variants={rightLegVariants} style={{ originX: "111px", originY: "196px", transformBox: "view-box" }}>
-          <rect x="100" y="196" width="22" height="34" rx="11" fill={colors.bodyBg} />
+        <motion.g data-part="right-leg" animate={state} variants={rightLegVariants} style={{ originX: "111px", originY: "196px", transformBox: "view-box" }}>
+          <rect x="100" y="196" width="22" height="34" rx="11" fill={paint("shell")} stroke={colors.bodyStroke} strokeWidth="1.3" />
           <rect
             x="102"
             y="222"
             width="36"
             height="22"
             rx="11"
-            fill="#FFFFFF"
+            fill={paint("shell")}
             stroke={colors.bodyStroke}
-            strokeWidth="1.5"
+            strokeWidth="2"
           />
           <rect x="102" y="235" width="36" height="9" rx="4.5" fill={colors.accent} />
+          <path d="M110 228h13" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
         </motion.g>
 
         {/* Left Arm */}
         <motion.g animate={state} variants={leftArmVariants} style={{ originX: "56px", originY: "162px", transformBox: "view-box" }}>
-          <rect x="42" y="160" width="20" height="32" rx="10" fill={colors.bodyBg} />
-          <ellipse cx="55" cy="161" rx="15" ry="13" fill={colors.accent} />
-          <circle cx="49" cy="196" r="13" fill={colors.accent} />
+          <rect x="42" y="160" width="20" height="32" rx="10" fill={paint("shell")} stroke={colors.bodyStroke} strokeWidth="1.3" />
+          <ellipse cx="55" cy="161" rx="15" ry="13" fill={paint("lavender")} stroke={colors.accentDark} strokeWidth="1.5" />
+          <circle cx="49" cy="196" r="13" fill={paint("lavender")} stroke={colors.accentDark} strokeWidth="1.5" />
           <circle cx="39" cy="190" r="6" fill={colors.accent} />
           <ellipse cx="46" cy="192" rx="4" ry="3" fill="#FFFFFF" opacity="0.45" />
+          <path d="m49 200 1 4m5-5 1 3" stroke={colors.accentDark} strokeWidth="1.5" strokeLinecap="round" />
         </motion.g>
 
         {/* Right Arm */}
         <motion.g animate={state} variants={rightArmVariants} style={{ originX: "144px", originY: "162px", transformBox: "view-box" }}>
-          <rect x="138" y="160" width="20" height="32" rx="10" fill={colors.bodyBg} />
-          <ellipse cx="145" cy="161" rx="15" ry="13" fill={colors.accent} />
-          <circle cx="151" cy="196" r="13" fill={colors.accent} />
+          <rect x="138" y="160" width="20" height="32" rx="10" fill={paint("shell")} stroke={colors.bodyStroke} strokeWidth="1.3" />
+          <ellipse cx="145" cy="161" rx="15" ry="13" fill={paint("lavender")} stroke={colors.accentDark} strokeWidth="1.5" />
+          <circle cx="151" cy="196" r="13" fill={paint("lavender")} stroke={colors.accentDark} strokeWidth="1.5" />
           <circle cx="161" cy="190" r="6" fill={colors.accent} />
           <ellipse cx="148" cy="192" rx="4" ry="3" fill="#FFFFFF" opacity="0.45" />
+          <path d="m151 200 1 4m5-5 1 3" stroke={colors.accentDark} strokeWidth="1.5" strokeLinecap="round" />
         </motion.g>
 
         {/* Body */}
@@ -403,11 +432,12 @@ export default function RobotCharacter({
             width="92"
             height="74"
             rx="36"
-            fill={colors.bodyBg}
+            fill={paint("shell")}
             stroke={colors.bodyStroke}
-            strokeWidth="1.5"
+            strokeWidth="2"
           />
           <ellipse cx="80" cy="166" rx="22" ry="11" fill="#FFFFFF" opacity="0.7" />
+          <path d="M65 162q7-7 18-7" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
           <text
             x="100"
             y="186"
@@ -419,7 +449,8 @@ export default function RobotCharacter({
           >
             AI
           </text>
-          <rect x="58" y="196" width="84" height="15" rx="7.5" fill={colors.accent} />
+          <rect x="58" y="196" width="84" height="15" rx="7.5" fill={paint("lavender")} />
+          <path d="M67 198h65" stroke="#EEE1FB" strokeWidth="1.5" strokeLinecap="round" opacity=".65" />
           {[70, 82, 94, 106, 118, 130].map((cx) => (
             <circle key={cx} cx={cx} cy="203.5" r="2.1" fill={colors.bodyBg} />
           ))}
@@ -428,10 +459,11 @@ export default function RobotCharacter({
         {/* Head + Headphones + Antenna + Bow (grouped so they all move together) */}
         <motion.g animate={state} variants={headVariants} style={{ originX: "100px", originY: "95px", transformBox: "view-box" }}>
           {/* Headphones */}
-          <circle cx="35" cy="96" r="20" fill={colors.earBg} />
-          <ellipse cx="35" cy="96" rx="8.5" ry="13" fill="#EFE4FB" />
-          <circle cx="165" cy="96" r="20" fill={colors.earBg} />
-          <ellipse cx="165" cy="96" rx="8.5" ry="13" fill="#EFE4FB" />
+          <circle cx="35" cy="96" r="20" fill={paint("lavender")} stroke={colors.accentDark} strokeWidth="2" />
+          <ellipse cx="35" cy="96" rx="8.5" ry="13" fill={paint("shell")} stroke={colors.accentDark} strokeWidth="1.5" />
+          <circle cx="165" cy="96" r="20" fill={paint("lavender")} stroke={colors.accentDark} strokeWidth="2" />
+          <ellipse cx="165" cy="96" rx="8.5" ry="13" fill={paint("shell")} stroke={colors.accentDark} strokeWidth="1.5" />
+          <path d="M22 85q3-5 8-6m142 0q5 1 7 6" stroke="#F5ECFF" strokeWidth="2.5" strokeLinecap="round" opacity=".8" />
 
           {/* Head */}
           <rect
@@ -440,13 +472,15 @@ export default function RobotCharacter({
             width="144"
             height="110"
             rx="50"
-            fill={colors.bodyBg}
+            fill={paint("shell")}
             stroke={colors.bodyStroke}
-            strokeWidth="2"
+            strokeWidth="2.5"
           />
           <ellipse cx="70" cy="66" rx="34" ry="16" fill="#FFFFFF" opacity="0.65" />
-          <ellipse cx="100" cy="140" rx="60" ry="15" fill="#EEE2FB" opacity="0.55" />
-          <rect x="44" y="60" width="112" height="70" rx="32" fill="#FFFFFF" stroke="#E7DAF7" strokeWidth="3" />
+          <path d="M42 70q7-17 25-20" fill="none" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" opacity=".9" />
+          <path d="M51 136q49 19 98 0" stroke={colors.bodyStroke} strokeWidth="2" fill="none" opacity=".45" strokeLinecap="round" />
+          <rect x="43" y="60" width="114" height="73" rx="33" fill={colors.bodyStroke} opacity=".3" />
+          <rect x="44" y="59" width="112" height="70" rx="32" fill={paint("face")} stroke={colors.bodyStroke} strokeWidth="2" />
 
           {/* Eyebrows */}
           {renderEyebrows()}
@@ -532,14 +566,18 @@ export default function RobotCharacter({
             cx="100"
             cy="9"
             r="9"
-            fill={colors.glowColor}
+            fill={paint("light")}
+            stroke={colors.accentDark}
+            strokeWidth="1.5"
             style={{ transformOrigin: "100px 9px", animation: "antGlow 1.9s ease-in-out infinite" }}
           />
+          <circle cx="97" cy="6" r="2.5" fill="#FFFFFF" opacity=".85" />
 
           {/* Hair Bow */}
           <g style={{ transformOrigin: "64px 40px", animation: "bowSway 3.6s ease-in-out infinite" }}>
-            <ellipse cx="50" cy="40" rx="12" ry="9.5" fill={colors.accent} />
-            <ellipse cx="79" cy="39" rx="12" ry="9.5" fill={colors.accent} opacity="0.9" />
+            <ellipse cx="50" cy="40" rx="12" ry="9.5" fill={paint("lavender")} stroke={colors.accentDark} strokeWidth="1.3" />
+            <ellipse cx="79" cy="39" rx="12" ry="9.5" fill={paint("lavender")} stroke={colors.accentDark} strokeWidth="1.3" />
+            <path d="m55 39 7 2m8 0 5-3" stroke={colors.accentDark} strokeWidth="1.5" strokeLinecap="round" opacity=".7" />
             <ellipse cx="48" cy="38" rx="5" ry="3.5" fill="#FFFFFF" opacity="0.35" />
             <circle cx="64" cy="40" r="7.5" fill={colors.accentDark} />
           </g>

@@ -110,32 +110,39 @@ export const rightArmVariants: Variants = {
   shaking: {},
 };
 
+// An empty variant preserves the previous rotation (including a looping walk).
+// Every non-leg action must explicitly return both feet to their neutral pose.
+const restingLeg = {
+  rotate: 0,
+  transition: { duration: 0.18, ease: "easeOut" as const },
+};
+
 export const leftLegVariants: Variants = {
-  idle: {},
-  talking: {},
+  idle: restingLeg,
+  talking: restingLeg,
   walking: {
     rotate: [-20, 20, -20],
     transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" },
   },
   jumping: { rotate: [-10], transition: { duration: 0.3 } },
-  headShake: {},
-  celebrating: {},
-  error: {},
-  spinning: {},
-  shaking: {},
+  headShake: restingLeg,
+  celebrating: restingLeg,
+  error: restingLeg,
+  spinning: restingLeg,
+  shaking: restingLeg,
 };
 
 export const rightLegVariants: Variants = {
-  idle: {},
-  talking: {},
+  idle: restingLeg,
+  talking: restingLeg,
   walking: {
     rotate: [20, -20, 20],
     transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" },
   },
   jumping: { rotate: [10], transition: { duration: 0.3 } },
-  headShake: {},
-  celebrating: {},
-  error: {},
-  spinning: {},
-  shaking: {},
+  headShake: restingLeg,
+  celebrating: restingLeg,
+  error: restingLeg,
+  spinning: restingLeg,
+  shaking: restingLeg,
 };

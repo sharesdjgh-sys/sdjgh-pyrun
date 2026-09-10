@@ -37,3 +37,14 @@ test("robot.size queues shrink, enlarge and reset values without changing their 
     for (const invalid of [.49, 3.01, NaN, Infinity, -Infinity]) assert.throws(() => robotApi.size(invalid));
   } finally { animationQueue.clear(); }
 });
+
+test("robot paint IDs remain unique across wardrobe previews and stage clones", () => {
+  const markup = renderToStaticMarkup(createElement(React.Fragment, null,
+    ...(["idle", "happy", "sad", "angry", "surprised"] as const).map((emotion, key) => createElement(RobotCharacter, { key, state: "idle", emotion, size: 70 })),
+  ));
+  const ids = [...markup.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
+  const refs = [...markup.matchAll(/url\(#([^)]+)\)/g)].map(match => match[1]);
+  assert.ok(ids.length >= 25);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(refs.every(id => ids.includes(id)), "all gradient references resolve to a local paint server");
+});
