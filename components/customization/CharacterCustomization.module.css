@@ -18,7 +18,15 @@
 .wardrobeItems { min-width: 0; padding: 18px; }
 .itemSections { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: 20px 16px; }
 .itemSection { min-width: 0; }
-.itemCard { min-height: 78px; padding: 8px; border-radius: 12px; text-align: left; position: relative; }
+.itemCard { display: grid; grid-template-columns: 40px minmax(0,1fr); column-gap: 7px; min-height: 78px; padding: 8px; border-radius: 12px; text-align: left; position: relative; }
+.itemArtwork { grid-row: 1 / span 2; align-self: center; display: grid; place-items: center; width: 40px; height: 40px; pointer-events: none; }
+.itemCard[data-owned="false"] .itemArtwork { opacity: .45; filter: saturate(.35); }
+.itemCard > strong { align-self: end; }
+.itemStatus { display: flex; align-items: center; gap: 3px; align-self: start; font-size: 10px; }
+.itemStatus > svg { flex-shrink: 0; }
+.itemCard:focus-visible { outline: 2px solid #7856bc; outline-offset: 2px; }
+.rewardItemLabel { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.rewardItemLabel > svg { width: 24px; height: 24px; }
 .slotPicker { display: none; }
 
 .rewardGrid {
@@ -149,10 +157,7 @@
   .itemSections { grid-template-columns: 1fr; gap: 0; }
   .itemSection[data-active="false"] { display: none; }
   .itemSection > div:first-child { display: none; }
-  .itemCard { display: grid; grid-template-columns: 24px minmax(0,1fr); column-gap: 7px; min-height: 58px; }
-  .itemCard > span { grid-row: 1 / span 2; align-self: center; margin-bottom: 0 !important; }
-  .itemCard > strong { align-self: end; }
-  .itemCard > small { align-self: start; }
+  .itemCard { min-height: 58px; }
 
   .rewardGrid {
     grid-template-columns: 1fr;

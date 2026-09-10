@@ -12,6 +12,7 @@ import SlimeCharacter from "@/components/robot/SlimeCharacter";
 import { ACTIVE_CHARACTERS, AI_REWARD_CONCEPT_LIMIT, COSMETIC_FAMILIES, cosmeticItemKey, parseCosmeticItemKey } from "@/lib/cosmetics";
 import type { ActiveCharacterType, CharacterLoadout, CosmeticSlot } from "@/types";
 import styles from "./CharacterCustomization.module.css";
+import CosmeticItemPreview from "./CosmeticItemPreview";
 
 type PendingGrant = {
   id: number;
@@ -107,7 +108,7 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
 
   const equip = async (itemKey: string) => {
     const parsed = parseCosmeticItemKey(itemKey);
-    if (!parsed || busy) return;
+    if (!parsed || busy || !inventory.has(itemKey)) return;
     const slot = parsed.family.slot;
     const current = loadouts[wardrobeCharacter]?.[slot];
     setBusy(true);
@@ -239,10 +240,10 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
                         const key = cosmeticItemKey(family.key, wardrobeCharacter);
                         const owned = inventory.has(key);
                         const equipped = loadouts[wardrobeCharacter]?.[slot] === key;
-                        return <button key={key} className={styles.itemCard} disabled={!owned || busy} onClick={() => void equip(key)} style={{ border: equipped ? `2px solid ${family.color}` : "1.5px solid #ECE7F4", background: equipped ? `${family.accent}66` : owned ? "#fff" : "#F7F5FA", color: owned ? "#4C435F" : "#B1A9C2", cursor: owned ? "pointer" : "not-allowed" }}>
-                          <span style={{ width: 24, height: 24, borderRadius: 8, display: "grid", placeItems: "center", background: owned ? family.color : "#DDD8E6", color: "white", marginBottom: 6 }}>{owned ? (equipped ? <Check size={15} /> : <Sparkles size={13} />) : <Lock size={12} />}</span>
+                        return <button key={key} type="button" className={styles.itemCard} data-owned={owned} aria-pressed={equipped} disabled={!owned || busy} onClick={() => void equip(key)} style={{ border: equipped ? `2px solid ${family.color}` : "1.5px solid #ECE7F4", background: equipped ? `${family.accent}66` : owned ? "#fff" : "#F7F5FA", color: owned ? "#4C435F" : "#8F849F", cursor: owned ? "pointer" : "not-allowed" }}>
+                          <span className={styles.itemArtwork}><CosmeticItemPreview family={family} /></span>
                           <strong style={{ display: "block", fontSize: 11.5 }}>{family.nameKo}</strong>
-                          <small style={{ fontSize: 10 }}>{owned ? (equipped ? "장착 중" : "장착하기") : "아직 잠김"}</small>
+                          <small className={styles.itemStatus}>{!owned ? <Lock size={10} aria-hidden="true" /> : equipped ? <Check size={11} aria-hidden="true" /> : null}{owned ? (equipped ? "장착 중" : "장착하기") : "아직 잠김"}</small>
                         </button>;
                       })}
                     </div>
@@ -284,11 +285,11 @@ export default function CharacterCustomization({ value, onChange, onLoadoutsChan
                   const available = activeGrant.sourceType === "group"
                     ? !!groupItemKey && !inventory.has(groupItemKey)
                     : activeGrant.availability[character.type] > 0;
-                  const previewLoadout = family ? { ...loadouts[character.type], [family.slot]: cosmeticItemKey(family.key, character.type) } : loadouts[character.type];
+                  const previewLoadout = loadouts[character.type];
                   return <button className={styles.rewardCard} key={character.type} disabled={!available || busy} onClick={() => void claim(character.type)} style={{ border: `2px solid ${available ? character.color : "#DDD8E6"}`, borderRadius: 20, background: available ? `linear-gradient(180deg,#fff,${character.tint})` : "#F6F4F8", padding: "13px 8px 16px", cursor: available ? "pointer" : "not-allowed", opacity: available ? 1 : .55, color: character.color }}>
                     <div className={styles.rewardPreview} style={{ height: 185, display: "grid", placeItems: "center", overflow: "hidden" }}><Preview type={character.type} loadout={previewLoadout} size={138} /></div>
                     <span><strong style={{ display: "block", fontSize: 15 }}>{character.label}</strong>
-                    <small style={{ color: "#817793", fontWeight: 700 }}>{activeGrant.sourceType === "ai" ? `${activeGrant.availability[character.type]}개 중 랜덤` : family?.nameKo}</small></span>
+                    <small className={styles.rewardItemLabel} style={{ color: "#817793", fontWeight: 700 }}>{activeGrant.sourceType === "group" && family && <CosmeticItemPreview family={family} />}{activeGrant.sourceType === "ai" ? `${activeGrant.availability[character.type]}개 중 랜덤` : family?.nameKo}</small></span>
                   </button>;
                 })}
               </div>
