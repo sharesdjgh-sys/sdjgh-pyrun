@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { curriculumLevelOrders, groupCurriculumUnits, type LearningUnitMeta } from "@/lib/curriculum-model";
+import { getBadgeImagePath } from "@/lib/badge-images";
 import {
   effectiveConceptAccessIdsForOrders,
   isConceptUnlockedInOrders,
 } from "@/lib/progress";
-import { Check, Clock3, LoaderCircle, Lock, LockOpen, PlayCircle, RotateCcw, Search, Users, X } from "lucide-react";
+import { Award, Check, Clock3, LoaderCircle, LockOpen, PlayCircle, RotateCcw, Search, Users, X } from "lucide-react";
 
 interface StudentStatus {
   id: number;
@@ -71,6 +73,9 @@ export default function StudentProgressManager() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [unlockingConceptId, setUnlockingConceptId] = useState<number | null>(null);
+  const [grantingBadgeConceptId, setGrantingBadgeConceptId] = useState<number | null>(null);
+  const [badgeGrantCandidateId, setBadgeGrantCandidateId] = useState<number | null>(null);
+  const [badgeGrantError, setBadgeGrantError] = useState("");
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [resettingPassword, setResettingPassword] = useState(false);
 
@@ -115,7 +120,21 @@ export default function StudentProgressManager() {
 
   useEffect(() => {
     setTemporaryPassword("");
+    setBadgeGrantCandidateId(null);
+    setBadgeGrantError("");
   }, [selectedStudentId]);
+
+  useEffect(() => {
+    if (badgeGrantCandidateId === null) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && grantingBadgeConceptId === null) {
+        setBadgeGrantCandidateId(null);
+        setBadgeGrantError("");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [badgeGrantCandidateId, grantingBadgeConceptId]);
 
   const studentClassKeys = students
     .filter((student) => student.grade !== null && student.classNumber !== null)
@@ -247,6 +266,8 @@ export default function StudentProgressManager() {
   }
   const selectedCurriculum = curriculumForStudent(selectedStudent);
   const curriculumUnits = selectedCurriculum?.units ?? [];
+  const badgeGrantCandidate = curriculumUnits.find((item) => item.id === badgeGrantCandidateId) ?? null;
+  const badgeGrantCandidateImage = getBadgeImagePath(badgeGrantCandidate?.sourceConceptId);
   const curriculumUnitIds = new Set(curriculumUnits.map((unit) => unit.id));
   const conceptOrders = curriculumLevelOrders(curriculumUnits);
   const visibleGroups = groupCurriculumUnits(curriculumUnits, level);
@@ -284,6 +305,41 @@ export default function StudentProgressManager() {
       setMessage(unlockError instanceof Error ? unlockError.message : "잠금 해제에 실패했습니다.");
     } finally {
       setUnlockingConceptId(null);
+    }
+  }
+
+  async function grantBadge(conceptId: number) {
+    if (!selectedStudent || grantingBadgeConceptId !== null) return;
+    const concept = curriculumUnits.find((item) => item.id === conceptId);
+    if (!concept) return;
+
+    setGrantingBadgeConceptId(conceptId);
+    setBadgeGrantError("");
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "grantBadge", studentId: selectedStudent.id, conceptId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "뱃지를 부여하지 못했습니다.");
+
+      if (data.granted) {
+        setStudents((current) => current.map((student) => (
+          student.id === selectedStudent.id
+            ? { ...student, clearedConceptIds: [...new Set([...student.clearedConceptIds, conceptId])] }
+            : student
+        )));
+        setMessage(`${selectedStudent.displayName || selectedStudent.username} 학생에게 '${concept.badgeNameKo}' 뱃지를 부여했습니다. 다음 로그인 시 축하 화면이 표시됩니다.`);
+      } else {
+        setMessage(`${selectedStudent.displayName || selectedStudent.username} 학생이 이미 '${concept.badgeNameKo}' 뱃지를 획득했습니다.`);
+      }
+      setBadgeGrantCandidateId(null);
+    } catch (grantError) {
+      setBadgeGrantError(grantError instanceof Error ? grantError.message : "뱃지를 부여하지 못했습니다.");
+    } finally {
+      setGrantingBadgeConceptId(null);
     }
   }
 
@@ -667,11 +723,20 @@ export default function StudentProgressManager() {
                                 {cleared ? "학생 완료 · 뱃지 획득" : directlyUnlocked ? "선생님이 잠금 해제" : accessible ? "현재 학습 가능" : "잠김"}
                               </div>
                             </div>
-                            {canUnlock ? (
-                              <button onClick={() => void unlockConcept(conceptId)} disabled={unlockingConceptId !== null} style={{ flex: "none", display: "flex", alignItems: "center", gap: 4, padding: "6px 8px", border: "1px solid #CFC2F5", borderRadius: 8, background: "#F3EFFE", color: "#6C4BEF", cursor: unlockingConceptId !== null ? "wait" : "pointer", fontSize: 10.5, fontWeight: 800 }}>
-                                <LockOpen size={11} /> {unlockingConceptId === conceptId ? "처리 중" : "잠금 해제"}
-                              </button>
-                            ) : cleared ? <Check size={16} color="#18A67A" /> : accessible ? <LockOpen size={15} color="#9A8AC7" /> : <Lock size={15} color="#B2AAC7" />}
+                            {cleared ? <Check size={16} color="#18A67A" /> : (
+                              <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 5 }}>
+                                {canUnlock && (
+                                  <button onClick={() => void unlockConcept(conceptId)} disabled={unlockingConceptId !== null || grantingBadgeConceptId !== null} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 8px", border: "1px solid #CFC2F5", borderRadius: 8, background: "#F3EFFE", color: "#6C4BEF", cursor: unlockingConceptId !== null || grantingBadgeConceptId !== null ? "wait" : "pointer", fontSize: 10.5, fontWeight: 800 }}>
+                                    <LockOpen size={11} /> {unlockingConceptId === conceptId ? "처리 중" : "잠금 해제"}
+                                  </button>
+                                )}
+                                {accessible && (
+                                  <button onClick={() => { setBadgeGrantError(""); setBadgeGrantCandidateId(conceptId); }} disabled={grantingBadgeConceptId !== null || unlockingConceptId !== null} title="단원을 완료 처리하고 학생의 다음 로그인 때 획득 축하 화면을 표시합니다." style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 8px", border: "1px solid #E7BE62", borderRadius: 8, background: "#FFF8E5", color: "#9A6500", cursor: grantingBadgeConceptId !== null || unlockingConceptId !== null ? "wait" : "pointer", fontSize: 10.5, fontWeight: 800 }}>
+                                    <Award size={11} /> {grantingBadgeConceptId === conceptId ? "부여 중" : "뱃지 부여"}
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -683,6 +748,83 @@ export default function StudentProgressManager() {
           )}
           </div>
         </>
+      )}
+
+      {selectedStudent && badgeGrantCandidate && (
+        <div
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && grantingBadgeConceptId === null) {
+              setBadgeGrantCandidateId(null);
+              setBadgeGrantError("");
+            }
+          }}
+          style={{ position: "fixed", inset: 0, zIndex: 200, display: "grid", placeItems: "center", padding: 20, background: "rgba(28, 21, 52, .52)", backdropFilter: "blur(5px)" }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="badge-grant-dialog-title"
+            aria-describedby="badge-grant-dialog-description"
+            style={{ width: "min(430px, calc(100vw - 32px))", overflow: "hidden", border: "1px solid #E8D7AC", borderRadius: 22, background: "#fff", boxShadow: "0 24px 70px rgba(38, 25, 72, .28)" }}
+          >
+            <div style={{ position: "relative", padding: "25px 26px 20px", textAlign: "center", background: "linear-gradient(145deg, #FFF9E9, #FFF 70%)" }}>
+              <button
+                type="button"
+                onClick={() => { setBadgeGrantCandidateId(null); setBadgeGrantError(""); }}
+                disabled={grantingBadgeConceptId !== null}
+                aria-label="뱃지 부여 창 닫기"
+                style={{ position: "absolute", top: 14, right: 14, display: "grid", placeItems: "center", width: 32, height: 32, padding: 0, border: "1px solid #E9E1D1", borderRadius: 10, background: "rgba(255,255,255,.8)", color: "#81745F", cursor: grantingBadgeConceptId !== null ? "wait" : "pointer" }}
+              >
+                <X size={16} />
+              </button>
+              <div style={{ position: "relative", display: "grid", placeItems: "center", width: 104, height: 104, margin: "0 auto 14px", border: "1px solid #F0D58E", borderRadius: 28, background: "radial-gradient(circle, #FFFDF5 30%, #FFF2C9 100%)", color: "#875800", boxShadow: "0 12px 28px rgba(210,151,28,.2)" }}>
+                {badgeGrantCandidateImage ? (
+                  <Image
+                    src={badgeGrantCandidateImage}
+                    alt={`${badgeGrantCandidate.badgeNameKo} 뱃지`}
+                    fill
+                    sizes="104px"
+                    priority
+                    style={{ objectFit: "contain", padding: 7, filter: "drop-shadow(0 8px 8px rgba(95,62,6,.18))" }}
+                  />
+                ) : (
+                  <Award size={45} strokeWidth={2.1} />
+                )}
+              </div>
+              <h2 id="badge-grant-dialog-title" style={{ margin: 0, color: "#3F3656", fontSize: 20, fontWeight: 900 }}>뱃지를 부여할까요?</h2>
+              <p id="badge-grant-dialog-description" style={{ margin: "9px 0 0", color: "#756C83", fontSize: 13, lineHeight: 1.65 }}>
+                <strong style={{ color: "#5A4477" }}>{selectedStudent.displayName || selectedStudent.username}</strong> 학생에게<br />
+                <strong style={{ color: "#9A6500" }}>{badgeGrantCandidate.badgeNameKo}</strong> 뱃지를 부여합니다.
+              </p>
+            </div>
+            <div style={{ padding: "16px 22px 22px" }}>
+              <div style={{ padding: "11px 13px", borderRadius: 11, background: "#F7F3FC", color: "#756C83", fontSize: 11.5, lineHeight: 1.55 }}>
+                ‘{badgeGrantCandidate.nameKo}’ 단원이 완료 처리되며, 학생이 다음에 학습 화면에 들어오면 뱃지 획득 축하 화면이 표시됩니다.
+              </div>
+              {badgeGrantError && <div role="alert" style={{ marginTop: 10, padding: "9px 11px", borderRadius: 9, background: "#FFF0F3", color: "#C53D61", fontSize: 11.5, fontWeight: 750 }}>{badgeGrantError}</div>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1.35fr", gap: 9, marginTop: 16 }}>
+                <button
+                  type="button"
+                  onClick={() => { setBadgeGrantCandidateId(null); setBadgeGrantError(""); }}
+                  disabled={grantingBadgeConceptId !== null}
+                  style={{ minHeight: 44, border: 0, borderRadius: 11, background: "#F0EDF4", color: "#71697C", cursor: grantingBadgeConceptId !== null ? "wait" : "pointer", font: "inherit", fontSize: 13, fontWeight: 850 }}
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void grantBadge(badgeGrantCandidate.id)}
+                  disabled={grantingBadgeConceptId !== null}
+                  autoFocus
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 44, border: 0, borderRadius: 11, background: "linear-gradient(145deg, #E8A923, #B87605)", color: "#fff", cursor: grantingBadgeConceptId !== null ? "wait" : "pointer", font: "inherit", fontSize: 13, fontWeight: 900, boxShadow: "0 8px 18px rgba(184,118,5,.2)" }}
+                >
+                  {grantingBadgeConceptId !== null ? <><LoaderCircle size={15} className="animate-spin" /> 부여 중...</> : <><Award size={15} /> 뱃지 부여</>}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );

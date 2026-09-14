@@ -25,7 +25,12 @@ const schema = {
   schools: { id: "schools.id", code: "schools.code" },
   curriculumSets: { id: "sets.id", name: "sets.name" },
 };
-const operators = { eq: (column: string, value: unknown) => ({ column, value }), and: (...conditions: unknown[]) => conditions };
+const operators = {
+  eq: (column: string, value: unknown) => ({ column, value }),
+  and: (...conditions: unknown[]) => conditions,
+  isNull: (column: string) => ({ column, value: null }),
+  inArray: (column: string, value: unknown[]) => ({ column, value }),
+};
 
 function providerHarness() {
   type Account = { id: string; schoolId: number };
@@ -142,6 +147,7 @@ test("learning access queries use the authenticated user and resolved curriculum
       concepts: { id: "concept.id", curriculumId: "curriculumId", isActive: "active" },
       userConceptClears: { userId: "userId", conceptId: "clear.conceptId" },
       userConceptUnlocks: { userId: "userId", conceptId: "unlock.conceptId" },
+      teacherBadgeGrants: { id: "grant.id", userId: "userId", conceptId: "grant.conceptId", celebratedAt: "grant.celebratedAt" },
     },
     "drizzle-orm": operators,
     "@/lib/curriculum-access": {
@@ -154,8 +160,13 @@ test("learning access queries use the authenticated user and resolved curriculum
   authenticated = true;
   const result = await GET();
   assert.equal(result.body.clearedConceptIds[0], 100);
-  assert.equal(filters.length, 2);
-  for (const filter of filters) assert.equal(JSON.stringify(filter), JSON.stringify([
+  assert.equal(filters.length, 3);
+  for (const [index, filter] of filters.entries()) assert.equal(JSON.stringify(filter), JSON.stringify(index === 2 ? [
+    { column: "userId", value: 42 },
+    { column: "grant.celebratedAt", value: null },
+    { column: "curriculumId", value: 8 },
+    { column: "active", value: true },
+  ] : [
     { column: "userId", value: 42 }, { column: "curriculumId", value: 8 }, { column: "active", value: true },
   ]));
 });

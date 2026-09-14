@@ -206,6 +206,28 @@ export const userConceptUnlocks = pgTable(
   })
 );
 
+// A manual badge grant is stored separately so the student sees the same
+// celebration as a normal solve the next time the learning screen opens.
+export const teacherBadgeGrants = pgTable(
+  "teacher_badge_grants",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    conceptId: integer("concept_id")
+      .notNull()
+      .references(() => concepts.id, { onDelete: "cascade" }),
+    grantedByUserId: integer("granted_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    grantedAt: timestamp("granted_at").defaultNow(),
+    celebratedAt: timestamp("celebrated_at"),
+  },
+  (table) => ({
+    userConceptUnique: uniqueIndex("teacher_badge_grants_user_concept_unique").on(table.userId, table.conceptId),
+    userPendingIndex: index("teacher_badge_grants_user_pending_index").on(table.userId, table.celebratedAt),
+  })
+);
+
 export const classCurriculumAssignments = pgTable(
   "class_curriculum_assignments",
   {

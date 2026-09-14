@@ -119,6 +119,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
   const [speechText, setSpeechText] = useState("");
   const [showSpeech, setShowSpeech] = useState(false);
   const [newBadgeIds, setNewBadgeIds] = useState<number[]>([]);
+  const [pendingTeacherBadgeIds, setPendingTeacherBadgeIds] = useState<number[]>([]);
   const [badgeFeedback, setBadgeFeedback] = useState("");
   const [selectedConceptId, setSelectedConceptId] = useState(0);
   // 지금 에디터에 로드된 연습문제의 개념 ID. 문제 풀이 중일 때만 서버 채점을 요청한다.
@@ -296,12 +297,24 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         if (!active) return;
         setClearedConceptIds(new Set<number>(data.clearedConceptIds));
         setManuallyUnlockedConceptIds(new Set<number>(data.manuallyUnlockedConceptIds));
+        setPendingTeacherBadgeIds(Array.isArray(data.pendingTeacherBadgeIds) ? data.pendingTeacherBadgeIds : []);
         setProgressReady(true);
       })
       .catch(() => { if (active) setProgressError("단원 접근 상태를 확인하지 못했어요."); })
       .finally(() => window.clearTimeout(timeout));
     return () => { active = false; controller.abort(); window.clearTimeout(timeout); };
   }, [isStudent, progressAttempt]);
+
+  useEffect(() => {
+    if (!dataReady || !progressReady || pendingTeacherBadgeIds.length === 0 || newBadgeIds.length > 0) return;
+    const validBadgeIds = pendingTeacherBadgeIds
+      .filter((id) => curriculumView.units.some((unit) => unit.id === id))
+      .slice(0, 1);
+    if (validBadgeIds.length === 0) return;
+    setBadgeFeedback("선생님이 너의 노력과 성장을 확인하고 뱃지를 선물했어. 정말 잘했어!");
+    setNewBadgeIds(validBadgeIds);
+    setCommands([{ type: "dance", params: {} }]);
+  }, [curriculumView.units, dataReady, newBadgeIds.length, pendingTeacherBadgeIds, progressReady]);
 
   const accessibleConceptIds = effectiveConceptAccessIdsForOrders(
     clearedConceptIds,
@@ -543,8 +556,20 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     }
   }, [pendingFeedback, showSpeechBubble]);
 
+  const acknowledgeTeacherBadges = useCallback((badgeIds: number[]) => {
+    const teacherBadgeIds = badgeIds.filter((id) => pendingTeacherBadgeIds.includes(id));
+    if (teacherBadgeIds.length === 0) return;
+    setPendingTeacherBadgeIds((current) => current.filter((id) => !teacherBadgeIds.includes(id)));
+    void fetch("/api/learn/access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conceptIds: teacherBadgeIds }),
+    });
+  }, [pendingTeacherBadgeIds]);
+
   // 축하 팝업의 "다음 단계 공부하기": 다음 개념을 선택하고 예제 코드를 로드
   const handleGoNextConcept = useCallback((id: number) => {
+    acknowledgeTeacherBadges(newBadgeIds);
     setNewBadgeIds([]);
     if (rewardAfterBadge) {
       setRewardAfterBadge(false);
@@ -574,7 +599,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     } else {
       setEditorLoadSource(null);
     }
-  }, [curriculum, curriculumView.units, rewardAfterBadge]);
+  }, [acknowledgeTeacherBadges, curriculum, curriculumView.units, newBadgeIds, rewardAfterBadge]);
 
   const handleLoadExample = useCallback(() => {
     if (!dataReady || !progressReady || sessionExpired) return;
@@ -1989,6 +2014,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         conceptOrders={levelOrders}
         feedback={badgeFeedback}
         onClose={() => {
+          acknowledgeTeacherBadges(newBadgeIds);
           setNewBadgeIds([]);
           if (rewardAfterBadge) {
             setRewardAfterBadge(false);

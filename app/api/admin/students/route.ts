@@ -2,16 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import {
+  badges,
   classCurriculumAssignments,
   concepts,
   curriculumSets,
   feedbackHistory,
   teacherClassAssignments,
+  teacherBadgeGrants,
   userConceptClears,
   userConceptPractices,
   userConceptUnlocks,
   users,
 } from "@/lib/db/schema";
+import { syncGroupRewardGrants } from "@/lib/customization";
+import { curriculumLevelOrders } from "@/lib/curriculum-model";
+import { effectiveConceptAccessIdsForOrders, isConceptUnlockedInOrders } from "@/lib/progress";
 import {
   getCurriculumUnits,
   resolveCurriculumIdForUser,
@@ -196,6 +201,8 @@ export async function POST(req: NextRequest) {
     ? "resetPassword"
     : body?.action === "unlockClassConcept"
       ? "unlockClassConcept"
+      : body?.action === "grantBadge"
+        ? "grantBadge"
       : "unlockConcept";
 
   if (action === "unlockClassConcept") {
@@ -382,8 +389,9 @@ export async function POST(req: NextRequest) {
   });
   const [concept] = assignedCurriculumId
     ? await db
-        .select({ id: concepts.id })
+        .select({ id: concepts.id, badgeId: badges.id })
         .from(concepts)
+        .leftJoin(badges, eq(badges.conceptId, concepts.id))
         .where(and(
           eq(concepts.id, conceptId),
           eq(concepts.curriculumId, assignedCurriculumId),
@@ -394,6 +402,77 @@ export async function POST(req: NextRequest) {
 
   if (!concept) {
     return NextResponse.json({ error: "학생에게 배정된 커리큘럼의 단원이 아닙니다." }, { status: 400 });
+  }
+
+  if (action === "grantBadge") {
+    const rate = rateLimit(req, `teacher-badge-grant:${authResult.userId}`, 60, 10 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json({ error: "뱃지 부여 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfter) },
+      });
+    }
+    if (!concept.badgeId) {
+      return NextResponse.json({ error: "이 단원에는 부여할 뱃지가 없습니다." }, { status: 400 });
+    }
+
+    const curriculumUnits = await getCurriculumUnits(assignedCurriculumId!);
+    const [studentClears, studentUnlocks] = await Promise.all([
+      db
+        .select({ conceptId: userConceptClears.conceptId })
+        .from(userConceptClears)
+        .where(eq(userConceptClears.userId, studentId)),
+      db
+        .select({ conceptId: userConceptUnlocks.conceptId })
+        .from(userConceptUnlocks)
+        .where(eq(userConceptUnlocks.userId, studentId)),
+    ]);
+    const conceptOrders = curriculumLevelOrders(curriculumUnits);
+    const accessIds = effectiveConceptAccessIdsForOrders(
+      studentClears.map((item) => item.conceptId),
+      studentUnlocks.map((item) => item.conceptId),
+      conceptOrders
+    );
+    if (!isConceptUnlockedInOrders(conceptId, accessIds, conceptOrders)) {
+      return NextResponse.json({ error: "잠금 해제된 단원에만 뱃지를 부여할 수 있습니다." }, { status: 409 });
+    }
+
+    // 완료 기록과 다음 로그인용 축하 알림을 한 SQL 문에서 함께 생성한다.
+    // 이미 완료한 단원에는 중복 뱃지나 축하 알림을 만들지 않는다.
+    const result = await db.execute(sql`
+      WITH new_clear AS (
+        INSERT INTO ${userConceptClears} (user_id, concept_id)
+        VALUES (${studentId}, ${conceptId})
+        ON CONFLICT (user_id, concept_id) DO NOTHING
+        RETURNING user_id, concept_id
+      )
+      INSERT INTO ${teacherBadgeGrants} (user_id, concept_id, granted_by_user_id)
+      SELECT user_id, concept_id, ${authResult.userId} FROM new_clear
+      ON CONFLICT (user_id, concept_id) DO NOTHING
+      RETURNING id
+    `);
+    const granted = result.rows.length > 0;
+    if (granted && assignedCurriculumId) {
+      try {
+        await syncGroupRewardGrants(
+          studentId,
+          assignedCurriculumId,
+          curriculumUnits
+        );
+      } catch (rewardError) {
+        // 뱃지 부여 자체는 이미 원자적으로 완료됐다. 부가 아이템 동기화 실패로
+        // 교사가 다시 눌러 중복 처리하지 않도록 성공 응답은 유지한다.
+        console.error("Teacher badge group reward sync failed", { studentId, conceptId, rewardError });
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      studentId,
+      conceptId,
+      granted,
+      alreadyEarned: !granted,
+    });
   }
 
   await db
