@@ -34,6 +34,7 @@ import {
   isExactExpectedOutput,
   matchesExpectedOutput,
   normalizePracticeOutputFrame,
+  resolvePracticeConceptId,
 } from "../lib/practice-template";
 import { getStudentAddress, getStudentCallName, getStudentVocative } from "../lib/student-name";
 import { getBadgeImagePath } from "../lib/badge-images";
@@ -148,6 +149,29 @@ test("every level 1 practice problem shows a framed output example", () => {
     assert.match(starter, /#-----------------------------------------\n# \[출력 결과\]\n[\s\S]+?\n#-----------------------------------------/);
     assert.ok(extractExpectedOutput(practiceCode), `concept ${conceptId} expected output`);
   }
+});
+
+test("practice identity is recovered from a problem statement left in the editor", () => {
+  const candidates = [
+    { id: 5, practiceCode: "# 문제: 로봇 체력을 관리하세요.\n# 조건\nhp = 100" },
+    { id: 6, practiceCode: "# 문제: 놀이터 입장을 판단하세요.\n# 조건\ncan_enter = True" },
+  ];
+
+  assert.equal(
+    resolvePracticeConceptId(
+      "# 문제: 로봇 체력을 관리하세요.\n# 조건\nhp = 100\nhp -= 30\nprint(hp)",
+      candidates,
+    ),
+    5,
+  );
+  assert.equal(resolvePracticeConceptId("print('자유 실행')", candidates), null);
+  assert.equal(
+    resolvePracticeConceptId("# 문제: 같은 제목", [
+      { id: 1, practiceCode: "# 문제: 같은 제목" },
+      { id: 2, practiceCode: "# 문제: 같은 제목" },
+    ]),
+    null,
+  );
 });
 
 test("AI extra practice starter includes a clear expected output block", () => {

@@ -20,6 +20,7 @@ import type { ActiveCharacterType, CharacterLoadout } from "@/types";
 import { curriculumLevelOrders, groupCurriculumUnits, type CurriculumView } from "@/lib/curriculum-model";
 import { getBadgeImagePath } from "@/lib/badge-images";
 import { highestEarnedBadgesByLevel } from "@/lib/badge-ranks";
+import { resolvePracticeConceptId } from "@/lib/practice-template";
 import { AlertTriangle, Bot, Layers, Calculator, CheckCircle2, GitBranch, Braces, ShieldAlert, BarChart2, TrendingUp, Filter, Cpu, Lock, Check, Sparkles } from "lucide-react";
 import Image from "next/image";
 
@@ -474,7 +475,19 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     const queueCommands = animationQueue.get();
     animationDoneRef.current = queueCommands.length === 0;
     setCommands(queueCommands);
-    setFeedbackStatus(mode !== "mechdog" && practiceConceptId !== null ? "grading" : "feedback");
+    const submittedPracticeConceptId = mode === "mechdog"
+      ? null
+      : practiceConceptId ?? (aiChallengeId === null
+        ? resolvePracticeConceptId(code, Object.entries(curriculum).map(([id, item]) => ({
+            id: Number(id),
+            practiceCode: item.practiceCode,
+          })))
+        : null);
+    if (practiceConceptId === null && submittedPracticeConceptId !== null) {
+      setPracticeConceptId(submittedPracticeConceptId);
+      setEditorLoadSource("practice");
+    }
+    setFeedbackStatus(submittedPracticeConceptId !== null ? "grading" : "feedback");
 
     try {
       const res = await fetch("/api/feedback", {
@@ -482,7 +495,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code, stdout, stderr, isSuccess: success,
-          practiceConceptId: mode === "mechdog" ? null : practiceConceptId,
+          practiceConceptId: submittedPracticeConceptId,
           aiChallengeId: mode === "mechdog" ? null : aiChallengeId,
         }),
       });
@@ -541,7 +554,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
       setFeedbackStatus(null);
       runningRef.current = false;
     }
-  }, [pyLoading, code, mode, practiceConceptId, aiChallengeId, executeCode, showSpeechBubble]);
+  }, [pyLoading, code, mode, practiceConceptId, aiChallengeId, curriculum, executeCode, showSpeechBubble]);
 
   const handleAnimationComplete = useCallback(() => {
     animationDoneRef.current = true;

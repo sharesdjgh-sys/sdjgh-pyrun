@@ -1,4 +1,24 @@
 const BLANK_PLACEHOLDER = "___";
+const PRACTICE_TITLE = /^#\s*문제\s*:\s*(.+?)\s*$/m;
+
+function practiceTitle(code: string): string | null {
+  return code.replace(/\r\n/g, "\n").match(PRACTICE_TITLE)?.[1]?.trim() || null;
+}
+
+/**
+ * Recover a lost practice ID from the problem statement still in the editor.
+ * Duplicate titles are ambiguous and are intentionally not resolved.
+ */
+export function resolvePracticeConceptId(
+  submittedCode: string,
+  candidates: Array<{ id: number; practiceCode: string | null | undefined }>,
+): number | null {
+  const submittedTitle = practiceTitle(submittedCode);
+  if (!submittedTitle) return null;
+
+  const matches = candidates.filter((candidate) => practiceTitle(candidate.practiceCode ?? "") === submittedTitle);
+  return matches.length === 1 ? matches[0].id : null;
+}
 const OUTPUT_DIVIDER = "#-----------------------------------------";
 const EXPECTED_OUTPUT_HEADER = /^#\s*(?:\[(?:예상\s*)?출력\s*결과\]|(?:예상\s*)?출력\s*결과\s*:)/;
 

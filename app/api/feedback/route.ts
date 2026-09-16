@@ -13,6 +13,7 @@ import {
   extractExpectedOutput,
   isExactExpectedOutput,
   matchesExpectedOutput,
+  resolvePracticeConceptId,
 } from "@/lib/practice-template";
 import {
   curriculumOrders,
@@ -43,7 +44,14 @@ export async function POST(req: NextRequest) {
         headers: { "Retry-After": String(rate.retryAfter) },
       });
     }
-    const { code, stdout, stderr, isSuccess, practiceConceptId, aiChallengeId } = validateFeedback(await req.json());
+    const validated = validateFeedback(await req.json());
+    const { code, stdout, stderr, isSuccess, aiChallengeId } = validated;
+    // A loaded problem can remain in the editor after transient UI state loses
+    // its ID. Recover only a unique problem in the active curriculum. AI
+    // challenges remain separate from required practice and badge completion.
+    const practiceConceptId = validated.practiceConceptId ?? (aiChallengeId === null
+      ? resolvePracticeConceptId(code, curriculumUnits)
+      : null);
     const practiceUnit = practiceConceptId === null
       ? undefined
       : curriculumUnits.find((unit) => unit.id === practiceConceptId);
