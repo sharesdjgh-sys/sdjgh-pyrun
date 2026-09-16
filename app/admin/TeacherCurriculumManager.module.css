@@ -14,6 +14,65 @@
   align-items: start;
 }
 
+.curriculumActions {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.curriculumActions .actionButton,
+.curriculumDeleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.curriculumActions .actionButton {
+  background: #7b5cf0;
+  color: #fff;
+}
+
+.curriculumDeleteControl {
+  display: flex;
+  max-width: 190px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+}
+
+.curriculumDeleteControl small {
+  color: #9b6070;
+  font-size: 9.5px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.curriculumDeleteButton {
+  background: #fbe9ee;
+  color: #bd3659;
+}
+
+.curriculumActions button:hover:not(:disabled) {
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+}
+
+.curriculumActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .curriculumSidebar {
   min-width: 0;
 }
@@ -838,6 +897,52 @@
   opacity: 0.58;
 }
 
+.deleteCurriculumModal {
+  width: min(460px, 100%);
+}
+
+.deleteCurriculumModal .assignmentModalHeader span {
+  color: #bd3659;
+}
+
+.deleteCurriculumModalBody {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 20px 22px;
+  background: #fffafb;
+}
+
+.deleteCurriculumIcon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: #fbe9ee;
+  color: #bd3659;
+}
+
+.deleteCurriculumModalBody strong {
+  display: block;
+  margin: 2px 0 5px;
+  color: #5e3340;
+  font-size: 13px;
+}
+
+.deleteCurriculumModalBody p {
+  margin: 0;
+  color: #8e737b;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.deleteCurriculumModalFooter button:last-child {
+  background: #bd3659;
+  box-shadow: 0 4px 10px rgba(189, 54, 89, 0.2);
+}
+
 @keyframes toastIn {
   from {
     opacity: 0;
@@ -954,6 +1059,15 @@
 }
 
 @media (max-width: 720px) {
+  .curriculumActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .curriculumDeleteControl {
+    max-width: none;
+  }
+
   .basicFields {
     grid-template-columns: 1fr;
   }

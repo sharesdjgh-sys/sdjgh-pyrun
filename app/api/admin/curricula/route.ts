@@ -14,9 +14,10 @@ export async function GET() {
   }
 
   const ownerScope = isAdministratorRole(context.role)
-    ? eq(curriculumSets.schoolId, context.schoolId)
+    ? and(eq(curriculumSets.schoolId, context.schoolId), isNull(curriculumSets.archivedAt))
     : and(
         eq(curriculumSets.schoolId, context.schoolId),
+        isNull(curriculumSets.archivedAt),
         or(eq(curriculumSets.ownerTeacherId, context.userId), isNull(curriculumSets.ownerTeacherId))
       );
   const rows = await db
@@ -88,7 +89,11 @@ export async function POST(req: NextRequest) {
     const [source] = await db
       .select({ id: curriculumSets.id })
       .from(curriculumSets)
-      .where(and(eq(curriculumSets.id, cloneFromId), eq(curriculumSets.schoolId, context.schoolId)))
+      .where(and(
+        eq(curriculumSets.id, cloneFromId),
+        eq(curriculumSets.schoolId, context.schoolId),
+        isNull(curriculumSets.archivedAt)
+      ))
       .limit(1);
     if (!source) return NextResponse.json({ error: "복제할 커리큘럼을 찾을 수 없습니다." }, { status: 404 });
     await ensureDefaultMechdogUnits(source.id, context.userId);

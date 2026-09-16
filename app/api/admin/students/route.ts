@@ -25,7 +25,7 @@ import {
 import { canManageStudentClass, canOpenAdminPage, isAdministratorRole } from "@/lib/roles";
 import { parseSchoolStudentNumber } from "@/lib/student-number";
 import { rateLimit } from "@/lib/api-guard";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 async function requireTeacher() {
   const context = sessionTenant(await auth());
@@ -134,7 +134,10 @@ export async function GET() {
             eq(classCurriculumAssignments.schoolId, authResult.schoolId)
           )
         )
-        .where(eq(curriculumSets.schoolId, authResult.schoolId))
+        .where(and(
+          eq(curriculumSets.schoolId, authResult.schoolId),
+          isNull(curriculumSets.archivedAt)
+        ))
         .orderBy(asc(curriculumSets.id)),
     ]);
 
@@ -239,7 +242,8 @@ export async function POST(req: NextRequest) {
         eq(classCurriculumAssignments.schoolId, authResult.schoolId),
         eq(classCurriculumAssignments.grade, grade),
         eq(classCurriculumAssignments.classNumber, classNumber),
-        eq(curriculumSets.schoolId, authResult.schoolId)
+        eq(curriculumSets.schoolId, authResult.schoolId),
+        isNull(curriculumSets.archivedAt)
       ))
       .limit(1);
     const [defaultCurriculum] = classCurriculum
@@ -247,7 +251,11 @@ export async function POST(req: NextRequest) {
       : await db
           .select({ curriculumId: curriculumSets.id })
           .from(curriculumSets)
-          .where(and(eq(curriculumSets.schoolId, authResult.schoolId), eq(curriculumSets.isDefault, true)))
+          .where(and(
+            eq(curriculumSets.schoolId, authResult.schoolId),
+            eq(curriculumSets.isDefault, true),
+            isNull(curriculumSets.archivedAt)
+          ))
           .orderBy(asc(curriculumSets.id))
           .limit(1);
     const curriculumId = classCurriculum?.curriculumId ?? defaultCurriculum?.curriculumId;

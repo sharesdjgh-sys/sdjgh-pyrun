@@ -45,7 +45,8 @@ export async function resolveCurriculumIdForUser(context: SessionTenant): Promis
           eq(classCurriculumAssignments.schoolId, context.schoolId),
           eq(classCurriculumAssignments.grade, student.grade),
           eq(classCurriculumAssignments.classNumber, student.classNumber),
-          eq(curriculumSets.schoolId, context.schoolId)
+          eq(curriculumSets.schoolId, context.schoolId),
+          isNull(curriculumSets.archivedAt)
         ))
         .limit(1);
       if (assignment) return assignment.curriculumId;
@@ -55,7 +56,11 @@ export async function resolveCurriculumIdForUser(context: SessionTenant): Promis
   const [fallback] = await db
     .select({ id: curriculumSets.id })
     .from(curriculumSets)
-    .where(and(eq(curriculumSets.schoolId, context.schoolId), eq(curriculumSets.isDefault, true)))
+    .where(and(
+      eq(curriculumSets.schoolId, context.schoolId),
+      eq(curriculumSets.isDefault, true),
+      isNull(curriculumSets.archivedAt)
+    ))
     .orderBy(asc(curriculumSets.id))
     .limit(1);
   return fallback?.id ?? null;
@@ -71,7 +76,7 @@ export async function canManageCurriculum(context: SessionTenant, curriculumId: 
   const [row] = await db
     .select({ id: curriculumSets.id })
     .from(curriculumSets)
-    .where(and(eq(curriculumSets.id, curriculumId), ownership))
+    .where(and(eq(curriculumSets.id, curriculumId), ownership, isNull(curriculumSets.archivedAt)))
     .limit(1);
   return Boolean(row);
 }
@@ -81,7 +86,11 @@ export async function canReadCurriculum(context: SessionTenant, curriculumId: nu
     const [row] = await db
       .select({ id: curriculumSets.id })
       .from(curriculumSets)
-      .where(and(eq(curriculumSets.id, curriculumId), eq(curriculumSets.schoolId, context.schoolId)))
+      .where(and(
+        eq(curriculumSets.id, curriculumId),
+        eq(curriculumSets.schoolId, context.schoolId),
+        isNull(curriculumSets.archivedAt)
+      ))
       .limit(1);
     return Boolean(row);
   }
@@ -96,6 +105,7 @@ export async function canReadCurriculum(context: SessionTenant, curriculumId: nu
       .where(and(
         eq(curriculumSets.id, curriculumId),
         eq(curriculumSets.schoolId, context.schoolId),
+        isNull(curriculumSets.archivedAt),
         or(eq(curriculumSets.ownerTeacherId, context.userId), isNull(curriculumSets.ownerTeacherId))
       ))
       .limit(1);

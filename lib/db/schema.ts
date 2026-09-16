@@ -76,6 +76,7 @@ export const curriculumSets = pgTable(
     name: varchar("name", { length: 120 }).notNull(),
     description: text("description"),
     isDefault: boolean("is_default").notNull().default(false),
+    archivedAt: timestamp("archived_at"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },

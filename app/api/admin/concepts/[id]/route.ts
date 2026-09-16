@@ -4,7 +4,7 @@ import { db } from "@/lib/db/index";
 import { concepts, curriculumSets } from "@/lib/db/schema";
 import { sessionTenant } from "@/lib/curriculum-access";
 import { isAdministratorRole } from "@/lib/roles";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const context = sessionTenant(await auth());
@@ -36,7 +36,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     .select({ id: concepts.id })
     .from(concepts)
     .innerJoin(curriculumSets, eq(concepts.curriculumId, curriculumSets.id))
-    .where(and(eq(concepts.id, conceptId), eq(curriculumSets.schoolId, context.schoolId)))
+    .where(and(
+      eq(concepts.id, conceptId),
+      eq(curriculumSets.schoolId, context.schoolId),
+      isNull(curriculumSets.archivedAt)
+    ))
     .limit(1);
   if (!ownedConcept) {
     return NextResponse.json({ error: "단원을 찾을 수 없습니다." }, { status: 404 });

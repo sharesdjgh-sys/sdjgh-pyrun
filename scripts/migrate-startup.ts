@@ -13,6 +13,7 @@ async function migrate() {
     await sql`ALTER TABLE concepts ADD COLUMN IF NOT EXISTS level integer NOT NULL DEFAULT 1`;
     await sql`ALTER TABLE schools ADD COLUMN IF NOT EXISTS logo_url text`;
     await sql`ALTER TABLE schools ADD COLUMN IF NOT EXISTS logo_scale integer NOT NULL DEFAULT 100`;
+    await sql`ALTER TABLE curriculum_sets ADD COLUMN IF NOT EXISTS archived_at timestamp`;
 
     await sql`
       CREATE TABLE IF NOT EXISTS data_files (
@@ -94,10 +95,14 @@ async function migrate() {
     await sql`CREATE UNIQUE INDEX IF NOT EXISTS teacher_badge_grants_user_concept_unique ON teacher_badge_grants(user_id, concept_id)`;
     await sql`CREATE INDEX IF NOT EXISTS teacher_badge_grants_user_pending_index ON teacher_badge_grants(user_id, celebrated_at)`;
 
+    const { isNull } = await import("drizzle-orm");
     const { db } = await import("../lib/db/index");
     const { curriculumSets } = await import("../lib/db/schema");
     const { ensureDefaultMechdogUnits } = await import("../lib/mechdog-access");
-    for (const row of await db.select({ id: curriculumSets.id }).from(curriculumSets)) {
+    for (const row of await db
+      .select({ id: curriculumSets.id })
+      .from(curriculumSets)
+      .where(isNull(curriculumSets.archivedAt))) {
       await ensureDefaultMechdogUnits(row.id);
     }
     console.log("[DB] 스키마 및 기본 데이터 준비 완료");

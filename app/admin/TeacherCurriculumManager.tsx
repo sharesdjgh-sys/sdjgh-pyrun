@@ -94,10 +94,12 @@ export default function TeacherCurriculumManager() {
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
   const [selectedAssignmentKeys, setSelectedAssignmentKeys] = useState<string[]>([]);
   const [assignmentModalError, setAssignmentModalError] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteModalError, setDeleteModalError] = useState("");
   const [message, setMessage] = useState("");
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"create" | "assign" | "add-unit" | "save-unit" | "delete-unit" | "delete-level" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"create" | "assign" | "delete-curriculum" | "add-unit" | "save-unit" | "delete-unit" | "delete-level" | null>(null);
 
   const selectedCurriculum = curricula.find((item) => item.id === selectedCurriculumId);
   const selectedUnit = units.find((item) =>
@@ -261,6 +263,40 @@ export default function TeacherCurriculumManager() {
       setMessage("커리큘럼을 만들었습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "생성 오류");
+    } finally {
+      actionLockRef.current = false;
+      setPendingAction(null);
+      setBusy(false);
+    }
+  }
+
+  async function deleteCurriculum() {
+    if (
+      !selectedCurriculum
+      || selectedCurriculum.isDefault
+      || selectedCurriculum.assignments.length > 0
+      || busy
+      || actionLockRef.current
+    ) return;
+
+    actionLockRef.current = true;
+    setBusy(true);
+    setPendingAction("delete-curriculum");
+    setDeleteModalError("");
+    setToast("");
+    try {
+      const response = await fetch(`/api/admin/curricula/${selectedCurriculum.id}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "커리큘럼 삭제에 실패했습니다.");
+
+      setSelectedCurriculumId(null);
+      setSelectedUnitId(null);
+      setUnits([]);
+      await loadCurricula();
+      setDeleteModalOpen(false);
+      setToast("커리큘럼을 삭제했습니다.");
+    } catch (error) {
+      setDeleteModalError(error instanceof Error ? error.message : "커리큘럼 삭제 오류");
     } finally {
       actionLockRef.current = false;
       setPendingAction(null);
@@ -590,15 +626,37 @@ export default function TeacherCurriculumManager() {
                     : <span style={{ color: "#A39CC0", fontSize: 11.5 }}>아직 배정된 학급이 없습니다.</span>}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={openAssignmentModal}
-                disabled={busy}
-                className={styles.actionButton}
-                style={{ padding: "10px 14px", border: "none", borderRadius: 10, background: "#7B5CF0", color: "#fff", fontWeight: 800 }}
-              >
-                <School size={14} /> 학급 배정 관리
-              </button>
+              <div className={styles.curriculumActions}>
+                <button
+                  type="button"
+                  onClick={openAssignmentModal}
+                  disabled={busy}
+                  className={styles.actionButton}
+                >
+                  <School size={14} /> 학급 배정 관리
+                </button>
+                {!selectedCurriculum.isDefault && (
+                  <div className={styles.curriculumDeleteControl}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteModalError("");
+                        setDeleteModalOpen(true);
+                      }}
+                      disabled={busy || selectedCurriculum.assignments.length > 0}
+                      aria-busy={pendingAction === "delete-curriculum"}
+                      className={styles.curriculumDeleteButton}
+                    >
+                      {pendingAction === "delete-curriculum"
+                        ? <><LoaderCircle size={14} className={styles.spin} /> 삭제 중...</>
+                        : <><Trash2 size={14} /> 커리큘럼 삭제</>}
+                    </button>
+                    {selectedCurriculum.assignments.length > 0 && (
+                      <small>학급 배정을 모두 해제해야 삭제할 수 있습니다.</small>
+                    )}
+                  </div>
+                )}
+              </div>
             </section>
 
             <div className={styles.workspaceGrid}>
@@ -732,6 +790,49 @@ export default function TeacherCurriculumManager() {
           </>
         )}
       </main>
+
+      {deleteModalOpen && selectedCurriculum && (
+        <div className={styles.assignmentModalOverlay} role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !busy) setDeleteModalOpen(false);
+        }}>
+          <section className={`${styles.assignmentModal} ${styles.deleteCurriculumModal}`} role="dialog" aria-modal="true" aria-labelledby="delete-curriculum-modal-title">
+            <header className={styles.assignmentModalHeader}>
+              <div>
+                <span>DELETE CURRICULUM</span>
+                <h3 id="delete-curriculum-modal-title">커리큘럼 삭제</h3>
+                <p><strong>{selectedCurriculum.name}</strong> 커리큘럼을 삭제하시겠어요?</p>
+              </div>
+              <button type="button" onClick={() => setDeleteModalOpen(false)} disabled={busy} aria-label="커리큘럼 삭제 창 닫기">
+                <X size={20} />
+              </button>
+            </header>
+
+            <div className={styles.deleteCurriculumModalBody}>
+              <div className={styles.deleteCurriculumIcon}><Trash2 size={22} /></div>
+              <div>
+                <strong>내 커리큘럼 목록에서 삭제됩니다.</strong>
+                <p>학생의 학습 기록은 그대로 보존되며, 해당 커리큘럼은 더 이상 관리하거나 학급에 배정할 수 없습니다.</p>
+              </div>
+            </div>
+
+            {deleteModalError && <div className={styles.assignmentModalError} role="alert">{deleteModalError}</div>}
+
+            <footer className={`${styles.assignmentModalFooter} ${styles.deleteCurriculumModalFooter}`}>
+              <button type="button" onClick={() => setDeleteModalOpen(false)} disabled={busy}>취소</button>
+              <button
+                type="button"
+                onClick={deleteCurriculum}
+                disabled={busy}
+                aria-busy={pendingAction === "delete-curriculum"}
+              >
+                {pendingAction === "delete-curriculum"
+                  ? <><LoaderCircle size={15} className={styles.spin} /> 삭제 중...</>
+                  : <><Trash2 size={15} /> 삭제하기</>}
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
 
       {assignmentModalOpen && selectedCurriculum && (
         <div className={styles.assignmentModalOverlay} role="presentation" onMouseDown={(event) => {

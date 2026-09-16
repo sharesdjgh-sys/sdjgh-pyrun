@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { canManageCurriculum, getCurriculumUnits, sessionTenant } from "@/lib/curriculum-access";
 import { db } from "@/lib/db/index";
 import { ensureDefaultMechdogUnits, getMechdogUnits } from "@/lib/mechdog-access";
-import {
-  badges,
-  classCurriculumAssignments,
-  concepts,
-  curriculumSets,
-  userConceptClears,
-  userConceptPractices,
-  userConceptUnlocks,
-} from "@/lib/db/schema";
+import { classCurriculumAssignments, curriculumSets } from "@/lib/db/schema";
 
 function parseId(value: string) {
   const id = Number(value);
@@ -80,23 +72,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "학급에 배정된 커리큘럼은 삭제할 수 없습니다." }, { status: 409 });
   }
 
-  const unitRows = await db
-    .select({ id: concepts.id })
-    .from(concepts)
-    .where(eq(concepts.curriculumId, curriculumId));
-  const unitIds = unitRows.map((item) => item.id);
-  if (unitIds.length > 0) {
-    const [clear, practice, unlock] = await Promise.all([
-      db.select({ id: userConceptClears.id }).from(userConceptClears).where(inArray(userConceptClears.conceptId, unitIds)).limit(1),
-      db.select({ id: userConceptPractices.id }).from(userConceptPractices).where(inArray(userConceptPractices.conceptId, unitIds)).limit(1),
-      db.select({ id: userConceptUnlocks.id }).from(userConceptUnlocks).where(inArray(userConceptUnlocks.conceptId, unitIds)).limit(1),
-    ]);
-    if (clear.length || practice.length || unlock.length) {
-      return NextResponse.json({ error: "학생 학습 기록이 있는 커리큘럼은 삭제할 수 없습니다." }, { status: 409 });
-    }
-    await db.delete(badges).where(inArray(badges.conceptId, unitIds));
-    await db.delete(concepts).where(inArray(concepts.id, unitIds));
-  }
-  await db.delete(curriculumSets).where(eq(curriculumSets.id, curriculumId));
+  // 학생 학습 기록과의 연결은 보존하고 관리·배정 대상에서만 제외한다.
+  await db
+    .update(curriculumSets)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(eq(curriculumSets.id, curriculumId));
   return NextResponse.json({ ok: true });
 }

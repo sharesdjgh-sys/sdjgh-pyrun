@@ -1,6 +1,6 @@
 import { ensureDefaultMechdogUnits } from "@/lib/mechdog-access";
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { getCurriculumUnits, sessionTenant } from "@/lib/curriculum-access";
 import { db } from "@/lib/db/index";
@@ -33,7 +33,10 @@ export async function GET() {
     })
     .from(schools)
     .leftJoin(users, eq(users.schoolId, schools.id))
-    .leftJoin(curriculumSets, eq(curriculumSets.schoolId, schools.id))
+    .leftJoin(curriculumSets, and(
+      eq(curriculumSets.schoolId, schools.id),
+      isNull(curriculumSets.archivedAt)
+    ))
     .groupBy(schools.id)
     .orderBy(asc(schools.id));
 
@@ -75,7 +78,11 @@ export async function POST(req: NextRequest) {
       .select({ curriculumId: curriculumSets.id })
       .from(curriculumSets)
       .innerJoin(schools, eq(curriculumSets.schoolId, schools.id))
-      .where(and(eq(schools.code, "서대전여고"), eq(curriculumSets.isDefault, true)))
+      .where(and(
+        eq(schools.code, "서대전여고"),
+        eq(curriculumSets.isDefault, true),
+        isNull(curriculumSets.archivedAt)
+      ))
       .limit(1);
     if (!template) {
       return NextResponse.json({ error: "기본 커리큘럼을 찾을 수 없습니다." }, { status: 500 });
