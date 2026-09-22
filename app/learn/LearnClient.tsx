@@ -155,7 +155,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     .filter((unit) => unit.level === currentLevel)
     .map((unit) => ({
       conceptId: unit.id,
-      nameKo: unit.badgeNameKo,
+      nameKo: unit.nameKo,
       iconName: unit.iconName,
       colorClass: unit.colorClass,
     }));
