@@ -138,6 +138,9 @@
 .deleteButton { display: flex; align-items: center; justify-content: center; gap: 4px; height: 34px; padding: 0 9px; border: 1px solid #ead2d5; border-radius: 9px; background: #fff; color: #b1545e; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; transition: background .2s ease, border-color .2s ease; }
 .deleteButton:hover:not(:disabled) { border-color: #d8aab0; background: #fff3f4; }
 .deleteButton:disabled { cursor: not-allowed; opacity: .4; }
+.cosmeticButton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 36px; margin-top: 9px; border: 1px solid #d7c9ef; border-radius: 9px; background: #f7f2ff; color: #6745a5; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.cosmeticButton:hover:not(:disabled) { border-color: #ae92d8; background: #efe5ff; }
+.cosmeticButton:disabled { cursor: wait; opacity: .5; }
 
 .emptyState { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px; padding: 40px; border: 1px dashed #d9d3de; border-radius: 14px; background: #faf9fb; color: #9a929f; text-align: center; }
 .emptyState strong { margin-top: 12px; color: #514a58; font-size: 14px; }
