@@ -1,8 +1,7 @@
-const assert = require('node:assert/strict');
-const { chromium } = require('playwright-core');
-
 // Uses development-only pages and synthetic wardrobe data; never modifies student accounts.
 (async () => {
+  const assert = (await import('node:assert/strict')).default;
+  const { chromium } = await import('playwright-core');
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   try {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
