@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/api-guard";
 import { resolveCurriculumIdForUser, sessionTenant } from "@/lib/curriculum-access";
 import { db } from "@/lib/db/index";
 import { badges, concepts, userConceptClears, users } from "@/lib/db/schema";
+import { isAdministratorRole } from "@/lib/roles";
 
 const PASSWORD_MIN_LENGTH = 8;
 
@@ -31,7 +32,21 @@ export async function GET() {
 
   const curriculumId = await resolveCurriculumIdForUser(context);
   const earnedBadges = curriculumId
-    ? await db
+    ? isAdministratorRole(context.role)
+      ? await db
+        .select({
+          id: badges.id,
+          name: badges.nameKo,
+          sourceConceptId: concepts.sourceConceptId,
+          iconName: badges.iconName,
+          colorClass: badges.colorClass,
+        })
+        .from(badges)
+        .innerJoin(concepts, eq(badges.conceptId, concepts.id))
+        .where(and(eq(concepts.curriculumId, curriculumId), eq(concepts.isActive, true)))
+        .orderBy(concepts.level, concepts.orderIndex)
+        .then((rows) => rows.map((row) => ({ ...row, clearedAt: null })))
+      : await db
         .select({
           id: badges.id,
           name: badges.nameKo,

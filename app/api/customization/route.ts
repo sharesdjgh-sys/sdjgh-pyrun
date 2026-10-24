@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getCurriculumUnits, resolveCurriculumIdForUser, sessionTenant } from "@/lib/curriculum-access";
 import { isActiveCharacter } from "@/lib/cosmetics";
+import { isAdministratorRole } from "@/lib/roles";
 import { claimCosmeticReward, getCustomizationState, saveActiveCharacter, saveEquippedItem, syncAiRewardGrants, syncGroupRewardGrants } from "@/lib/customization";
 import type { CosmeticSlot } from "@/types";
 
@@ -16,10 +17,12 @@ export async function GET() {
   const context = await contextForRequest();
   if (!context) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   try {
-    const units = await getCurriculumUnits(context.curriculumId);
-    await syncGroupRewardGrants(context.userId, context.curriculumId, units);
-    await syncAiRewardGrants(context.userId, context.curriculumId);
-    return NextResponse.json(await getCustomizationState(context.userId, context.curriculumId), {
+    if (!isAdministratorRole(context.role)) {
+      const units = await getCurriculumUnits(context.curriculumId);
+      await syncGroupRewardGrants(context.userId, context.curriculumId, units);
+      await syncAiRewardGrants(context.userId, context.curriculumId);
+    }
+    return NextResponse.json(await getCustomizationState(context.userId, context.curriculumId, context.role), {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {
@@ -31,6 +34,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const context = await contextForRequest();
   if (!context) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (isAdministratorRole(context.role)) {
+    return NextResponse.json({ error: "관리자는 모든 꾸미기 아이템을 보유하고 있습니다." }, { status: 409 });
+  }
   try {
     const data = await req.json() as Record<string, unknown>;
     if (!Number.isInteger(data.grantId) || !isActiveCharacter(data.characterType)) {
@@ -42,7 +48,7 @@ export async function POST(req: NextRequest) {
       data.grantId as number,
       data.characterType,
     );
-    return NextResponse.json({ reward, state: await getCustomizationState(context.userId, context.curriculumId) });
+    return NextResponse.json({ reward, state: await getCustomizationState(context.userId, context.curriculumId, context.role) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "보상을 받지 못했습니다.";
     return NextResponse.json({ error: message }, { status: 409 });
@@ -69,11 +75,12 @@ export async function PUT(req: NextRequest) {
         data.characterType,
         data.slot as CosmeticSlot,
         data.itemKey as string | null,
+        context.role,
       );
     } else {
       return NextResponse.json({ error: "꾸미기 요청이 올바르지 않습니다." }, { status: 400 });
     }
-    return NextResponse.json(await getCustomizationState(context.userId, context.curriculumId));
+    return NextResponse.json(await getCustomizationState(context.userId, context.curriculumId, context.role));
   } catch (error) {
     const message = error instanceof Error ? error.message : "꾸미기 상태를 저장하지 못했습니다.";
     return NextResponse.json({ error: message }, { status: 400 });

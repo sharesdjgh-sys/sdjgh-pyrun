@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/index";
 import { userConceptClears, userConceptPractices, userConceptUnlocks, feedbackHistory, concepts } from "@/lib/db/schema";
-import { and, eq, desc, sql } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { calculateProgress } from "@/lib/progress";
 import { resolveCurriculumIdForUser, sessionTenant } from "@/lib/curriculum-access";
+import { isAdministratorRole } from "@/lib/roles";
 
 export async function GET() {
   const context = sessionTenant(await auth());
@@ -34,7 +35,7 @@ export async function GET() {
       eq(concepts.isActive, true)
     ));
 
-  const clearedConceptIds = clears.map((c) => c.conceptId);
+  const isAdmin = isAdministratorRole(context.role);
 
   const manualUnlocks = await db
     .select({ conceptId: userConceptUnlocks.conceptId })
@@ -56,10 +57,13 @@ export async function GET() {
       eq(concepts.curriculumId, curriculumId),
       eq(concepts.isActive, true)
     ));
-  const [{ count: totalConcepts }] = await db
-    .select({ count: sql<number>`count(*)::int` })
+  const activeConcepts = await db
+    .select({ id: concepts.id })
     .from(concepts)
     .where(and(eq(concepts.curriculumId, curriculumId), eq(concepts.isActive, true)));
+  const totalConcepts = activeConcepts.length;
+  // Full administrator access is derived from the current catalog, not written into student progress.
+  const clearedConceptIds = isAdmin ? activeConcepts.map((concept) => concept.id) : clears.map((clear) => clear.conceptId);
 
   const history = await db
     .select()

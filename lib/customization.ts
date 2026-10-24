@@ -15,8 +15,10 @@ import {
   COSMETIC_FAMILIES,
   randomRewardCandidates,
   completedGroupRewardFamilies,
+  cosmeticInventoryForRole,
   parseCosmeticItemKey,
 } from "@/lib/cosmetics";
+import { isAdministratorRole } from "@/lib/roles";
 import type { ActiveCharacterType, CharacterLoadout, CosmeticSlot } from "@/types";
 import { cosmeticRewardClaimQuery } from "./cosmetic-reward-query";
 
@@ -85,7 +87,7 @@ export async function syncAiRewardGrants(userId: number, curriculumId: number) {
     .then((rows) => rows.map((row) => row.id));
 }
 
-export async function getCustomizationState(userId: number, curriculumId: number) {
+export async function getCustomizationState(userId: number, curriculumId: number, role: string) {
   const [profiles, inventoryRows, loadoutRows, grantRows, solvedRows] = await Promise.all([
     db.select().from(userCustomizationProfiles).where(eq(userCustomizationProfiles.userId, userId)).limit(1),
     db.select({ itemKey: userCosmeticItems.itemKey }).from(userCosmeticItems).where(eq(userCosmeticItems.userId, userId)),
@@ -96,7 +98,7 @@ export async function getCustomizationState(userId: number, curriculumId: number
     getAiSolvedCounts(userId, curriculumId),
   ]);
 
-  const inventory = inventoryRows.map((row) => row.itemKey).filter((key) => parseCosmeticItemKey(key));
+  const inventory = cosmeticInventoryForRole(role, inventoryRows.map((row) => row.itemKey));
   const availability = Object.fromEntries(ACTIVE_CHARACTERS.map(({ type }) => [
     type,
     randomRewardCandidates(type, inventory).length,
@@ -121,7 +123,7 @@ export async function getCustomizationState(userId: number, curriculumId: number
     catalog: COSMETIC_FAMILIES,
     inventory,
     loadouts,
-    pendingGrants: grantRows.filter((grant) => !grant.claimedAt).map((grant) => ({
+    pendingGrants: (isAdministratorRole(role) ? [] : grantRows.filter((grant) => !grant.claimedAt)).map((grant) => ({
       id: grant.id,
       sourceType: grant.sourceType,
       familyKey: grant.familyKey,
@@ -160,17 +162,20 @@ export async function saveEquippedItem(
   characterType: ActiveCharacterType,
   slot: CosmeticSlot,
   itemKey: string | null,
+  role: string,
 ) {
   if (itemKey) {
     const parsed = parseCosmeticItemKey(itemKey);
     if (!parsed || parsed.characterType !== characterType || parsed.family.slot !== slot) {
       throw new Error("이 캐릭터의 해당 부위에 장착할 수 없는 아이템입니다.");
     }
-    const [owned] = await db.select({ id: userCosmeticItems.id }).from(userCosmeticItems).where(and(
-      eq(userCosmeticItems.userId, userId),
-      eq(userCosmeticItems.itemKey, itemKey),
-    )).limit(1);
-    if (!owned) throw new Error("보유하지 않은 아이템입니다.");
+    if (!isAdministratorRole(role)) {
+      const [owned] = await db.select({ id: userCosmeticItems.id }).from(userCosmeticItems).where(and(
+        eq(userCosmeticItems.userId, userId),
+        eq(userCosmeticItems.itemKey, itemKey),
+      )).limit(1);
+      if (!owned) throw new Error("보유하지 않은 아이템입니다.");
+    }
   }
   const columnBySlot = {
     head: "headItemKey",

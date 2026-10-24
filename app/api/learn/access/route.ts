@@ -4,12 +4,22 @@ import { db } from "@/lib/db";
 import { concepts, teacherBadgeGrants, userConceptClears, userConceptUnlocks } from "@/lib/db/schema";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { resolveCurriculumIdForUser, sessionTenant } from "@/lib/curriculum-access";
+import { isAdministratorRole } from "@/lib/roles";
 
 export async function GET() {
   const context = sessionTenant(await auth());
   if (!context) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   try {
     const curriculumId = await resolveCurriculumIdForUser(context);
+    if (curriculumId && isAdministratorRole(context.role)) {
+      const activeConcepts = await db.select({ id: concepts.id }).from(concepts)
+        .where(and(eq(concepts.curriculumId, curriculumId), eq(concepts.isActive, true)));
+      return NextResponse.json({
+        clearedConceptIds: activeConcepts.map((concept) => concept.id),
+        manuallyUnlockedConceptIds: [],
+        pendingTeacherBadgeIds: [],
+      }, { headers: { "Cache-Control": "private, no-store" } });
+    }
     const [clears, unlocks, pendingTeacherBadges] = curriculumId ? await Promise.all([
       db.select({ conceptId: userConceptClears.conceptId }).from(userConceptClears)
         .innerJoin(concepts, eq(userConceptClears.conceptId, concepts.id))

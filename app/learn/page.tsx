@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import LearnClient from "./LearnClient";
-import { isStudentRole } from "@/lib/roles";
+import { isAdministratorRole, isStudentRole } from "@/lib/roles";
 import { sessionTenant } from "@/lib/curriculum-access";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -19,5 +19,5 @@ export default async function LearnPage() {
     .limit(1);
   const displayName = profile?.displayName?.trim();
   const userName = displayName || (isStudent ? "학생" : session.user?.name || "사용자");
-  return <LearnClient key={context.userId} userName={userName} isStudent={isStudent} />;
+  return <LearnClient key={context.userId} userName={userName} isStudent={isStudent} isAdmin={isAdministratorRole(context.role)} />;
 }

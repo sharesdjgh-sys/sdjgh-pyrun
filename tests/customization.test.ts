@@ -4,6 +4,7 @@ import {
   ACTIVE_CHARACTERS,
   COSMETIC_FAMILIES,
   cosmeticItemKey,
+  cosmeticInventoryForRole,
   isActiveCharacter,
   parseCosmeticItemKey,
   availableCosmeticItemKeys,
@@ -84,6 +85,17 @@ test("character-specific item keys round-trip for all student characters", () =>
   assert.equal(parseCosmeticItemKey("round-glasses:wizard")?.characterType, "wizard");
   assert.equal(parseCosmeticItemKey("round-glasses:mechdog"), null);
   assert.equal(parseCosmeticItemKey("unknown:robot"), null);
+});
+
+test("administrators own every item for every character without stored grants", () => {
+  const expected = ACTIVE_CHARACTERS.flatMap(({ type }) =>
+    COSMETIC_FAMILIES.map((family) => cosmeticItemKey(family.key, type)));
+  for (const role of ["admin", "administrator"]) {
+    assert.deepEqual(cosmeticInventoryForRole(role, []), expected);
+    assert.deepEqual(cosmeticInventoryForRole(role, ["starter-antenna:robot"]), expected);
+  }
+  assert.deepEqual(cosmeticInventoryForRole("teacher", ["starter-antenna:robot"]), ["starter-antenna:robot"]);
+  assert.deepEqual(cosmeticInventoryForRole("student", ["starter-antenna:robot", "unknown:robot"]), ["starter-antenna:robot"]);
 });
 
 test("feedback validation accepts a saved AI challenge id", () => {

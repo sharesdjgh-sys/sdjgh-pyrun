@@ -5,6 +5,7 @@ import { userConceptClears, badges, concepts } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
 import { and, eq } from "drizzle-orm";
 import { resolveCurriculumIdForUser, sessionTenant } from "@/lib/curriculum-access";
+import { isAdministratorRole } from "@/lib/roles";
 
 export async function GET() {
   const context = sessionTenant(await auth());
@@ -46,10 +47,11 @@ export async function GET() {
     ));
 
   const clearedMap = new Map(clears.map((c) => [c.conceptId, c.clearedAt]));
+  const isAdmin = isAdministratorRole(context.role);
 
   const earned = allBadges.map((b) => ({
     ...b,
-    earned: clearedMap.has(b.conceptId),
+    earned: isAdmin || clearedMap.has(b.conceptId),
     clearedAt: clearedMap.get(b.conceptId) ?? null,
   }));
 

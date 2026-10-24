@@ -1,4 +1,5 @@
 import type { ActiveCharacterType, CosmeticSlot } from "@/types";
+import { isAdministratorRole } from "@/lib/roles";
 
 export const AI_REWARD_CONCEPT_LIMIT = 2;
 export const AI_REWARD_TARGET = 3;
@@ -85,6 +86,14 @@ export function randomRewardCandidates(characterType: ActiveCharacterType, owned
 
 export function cosmeticItemKey(familyKey: string, characterType: ActiveCharacterType) {
   return `${familyKey}:${characterType}`;
+}
+
+// Administrator ownership follows the account role, so new catalog items are available without DB grants.
+export function cosmeticInventoryForRole(role: string, storedItemKeys: Iterable<string>) {
+  if (isAdministratorRole(role)) {
+    return ACTIVE_CHARACTERS.flatMap(({ type }) => COSMETIC_FAMILIES.map((family) => cosmeticItemKey(family.key, type)));
+  }
+  return [...storedItemKeys].filter((key) => parseCosmeticItemKey(key));
 }
 
 export function parseCosmeticItemKey(itemKey: string) {

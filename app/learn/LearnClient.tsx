@@ -88,9 +88,10 @@ function getFriendlyNameCall(name: string) {
 interface LearnClientProps {
   userName: string;
   isStudent: boolean;
+  isAdmin: boolean;
 }
 
-export default function LearnClient({ userName, isStudent }: LearnClientProps) {
+export default function LearnClient({ userName, isStudent, isAdmin }: LearnClientProps) {
   const robotAudienceCall = isStudent ? getFriendlyNameCall(userName) : "얘들아";
   const [curriculum, setCurriculum] = useState<Record<number, CurriculumItem>>({});
   const [curriculumView, setCurriculumView] = useState<CurriculumView>({ id: 0, name: "학습 자료 준비 중", units: [], mechdogUnits: [] });
@@ -762,8 +763,11 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
     : mode === "lv3"
     ? curriculum[selectedLv3ConceptId]
     : currentConcept;
-  const levelRanks = isStudent
-    ? highestEarnedBadgesByLevel(curriculumView.units, clearedConceptIds)
+  const visibleClearedConceptIds = isAdmin
+    ? new Set(curriculumView.units.map((unit) => unit.id))
+    : clearedConceptIds;
+  const levelRanks = (isStudent || isAdmin)
+    ? highestEarnedBadgesByLevel(curriculumView.units, visibleClearedConceptIds)
     : [];
   const focusWorldName = displayConcept?.nameKo?.trim() || "코딩";
   const focusConceptId = mode === "lv3" ? selectedLv3ConceptId : selectedConceptId;
@@ -950,7 +954,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
                     const badge = currentBadges.find(b => b.conceptId === id);
                     if (!badge) return null;
                     const selected = id === selectedLv3ConceptId;
-                    const cleared = isStudent && clearedConceptIds.has(id);
+                    const cleared = (isStudent || isAdmin) && visibleClearedConceptIds.has(id);
                     const unit = curriculumView.units.find((item) => item.id === id);
                     const unlocked = !sessionExpired && progressReady && (!isStudent || unit?.sourceConceptId === 0 || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders));
                     return (
@@ -1063,7 +1067,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
                     if (!badge) return null;
                     const name = badge.nameKo.replace(" 마스터", "");
                     const selected = id === selectedConceptId;
-                    const cleared = isStudent && clearedConceptIds.has(id);
+                    const cleared = (isStudent || isAdmin) && visibleClearedConceptIds.has(id);
                     const unit = curriculumView.units.find((item) => item.id === id);
                     const unlocked = !sessionExpired && progressReady && (!isStudent || unit?.sourceConceptId === 0 || isConceptUnlockedInOrders(id, accessibleConceptIds, levelOrders));
                     return (
@@ -1825,7 +1829,7 @@ export default function LearnClient({ userName, isStudent }: LearnClientProps) {
             gap: 10,
           }}
         >
-          {mode !== "lv3" && isStudent && levelRanks.length > 0 && (
+          {mode !== "lv3" && (isStudent || isAdmin) && levelRanks.length > 0 && (
             <div
               className={`learn-stage-ranks ${conceptExpanded ? "" : "is-compact"}`}
               aria-label="레벨별 최고 뱃지"

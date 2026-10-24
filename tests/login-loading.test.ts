@@ -137,7 +137,7 @@ test("learning access queries use the authenticated user and resolved curriculum
   let authenticated = false;
   const query = {
     from() { return query; }, innerJoin() { return query; },
-    async where(value: unknown) { filters.push(value); return [{ conceptId: 100 }]; },
+    async where(value: unknown) { filters.push(value); return [{ conceptId: 100, id: 100 }]; },
   };
   const { GET } = loadModule<{ GET: () => Promise<{ status?: number; body: { clearedConceptIds: number[] }; headers: Record<string, string> }> }>("app/api/learn/access/route.ts", {
     "@/lib/auth": { auth: async () => ({}) },
@@ -150,6 +150,7 @@ test("learning access queries use the authenticated user and resolved curriculum
       teacherBadgeGrants: { id: "grant.id", userId: "userId", conceptId: "grant.conceptId", celebratedAt: "grant.celebratedAt" },
     },
     "drizzle-orm": operators,
+    "@/lib/roles": { isAdministratorRole: (role: string) => role === "admin" || role === "administrator" },
     "@/lib/curriculum-access": {
       sessionTenant: () => authenticated ? tenant : null,
       resolveCurriculumIdForUser: async (context: unknown) => { assert.equal(context, tenant); return 8; },
@@ -169,6 +170,13 @@ test("learning access queries use the authenticated user and resolved curriculum
   ] : [
     { column: "userId", value: 42 }, { column: "curriculumId", value: 8 }, { column: "active", value: true },
   ]));
+  tenant.role = "admin";
+  const adminResult = await GET();
+  assert.deepEqual(adminResult.body.clearedConceptIds, [100]);
+  assert.equal(filters.length, 4);
+  assert.deepEqual(filters[3], [
+    { column: "curriculumId", value: 8 }, { column: "active", value: true },
+  ]);
 });
 
 
