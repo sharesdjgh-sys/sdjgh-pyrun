@@ -8,7 +8,8 @@ import {
   effectiveConceptAccessIdsForOrders,
   isConceptUnlockedInOrders,
 } from "@/lib/progress";
-import { Award, Check, Clock3, LoaderCircle, LockOpen, PlayCircle, RotateCcw, Search, Users, X } from "lucide-react";
+import { Award, Check, Clock3, Gift, LoaderCircle, LockOpen, PlayCircle, RotateCcw, Search, Users, X } from "lucide-react";
+import CosmeticGrantModal from "./CosmeticGrantModal";
 
 interface StudentStatus {
   id: number;
@@ -78,6 +79,7 @@ export default function StudentProgressManager() {
   const [badgeGrantError, setBadgeGrantError] = useState("");
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [cosmeticTarget, setCosmeticTarget] = useState<StudentStatus | null>(null);
 
   async function loadStudents() {
     setLoading(true);
@@ -624,8 +626,20 @@ export default function StudentProgressManager() {
           {selectedStudent && (
             <section style={{ minWidth: 0, background: "#fff", border: "1px solid #EFEAF8", borderRadius: 18, padding: 20, boxShadow: "0 8px 24px rgba(90,63,214,.05)" }}>
               <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", gap: 16 }}>
-                <div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "#3D2E8A" }}>{selectedStudent.displayName || selectedStudent.username}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#3D2E8A" }}>{selectedStudent.displayName || selectedStudent.username}</div>
+                      {unrestricted && (
+                        <button
+                          type="button"
+                          onClick={() => setCosmeticTarget(selectedStudent)}
+                          aria-label="선택한 학생에게 꾸미기 아이템 지급"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 30, padding: "4px 8px", border: "1px solid #E4DCF2", borderRadius: 8, background: "#FAF8FE", color: "#756692", font: "inherit", fontSize: 10.5, fontWeight: 750, cursor: "pointer" }}
+                        >
+                          <Gift size={12} aria-hidden="true" /> 아이템 지급
+                        </button>
+                      )}
+                    </div>
                   <div style={{ marginTop: 3, fontSize: 12, color: "#9A93B5" }}>
                     {selectedStudent.grade && selectedStudent.classNumber ? `${selectedStudent.grade}학년 ${selectedStudent.classNumber}반 · ` : ""}
                     {selectedStudent.seatNumber ? `${selectedStudent.seatNumber}번 · ` : ""}학번 {selectedStudent.studentNumber || selectedStudent.username}
@@ -825,6 +839,17 @@ export default function StudentProgressManager() {
             </div>
           </section>
         </div>
+      )}
+      {cosmeticTarget && (
+        <CosmeticGrantModal
+          user={{
+            id: cosmeticTarget.id,
+            username: cosmeticTarget.username,
+            displayName: cosmeticTarget.displayName,
+            detail: cosmeticTarget.studentNumber ? `학번 ${cosmeticTarget.studentNumber}` : undefined,
+          }}
+          onClose={() => setCosmeticTarget(null)}
+        />
       )}
     </div>
   );

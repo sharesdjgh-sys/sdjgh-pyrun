@@ -5,10 +5,12 @@ import { Gift, LoaderCircle, X } from "lucide-react";
 import CosmeticItemPreview from "@/components/customization/CosmeticItemPreview";
 import { ACTIVE_CHARACTERS, characterCosmeticFamily, cosmeticItemKey, COSMETIC_FAMILIES } from "@/lib/cosmetics";
 import type { ActiveCharacterType } from "@/types";
-import type { ManagedUser } from "./UserManagementPanel";
 import styles from "./CosmeticGrantModal.module.css";
 
-type Props = { user: ManagedUser; onClose: () => void };
+type Props = {
+  user: { id: number; username: string; displayName: string | null; detail?: string };
+  onClose: () => void;
+};
 
 export default function CosmeticGrantModal({ user, onClose }: Props) {
   const [character, setCharacter] = useState<ActiveCharacterType>("robot");
@@ -67,7 +69,7 @@ export default function CosmeticGrantModal({ user, onClose }: Props) {
         <div className={styles.header}>
           <div>
             <h2 id="cosmetic-grant-title"><Gift size={20} aria-hidden="true" /> 꾸미기 아이템 지급</h2>
-            <p><strong>{displayName}</strong> · @{user.username} · {user.schoolName}</p>
+            <p><strong>{displayName}</strong> · @{user.username}{user.detail && <> · {user.detail}</>}</p>
           </div>
           <button ref={closeButton} type="button" onClick={onClose} disabled={saving} aria-label="아이템 지급 창 닫기"><X size={18} /></button>
         </div>

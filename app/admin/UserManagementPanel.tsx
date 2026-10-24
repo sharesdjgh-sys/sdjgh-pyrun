@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   Check,
   LoaderCircle,
-  Gift,
   RefreshCw,
   Search,
   SlidersHorizontal,
@@ -14,7 +13,6 @@ import {
   X,
 } from "lucide-react";
 import { USER_ROLES, type UserRole } from "@/lib/roles";
-import CosmeticGrantModal from "./CosmeticGrantModal";
 import styles from "./UserManagementPanel.module.css";
 
 export interface ManagedUser {
@@ -73,7 +71,6 @@ export default function UserManagementPanel({
   const [selectedTeacherClassKeys, setSelectedTeacherClassKeys] = useState<string[]>([]);
   const [teacherModalSaving, setTeacherModalSaving] = useState(false);
   const [teacherModalError, setTeacherModalError] = useState("");
-  const [cosmeticTarget, setCosmeticTarget] = useState<ManagedUser | null>(null);
 
   const schools = useMemo(
     () => Array.from(new Set(users.map((user) => user.schoolName))).sort((a, b) => a.localeCompare(b, "ko")),
@@ -260,7 +257,7 @@ export default function UserManagementPanel({
           <h2 id="user-management-title" className={styles.title}>
             회원 관리
           </h2>
-          <p className={styles.description}>이름, 아이디, 학교로 회원을 찾고 역할과 꾸미기 아이템을 관리하세요.</p>
+          <p className={styles.description}>이름, 아이디, 학교로 빠르게 찾고 회원 역할을 관리하세요.</p>
         </div>
         <div className={styles.headingActions}>
           <button
@@ -454,15 +451,6 @@ export default function UserManagementPanel({
                     <span role="status" style={{ color: "#6C579F", fontSize: 10.5, fontWeight: 750 }}>등급 변경 중...</span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className={styles.cosmeticButton}
-                  onClick={() => setCosmeticTarget(user)}
-                  disabled={updatingUserId !== null}
-                  aria-label={`${displayName} 계정에 꾸미기 아이템 지급`}
-                >
-                  <Gift size={16} aria-hidden="true" /> 아이템 지급
-                </button>
               </article>
             );
           })}
@@ -474,10 +462,6 @@ export default function UserManagementPanel({
           <span>검색어나 필터를 바꿔보세요.</span>
           {hasActiveFilters && <button type="button" onClick={resetFilters}>모든 회원 보기</button>}
         </div>
-      )}
-
-      {cosmeticTarget && (
-        <CosmeticGrantModal user={cosmeticTarget} onClose={() => setCosmeticTarget(null)} />
       )}
 
       {pendingTeacher && (
