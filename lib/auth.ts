@@ -2,9 +2,10 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db/index";
 import { schools, users } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { verifySsoToken } from "@/lib/ssoVerify";
 import { parseSchoolStudentNumber } from "@/lib/student-number";
+import { chooseLegacySsoAccount, legacySsoUsernameCandidates } from "@/lib/sso-legacy-account";
 
 // This deployment serves a single school (matches lib/db/seed.ts's seeded row).
 // SSO auto-login runs inside a third-party iframe (embedded under
@@ -20,10 +21,7 @@ const SSO_ROLE_MAP: Record<string, string> = { 학생: "student", 교사: "teach
 // The platform's uid is "입학연도-학번" (e.g. "24-10101"); this app's own
 // student numbers are the bare 5-digit part, so strip the year prefix to
 // match existing/CSV-imported accounts instead of creating duplicates.
-function ssoUidToStudentNumber(uid: string) {
-  const dashIndex = uid.indexOf("-");
-  return dashIndex >= 0 ? uid.slice(dashIndex + 1) : uid;
-}
+// 교직원·특수 형식 uid는 접두를 떼면 다른 사람과 겹치므로 lib/sso-legacy-account.ts 규칙을 따른다.
 
 function toAuthorizedUser(user: typeof users.$inferSelect) {
   return {
@@ -104,32 +102,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ssoUser = await verifySsoToken(`Bearer ${ssoToken}`);
         if (!ssoUser) return null;
 
-        const studentNumber = ssoUidToStudentNumber(ssoUser.uid);
-
-        const [existing] = await db
+        const role = SSO_ROLE_MAP[ssoUser.role] ?? "student";
+        const usernames = legacySsoUsernameCandidates(ssoUser.uid);
+        if (!usernames.length) return null;
+        const rows = await db
           .select({ user: users })
           .from(users)
-          .where(and(eq(users.schoolId, SSO_SCHOOL_ID), eq(users.username, studentNumber)))
-          .limit(1);
+          .where(and(eq(users.schoolId, SSO_SCHOOL_ID), inArray(users.username, usernames)))
+          .limit(2);
+        const choice = chooseLegacySsoAccount(
+          { uid: ssoUser.uid, name: ssoUser.name, role },
+          rows.map(({ user }) => user),
+        );
+        if (choice.kind === "reject") return null;
+        if (choice.kind === "existing") return toAuthorizedUser(choice.user);
 
-        if (existing) {
-          return toAuthorizedUser(existing.user);
-        }
-
-        const role = SSO_ROLE_MAP[ssoUser.role] ?? "student";
-        const classInfo = parseSchoolStudentNumber(studentNumber);
+        const classInfo = choice.studentNumber ? parseSchoolStudentNumber(choice.studentNumber) : null;
         const bcrypt = await import("bcryptjs");
 
         const [created] = await db
           .insert(users)
           .values({
             schoolId: SSO_SCHOOL_ID,
-            username: studentNumber,
+            username: choice.username,
             passwordHash: await bcrypt.hash(crypto.randomUUID(), 10),
             role,
             displayName: ssoUser.name,
             nickname: "코드러너",
-            studentNumber,
+            studentNumber: choice.studentNumber,
             grade: classInfo?.grade,
             classNumber: classInfo?.classNumber,
             seatNumber: classInfo?.seatNumber,

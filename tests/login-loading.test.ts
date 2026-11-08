@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
 import { verifySsoToken } from "../lib/ssoVerify";
+import * as ssoLegacyAccount from "../lib/sso-legacy-account";
 
 // Load real route/provider code in isolation; external services remain test doubles.
 function loadModule<T = Record<string, unknown>>(path: string, mocks: Record<string, unknown>, globals: Record<string, unknown> = {}) {
@@ -49,7 +50,7 @@ function providerHarness() {
     where(value: Filter | Filter[]) { filters = Array.isArray(value) ? value : [value]; return query; },
     async limit() {
       return accounts.filter((account) => filters.every((f: Filter) =>
-        f.column === "users.username" ? account.username === f.value :
+        f.column === "users.username" ? (Array.isArray(f.value) ? f.value.includes(account.username) : account.username === f.value) :
         f.column === "schools.code" ? account.schoolCode === f.value :
         f.column === "users.schoolId" ? account.schoolId === f.value : false
       )).map((user) => ({ user }));
@@ -62,6 +63,7 @@ function providerHarness() {
     "@/lib/db/schema": schema, "drizzle-orm": operators,
     "@/lib/ssoVerify": { verifySsoToken: async () => { verifyCalls++; return verified; } },
     "@/lib/student-number": { parseSchoolStudentNumber: () => null },
+    "@/lib/sso-legacy-account": ssoLegacyAccount,
     "bcryptjs": { compare: async (password: string, hash: string) => password === hash },
   });
   return { providers: config.providers, calls: () => verifyCalls, invalidate: () => { verified = null; } };
