@@ -8,6 +8,9 @@ import {
   boolean,
   uniqueIndex,
   index,
+  foreignKey,
+  uuid,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const schools = pgTable("schools", {
@@ -42,6 +45,33 @@ export const users = pgTable(
     studentNumberUnique: uniqueIndex("users_school_student_number_unique").on(table.schoolId, table.studentNumber),
     schoolUsernameUnique: uniqueIndex("users_school_username_unique").on(table.schoolId, table.username),
     schoolRoleIndex: index("users_school_role_index").on(table.schoolId, table.role),
+    schoolIdIdUnique: uniqueIndex("users_school_id_id_unique").on(table.schoolId, table.id),
+  })
+);
+
+// 타자연습과 공유하는 public.users.id의 중앙 계정 연결이다. 중앙 B열 ID를
+// 삭제 후 재등록하면 UUID가 달라지므로 기존 학습 이력을 자동으로 되살리지 않는다.
+export const smartCampusUserBindings = pgTable(
+  "smart_campus_user_bindings",
+  {
+    schoolId: integer("school_id").notNull().references(() => schools.id),
+    platformUserId: varchar("platform_user_id", { length: 200 }).notNull(),
+    registrationId: uuid("registration_id").notNull(),
+    userId: integer("user_id").notNull().references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    accountPk: primaryKey({ name: "smart_campus_user_bindings_account_pk",
+      columns: [table.schoolId, table.platformUserId] }),
+    registrationUnique: uniqueIndex("smart_campus_user_bindings_registration_unique")
+      .on(table.schoolId, table.registrationId),
+    localUserUnique: uniqueIndex("smart_campus_user_bindings_local_user_unique")
+      .on(table.userId),
+    sameSchoolFk: foreignKey({
+      columns: [table.schoolId, table.userId],
+      foreignColumns: [users.schoolId, users.id],
+      name: "smart_campus_user_bindings_same_school_fk",
+    }),
   })
 );
 

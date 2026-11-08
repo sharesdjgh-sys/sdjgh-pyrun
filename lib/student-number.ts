@@ -16,3 +16,15 @@ export function parseSchoolStudentNumber(studentNumber: string): ParsedStudentNu
   if (grade < 1 || classNumber < 1 || seatNumber < 1) return null;
   return { grade, classNumber, seatNumber };
 }
+
+// 중앙 B ID의 입학연도와 현재 E열 학번을 묶어 앱의 재사용 학번을 만든다.
+// 같은 5자리 학번을 다음 기수가 쓰더라도 두 사람의 student_number가 겹치지 않는다.
+export function currentBoundStudentNumber(platformUserId: string, uid: string | undefined):
+  (ParsedStudentNumber & { studentNumber: string }) | null {
+  const cohort = /^(\d{2})-\d{5}$/.exec(platformUserId)?.[1];
+  const current = /^(?:(\d{2}|\d{4})-)?(\d{5})$/.exec(uid ?? "");
+  if (!cohort || !current || (current[1] && current[1] !== cohort && current[1] !== `20${cohort}`)) return null;
+  const parsed = parseSchoolStudentNumber(current[2]);
+  if (!parsed || parsed.grade > 3) return null;
+  return { ...parsed, studentNumber: `${cohort}-${current[2]}` };
+}

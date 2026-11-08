@@ -54,7 +54,7 @@ export default function StudentCsvImport({ schoolName }: { schoolName: string })
       const res = await fetch("/api/admin/students/import", { method: "POST", body: formData });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "학생 계정 등록에 실패했습니다.");
-      setImportMessage(`총 ${data.total}명 처리 완료 · 신규 ${data.created}명 · 정보 갱신 ${data.updated}명`);
+      setImportMessage(`신규 학생 ${data.created}명 등록 완료`);
     } catch (error) {
       setImportMessage(error instanceof Error ? error.message : "학생 계정 등록에 실패했습니다.");
     } finally {
@@ -126,7 +126,7 @@ export default function StudentCsvImport({ schoolName }: { schoolName: string })
               <h3>CSV 일괄 등록</h3>
             </div>
           </div>
-          <p className={styles.description}>여러 학생을 한 번에 추가하거나 기존 학생 정보를 갱신합니다.</p>
+          <p className={styles.description}>새 학생 여러 명을 한 번에 등록합니다.</p>
 
           <div className={styles.csvGuide}>
             <span>필수 열</span>
@@ -144,7 +144,7 @@ export default function StudentCsvImport({ schoolName }: { schoolName: string })
               <Upload size={17} /> {importing ? "등록 중..." : "CSV 파일 선택"}
             </button>
           </div>
-          <p className={styles.bulkNote}>기존 학번을 다시 올리면 비밀번호는 유지되고 이름과 학급 정보만 갱신됩니다.</p>
+          <p className={styles.bulkNote}>이미 등록된 학번이 하나라도 있으면 파일 전체를 등록하지 않습니다. 기존 계정의 정보는 이 화면에서 덮어쓰지 않습니다.</p>
           {importMessage && <div role="status" className={`${styles.message} ${importMessage.includes("완료") ? styles.success : styles.error}`}>{importMessage}</div>}
         </article>
       </div>

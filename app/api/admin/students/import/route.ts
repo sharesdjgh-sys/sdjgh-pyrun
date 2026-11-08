@@ -106,68 +106,45 @@ export async function POST(req: NextRequest) {
   }
 
   const existingUsers = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      studentNumber: users.studentNumber,
-      role: users.role,
-      displayName: users.displayName,
-      nickname: users.nickname,
-    })
+    .select({ id: users.id })
     .from(users)
     .where(and(
       eq(users.schoolId, context.schoolId),
       or(inArray(users.username, studentNumbers), inArray(users.studentNumber, studentNumbers))
     ));
 
-  const conflictingStudent = existingUsers.find((user) => user.studentNumber && user.studentNumber !== user.username);
-  if (conflictingStudent) {
-    return NextResponse.json({ error: `학번 ${conflictingStudent.studentNumber}은(는) 다른 계정에서 사용 중입니다.` }, { status: 409 });
-  }
-
-  const nonStudentAccount = existingUsers.find((user) => studentNumbers.includes(user.username) && user.role !== "student");
-  if (nonStudentAccount) {
-    return NextResponse.json({ error: `학번 ${nonStudentAccount.username}은(는) 교사 또는 관리자 계정에서 사용 중입니다.` }, { status: 409 });
+  // 학번은 해가 바뀌면 다른 학생이 다시 쓴다. 기존 PK의 이름·학급을 CSV로
+  // 덮어쓰면 그 PK에 남은 학습 기록의 소유자가 바뀌므로 전체 파일을 거부한다.
+  if (existingUsers.length > 0) {
+    return NextResponse.json({ error: "이미 등록된 학번이 있습니다. 기존 계정은 CSV로 갱신할 수 없습니다." }, { status: 409 });
   }
 
   const bcrypt = await import("bcryptjs");
-  let created = 0;
-  let updated = 0;
-
+  const newUsers = [];
   for (const student of parsedStudents) {
-    const existing = existingUsers.find((user) => user.username === student.studentNumber);
-    if (existing) {
-      await db
-        .update(users)
-        .set({
-          role: "student",
-          displayName: student.name,
-          nickname: existing.nickname && existing.nickname !== existing.displayName
-            ? existing.nickname
-            : "코드러너",
-          studentNumber: student.studentNumber,
-          grade: student.classInfo!.grade,
-          classNumber: student.classInfo!.classNumber,
-          seatNumber: student.classInfo!.seatNumber,
-        })
-        .where(eq(users.id, existing.id));
-      updated += 1;
-    } else {
-      await db.insert(users).values({
-        schoolId: context.schoolId,
-        username: student.studentNumber,
-        passwordHash: await bcrypt.hash(student.password, 10),
-        role: "student",
-        displayName: student.name,
-        nickname: "코드러너",
-        studentNumber: student.studentNumber,
-        grade: student.classInfo!.grade,
-        classNumber: student.classInfo!.classNumber,
-        seatNumber: student.classInfo!.seatNumber,
-      });
-      created += 1;
-    }
+    newUsers.push({
+      schoolId: context.schoolId,
+      username: student.studentNumber,
+      passwordHash: await bcrypt.hash(student.password, 10),
+      role: "student" as const,
+      displayName: student.name,
+      nickname: "코드러너",
+      studentNumber: student.studentNumber,
+      grade: student.classInfo!.grade,
+      classNumber: student.classInfo!.classNumber,
+      seatNumber: student.classInfo!.seatNumber,
+    });
   }
 
-  return NextResponse.json({ ok: true, created, updated, total: parsedStudents.length });
+  // 한 SQL 문으로 삽입해 동시 등록과 충돌하면 일부 학생만 생성되지 않게 한다.
+  try {
+    await db.insert(users).values(newUsers);
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+      return NextResponse.json({ error: "이미 등록된 학번이 있습니다. CSV 전체를 다시 확인해 주세요." }, { status: 409 });
+    }
+    throw error;
+  }
+
+  return NextResponse.json({ ok: true, created: newUsers.length, updated: 0, total: parsedStudents.length });
 }
