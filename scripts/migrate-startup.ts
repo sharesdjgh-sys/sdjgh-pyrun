@@ -15,24 +15,6 @@ async function migrate() {
     await sql`ALTER TABLE schools ADD COLUMN IF NOT EXISTS logo_scale integer NOT NULL DEFAULT 100`;
     await sql`ALTER TABLE curriculum_sets ADD COLUMN IF NOT EXISTS archived_at timestamp`;
 
-    // 중앙 계정 연결은 학교와 앱 계정의 소유권을 함께 고정한다. 이 스키마가 없으면
-    // SSO 수신 단계에서 바로 실패하므로 배포 전에 실행하는 명시적 이관에 포함한다.
-    await sql`CREATE UNIQUE INDEX IF NOT EXISTS users_school_id_id_unique ON users(school_id, id)`;
-    await sql`
-      CREATE TABLE IF NOT EXISTS smart_campus_user_bindings (
-        school_id integer NOT NULL REFERENCES schools(id),
-        platform_user_id varchar(200) NOT NULL,
-        registration_id uuid NOT NULL,
-        user_id integer NOT NULL REFERENCES users(id),
-        created_at timestamptz NOT NULL DEFAULT now(),
-        CONSTRAINT smart_campus_user_bindings_account_pk PRIMARY KEY (school_id, platform_user_id),
-        CONSTRAINT smart_campus_user_bindings_same_school_fk
-          FOREIGN KEY (school_id, user_id) REFERENCES users(school_id, id)
-      )
-    `;
-    await sql`CREATE UNIQUE INDEX IF NOT EXISTS smart_campus_user_bindings_registration_unique ON smart_campus_user_bindings(school_id, registration_id)`;
-    await sql`CREATE UNIQUE INDEX IF NOT EXISTS smart_campus_user_bindings_local_user_unique ON smart_campus_user_bindings(user_id)`;
-
     await sql`
       CREATE TABLE IF NOT EXISTS data_files (
         id SERIAL PRIMARY KEY,

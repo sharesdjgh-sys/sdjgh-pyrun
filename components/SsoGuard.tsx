@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 const PLATFORM_ORIGIN = "https://platform.sdjgh-ai.kr";
+let ssoToken: string | null = null;
+export function getSsoToken() { return ssoToken; }
+
 type Status = "pending" | "signing-in" | "done" | "skipped" | "expired" | "timeout";
 
 export default function SsoGuard({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("pending");
   const router = useRouter();
-  const { update } = useSession();
 
   useEffect(() => {
     // Direct visits (including other schools) never depend on the platform.
@@ -19,6 +21,7 @@ export default function SsoGuard({ children }: { children: React.ReactNode }) {
     let accepted = false;
     let finished = false;
     let deadline: ReturnType<typeof setTimeout>;
+    ssoToken = null;
 
     function finishFailure(next: "expired" | "timeout") {
       if (!active || finished) return;
@@ -43,6 +46,7 @@ export default function SsoGuard({ children }: { children: React.ReactNode }) {
           if (!result?.ok || result.error) { finishFailure("expired"); return; }
           finished = true;
           clearTimeout(deadline);
+          ssoToken = data.token;
           // Refresh also replaces stale server props if the iframe opened on /learn.
           if (window.location.pathname === "/learn") router.refresh();
           else router.replace("/learn");
@@ -56,24 +60,6 @@ export default function SsoGuard({ children }: { children: React.ReactNode }) {
     window.parent.postMessage({ type: "sso:ready" }, PLATFORM_ORIGIN);
     return () => { active = false; clearTimeout(deadline); window.removeEventListener("message", onMessage); };
   }, [router]);
-
-  useEffect(() => {
-    if (status !== "done") return;
-    let active = true;
-    // 열린 화면도 주기적으로 Auth.js 세션을 읽는다. 서버의 JWT 콜백이 매번
-    // 중앙 증명을 확인하며, 거부되면 증명 없는 화면을 계속 표시하지 않는다.
-    const check = () => { void update().then((session) => {
-      if (!active || session) return;
-      setStatus("expired");
-      window.parent.postMessage({ type: "sso:expired" }, PLATFORM_ORIGIN);
-    }).catch(() => {
-      if (active) setStatus("timeout");
-    }); };
-    const timer = window.setInterval(check, 15000);
-    const onFocus = () => check();
-    window.addEventListener("focus", onFocus);
-    return () => { active = false; window.clearInterval(timer); window.removeEventListener("focus", onFocus); };
-  }, [status, update]);
 
   if (status === "pending" || status === "signing-in") {
     return <div style={overlayStyle} role="status">{status === "pending" ? "스마트캠퍼스 연결 확인 중..." : "로그인 확인 중..."}</div>;
